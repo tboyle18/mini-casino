@@ -47,7 +47,7 @@ self.addEventListener('fetch', event => {
     // Pages: network first so a new deploy shows up right away; cached copy when offline.
     event.respondWith(
       fetch(request)
-        .then(response => store(request, response))
+        .then(response => (url.search ? response : store(request, response)))   // skip one-off URLs like the sign-in return
         .catch(() => caches.match(request, { ignoreSearch: true }).then(hit => hit || caches.match('/')))
     );
     return;

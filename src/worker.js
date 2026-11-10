@@ -9,7 +9,9 @@
 
 import { neon } from '@neondatabase/serverless';
 
-const AUTH_ROUTES = new Set(['/sign-up/email', '/sign-in/email', '/sign-out', '/get-session']);
+// /sign-in/social starts "Continue with Google". Neon sends the player back to this site with a
+// one-time verifier; the page trades it for a session through /get-session, still via this proxy.
+const AUTH_ROUTES = new Set(['/sign-up/email', '/sign-in/email', '/sign-in/social', '/sign-out', '/get-session']);
 const MAX_SAVE_BYTES = 256 * 1024;
 
 export default {
