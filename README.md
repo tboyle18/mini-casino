@@ -12,6 +12,21 @@ A play-money casino in a single HTML page.
 | --- | --- |
 | `mini-casino.html` | The full casino. It's written as a [Claude artifact](https://claude.ai/artifact/Jr9pJxUStQxXb7Un3cHvPZ), so the page body has no `<html>`/`<head>` wrapper of its own. |
 | `blackjack.html` | The original stand-alone blackjack game. Works offline: open it in any browser. |
+| `wrangler.jsonc` | Cloudflare Workers config. Serves the site as static assets from `dist/`. |
+| `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, favicon) as `index.html`, and copies `blackjack.html`. |
+
+## Deploying to Cloudflare
+
+The site deploys as a static-assets Worker with no server code. `wrangler deploy` runs the build step first, then uploads `dist/`.
+
+```bash
+npx wrangler dev      # preview locally
+npx wrangler deploy   # deploy
+```
+
+With Workers Builds connected to this repo, keep the dashboard's deploy command as `npx wrangler deploy` and leave the build command empty. The Worker's name in the dashboard must match `name` in `wrangler.jsonc` (`mini-casino`).
+
+On Cloudflare you get solo blackjack, roulette and the bank, with the wallet saved in each visitor's browser. Multiplayer rooms need claude.ai's shared storage, so they only run on the claude.ai page.
 
 ## How multiplayer works
 
