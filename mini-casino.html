@@ -1,0 +1,3130 @@
+<title>Mini Casino</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  :root {
+    /* Layout: one felt table. Dealer and shoe across the top, four seats in a row, the viewer's controls docked below. */
+    --felt-1: #17804f;
+    --felt-2: #0e6640;
+    --felt-3: #063a24;
+    --gold: #e9c46a;
+    --on-gold: #2a1d05;
+    --ink: #f5f0e3;
+    --ink-2: rgba(245, 240, 227, .74);
+    --ink-3: rgba(245, 240, 227, .5);
+    --panel: rgba(0, 0, 0, .26);
+    --panel-2: rgba(0, 0, 0, .42);
+    --line: rgba(255, 255, 255, .1);
+    --card-face: #fdfcf8;
+    --card-red: #c8303c;
+    --card-black: #1c1e24;
+    --win: #86e8b0;
+    --lose: #ff9a9a;
+    --bust: #a3222e;
+    --font-display: Georgia, "Times New Roman", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --cw: 80px;
+    --ch: 112px;
+    --chip: 58px;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font: 15px/1.4 var(--font-body);
+    background-color: var(--felt-3);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 120% 90% at 50% 26%, var(--felt-1) 0%, var(--felt-2) 45%, var(--felt-3) 100%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wrap {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding-block: 12px 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Shared controls ---------- */
+  .btn {
+    appearance: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    min-width: 96px;
+    padding: 12px 18px;
+    border-radius: 10px;
+    color: var(--ink);
+    background: var(--panel-2);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 2px 0 rgba(0, 0, 0, .3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform .08s, background .15s, opacity .15s, box-shadow .2s;
+  }
+  .btn:hover:not(:disabled) { background: rgba(0, 0, 0, .55); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn.primary {
+    background: linear-gradient(#f2d488, #d3a744);
+    color: var(--on-gold);
+    box-shadow: 0 2px 0 #8a6522, 0 6px 16px rgba(0, 0, 0, .3);
+  }
+  .btn.primary:hover:not(:disabled) { background: linear-gradient(#f7dd98, #dcb150); }
+  .btn.small { min-width: 0; padding: 8px 12px; font-size: 13px; }
+  .btn.pressed { box-shadow: inset 0 0 0 2px var(--gold); }
+  .btn.recommend { box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(233, 196, 106, .55); }
+  kbd {
+    font: 600 10px/1 var(--font-mono);
+    padding: 3px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .14);
+    opacity: .8;
+  }
+  .btn.primary kbd { background: rgba(0, 0, 0, .13); }
+  .toggle {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink-2);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .toggle.hint::before {
+    content: "";
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .25);
+  }
+  .toggle[aria-pressed="true"] { color: var(--gold); border-color: rgba(233, 196, 106, .45); }
+  .toggle.hint[aria-pressed="true"]::before { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+  .linkbtn {
+    background: none; border: none; padding: 0;
+    font: inherit; color: var(--ink-3);
+    text-decoration: underline; text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  input.text {
+    background: rgba(0, 0, 0, .35);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 11px 12px;
+    font: inherit;
+    font-size: 15px;
+    min-width: 0;
+  }
+  input.text::placeholder { color: var(--ink-3); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* ---------- Lobby ---------- */
+  .lobby { display: flex; flex-direction: column; gap: 16px; }
+  .hero { text-align: center; padding: 20px 0 8px; }
+  .hero h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: normal;
+    color: var(--gold);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    font-size: clamp(30px, 6vw, 46px);
+    text-wrap: balance;
+  }
+  .hero p { margin: 8px 0 0; color: var(--ink-2); letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
+  .lgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .lcard {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+  .lcard h2 { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: 21px; }
+  .lcard label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .field { display: flex; gap: 8px; }
+  .field input { flex: 1; }
+  .fine { margin: 0; color: var(--ink-3); font-size: 13px; }
+  .note {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .22);
+    color: var(--ink-2);
+    font-size: 14px;
+  }
+  .room-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .room-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, .2);
+  }
+  .room-item .rn { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .room-item .rm { color: var(--ink-3); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pips { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: 1px; }
+  .pips i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .2); }
+  .pips i.on { background: var(--gold); }
+  .solo-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; color: var(--ink-3); font-size: 13px; }
+  .lobby-rules { text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+
+  /* ---------- Table top bar ---------- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .room-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 1; }
+  .room-title .rname {
+    font-family: var(--font-display);
+    font-size: 21px;
+    color: var(--gold);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .room-title .rcode { font: 600 12px/1 var(--font-mono); letter-spacing: .12em; color: var(--ink-3); }
+  .top-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .bank {
+    appearance: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 6px 8px 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .bank span { font-size: 16px; font-weight: 700; color: var(--gold); margin-left: 4px; }
+  .bank .plus {
+    display: grid; place-items: center;
+    width: 22px; height: 22px; margin-left: 6px;
+    border-radius: 50%;
+    background: var(--gold); color: var(--on-gold);
+    font-size: 15px; font-weight: 800; line-height: 1;
+  }
+
+  .invite {
+    margin-top: 10px;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--panel-2);
+    border: 1px solid rgba(233, 196, 106, .35);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .invite .field input { font-family: var(--font-mono); font-size: 13px; }
+  .invite .bigcode { font: 700 22px/1 var(--font-mono); letter-spacing: .2em; color: var(--gold); }
+
+  .rules { text-align: center; margin: 12px 0 0; }
+  .rules .big { font-family: var(--font-display); color: var(--gold); letter-spacing: .24em; text-transform: uppercase; font-size: 12px; }
+  .rules .small { color: var(--ink-3); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; margin-top: 3px; }
+
+  /* ---------- Dealer ---------- */
+  .dealer { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+  .label {
+    display: flex; align-items: center; gap: 8px;
+    min-height: 26px;
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2);
+  }
+  .badge {
+    display: inline-flex;
+    justify-content: center;
+    min-width: 30px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .45);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    font-variant-numeric: tabular-nums;
+    transition: opacity .25s;
+  }
+  .badge:empty { display: none; }
+  .badge.bust { background: var(--bust); }
+  .badge.gold { background: var(--gold); color: var(--on-gold); }
+  .shoe { position: absolute; right: 0; top: 0; width: 74px; height: 96px; }
+  .shoe .cardback { position: absolute; width: 56px; height: 78px; border-radius: 6px; transform: rotate(8deg); }
+  .shoe .cardback:nth-child(2) { left: 4px; top: 3px; }
+  .shoe .cardback:nth-child(3) { left: 8px; top: 6px; }
+
+  /* ---------- Cards ---------- */
+  .cards { display: flex; justify-content: center; min-height: var(--ch); min-width: var(--cw); }
+  .card { position: relative; flex: none; width: var(--cw); height: var(--ch); perspective: 900px; }
+  .cards .card + .card { margin-left: calc(var(--cw) * -0.56); }
+  .card .inner {
+    position: absolute; inset: 0;
+    transform-style: preserve-3d;
+    transition: transform .5s cubic-bezier(.2, .7, .25, 1);
+  }
+  .card.down .inner { transform: rotateY(180deg); }
+  .card .face, .card .back {
+    position: absolute; inset: 0;
+    border-radius: calc(var(--cw) * .09);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  .card .face {
+    background: linear-gradient(160deg, #ffffff, #f1ece1);
+    color: var(--card-black);
+    border: 1px solid rgba(0, 0, 0, .14);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .6) inset, 0 6px 14px rgba(0, 0, 0, .34);
+  }
+  .card.red .face { color: var(--card-red); }
+  .card .back { transform: rotateY(180deg); }
+  .cardback {
+    background:
+      repeating-linear-gradient(45deg, rgba(255, 255, 255, .13) 0 2px, transparent 2px 8px),
+      repeating-linear-gradient(-45deg, rgba(255, 255, 255, .13) 0 2px, transparent 2px 8px),
+      linear-gradient(160deg, #9a2233, #6a1220);
+    border: 4px solid var(--card-face);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, .34);
+  }
+  .card .back.cardback { border-width: calc(var(--cw) * .05); }
+  .corner { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+  .corner.tl { top: 6%; left: 7%; }
+  .corner.br { bottom: 6%; right: 7%; transform: rotate(180deg); }
+  .corner b { font-size: calc(var(--cw) * .21); font-weight: 700; letter-spacing: -.04em; }
+  .corner i { font-style: normal; font-size: calc(var(--cw) * .17); margin-top: 1px; }
+  .pip { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--cw) * .46); }
+  .card.ace .pip { font-size: calc(var(--cw) * .64); }
+  .court {
+    position: absolute; inset: 24% 22%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 1.5px solid currentColor; border-radius: 4px;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    line-height: 1;
+  }
+  .court b { font-family: var(--font-display); font-size: calc(var(--cw) * .34); }
+  .court i { font-style: normal; font-size: calc(var(--cw) * .18); margin-top: 2px; }
+  @keyframes dealIn {
+    0% { transform: translate(var(--dx, 160px), var(--dy, -200px)) rotate(-14deg) scale(.85); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+  .card.deal-in { animation: dealIn .38s cubic-bezier(.2, .8, .3, 1) both; }
+
+  /* ---------- Message ---------- */
+  .msg {
+    min-height: 62px;
+    margin: 8px 0 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    transition: opacity .25s;
+  }
+  .msg .title { font-family: var(--font-display); font-size: 25px; line-height: 1.15; text-shadow: 0 2px 10px rgba(0, 0, 0, .35); text-wrap: balance; }
+  .msg .sub { margin-top: 3px; font-weight: 700; font-size: 15px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .msg.win .title { color: var(--gold); }
+  .msg.win .sub { color: var(--win); }
+  .msg.lose .sub { color: var(--lose); }
+  @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+  .msg.pop { animation: pop .32s cubic-bezier(.2, .8, .3, 1.3); }
+  .status-line { text-align: center; color: var(--ink-2); font-size: 13px; min-height: 18px; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+
+  .animating .msg, .animating .hand .badge, .animating .tag, .animating #dealer-total { opacity: 0; }
+
+  /* ---------- Seats ---------- */
+  .seats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+  .seat {
+    --cw: 56px; --ch: 78px;
+    position: relative;
+    min-width: 0;
+    min-height: 196px;
+    padding: 10px 8px 14px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, .14);
+    border: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    transition: box-shadow .25s, border-color .25s;
+  }
+  .seat.mine { border-color: rgba(233, 196, 106, .5); }
+  .seat.turn { box-shadow: 0 0 0 2px var(--gold), 0 0 26px rgba(233, 196, 106, .28); }
+  .seat.empty { justify-content: center; border-style: dashed; background: transparent; }
+  .seats.solo { grid-template-columns: minmax(0, 1fr); }
+  .seats.solo .seat { --cw: 80px; --ch: 112px; background: transparent; border: none; min-height: 210px; }
+  .seats.solo .seat-head, .seats.solo .seat-sub { display: none; }
+  .seat-head { display: flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; }
+  .avatar {
+    width: 22px; height: 22px; flex: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .15) center / cover no-repeat;
+  }
+  .pname { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .you {
+    flex: none;
+    font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 4px;
+    background: var(--gold); color: var(--on-gold);
+  }
+  .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--win); box-shadow: 0 0 6px var(--win); }
+  .dot.away { background: rgba(255, 255, 255, .25); box-shadow: none; }
+  .seat-sub { display: flex; gap: 8px; align-items: baseline; justify-content: center; flex-wrap: wrap; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; text-align: center; }
+  .seat-sub .sbank { color: var(--ink-2); font-weight: 700; }
+  .seat .hands { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 14px; }
+  .empty-label { color: var(--ink-3); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+  .hand { display: flex; flex-direction: column; align-items: center; gap: 7px; transition: opacity .25s; }
+  .hand .cards { transition: filter .25s, opacity .25s; }
+  .hand.active .cards { filter: drop-shadow(0 0 10px rgba(233, 196, 106, .65)); }
+  .hand.active .badge.total { box-shadow: 0 0 0 2px var(--gold); }
+  .hand.lost .cards { opacity: .55; }
+  .meta { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; min-height: 24px; }
+  .meta .badge { font-size: 13px; padding: 2px 8px; }
+  .wager { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .wager::before {
+    content: "";
+    width: 13px; height: 13px; border-radius: 50%;
+    background: var(--wc, #c8303c);
+    border: 2px dashed rgba(255, 255, 255, .85);
+  }
+  .tag { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; transition: opacity .25s; }
+  .tag.win { background: var(--gold); color: var(--on-gold); }
+  .tag.blackjack { background: linear-gradient(90deg, #f7de90, #d6a43c); color: var(--on-gold); }
+  .tag.lose, .tag.bust { background: rgba(0, 0, 0, .45); color: var(--lose); }
+  .tag.push { background: rgba(255, 255, 255, .16); color: var(--ink); }
+  .tag.double { background: rgba(255, 255, 255, .1); color: var(--ink-2); }
+  .timer { position: absolute; left: 12px; right: 12px; bottom: 6px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+  .timer i { display: block; height: 100%; background: var(--gold); transform-origin: left; }
+  @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+  /* ---------- Chips & controls ---------- */
+  .chipface {
+    background:
+      radial-gradient(circle closest-side, var(--c) 0 50%, rgba(255, 255, 255, .88) 51% 55%, var(--c) 56% 68%, transparent 69%),
+      repeating-conic-gradient(var(--c) 0deg 20deg, #f3ede0 20deg 40deg);
+  }
+  .chip {
+    width: var(--chip); height: var(--chip);
+    border: none; border-radius: 50%; padding: 0;
+    cursor: pointer;
+    color: #fff;
+    font-family: inherit; font-size: 15px; font-weight: 800;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, .38), 0 8px 14px rgba(0, 0, 0, .32), inset 0 0 0 1px rgba(0, 0, 0, .3);
+    transition: transform .12s ease, opacity .15s;
+  }
+  .chip:hover:not(:disabled) { transform: translateY(-3px); }
+  .chip:active:not(:disabled) { transform: scale(.95); }
+  .chip:disabled { opacity: .28; cursor: not-allowed; }
+  .controls { margin-top: 14px; min-height: 136px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+  .panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .chips { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  .bet-amt { min-width: 100px; text-align: center; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .bet-amt b { color: var(--gold); font-size: 18px; margin-left: 4px; }
+  .pnote { color: var(--ink-2); text-align: center; font-size: 14px; max-width: 560px; }
+  .pnote b { color: var(--gold); }
+
+  .footer { margin-top: 16px; display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .keys { margin-top: 6px; text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .04em; }
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    backdrop-filter: blur(6px);
+    z-index: 5;
+  }
+
+  .chip-x {
+    background: rgba(0, 0, 0, .42);
+    color: var(--gold);
+    font-size: 14px;
+    box-shadow: inset 0 0 0 2px rgba(233, 196, 106, .65), 0 3px 0 rgba(0, 0, 0, .38), 0 8px 14px rgba(0, 0, 0, .32);
+  }
+
+  /* ---------- Casino bar ---------- */
+  .casino-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-bottom: 4px; }
+  .brand-btn {
+    appearance: none; background: none; border: none; padding: 4px 0; cursor: pointer;
+    font-family: var(--font-display); font-size: 20px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold);
+  }
+  .bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .toggle.active { color: var(--gold); border-color: rgba(233, 196, 106, .45); }
+  .wallet-pill {
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 6px 14px; border-radius: 999px;
+    font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums;
+  }
+  .wallet-pill span { font-size: 16px; font-weight: 700; color: var(--gold); margin-left: 4px; }
+
+  /* ---------- Home ---------- */
+  .home { display: flex; flex-direction: column; gap: 18px; }
+  .home .hero h1 { font-size: clamp(36px, 8vw, 62px); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+  .tile {
+    appearance: none;
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center;
+    padding: 18px; border-radius: 16px;
+    background: var(--panel); border: 1px solid var(--line);
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+    transition: transform .15s, border-color .15s, background .15s;
+  }
+  .tile:hover { transform: translateY(-2px); border-color: rgba(233, 196, 106, .45); background: rgba(0, 0, 0, .32); }
+  .tile h2 { margin: 0 0 4px; font-family: var(--font-display); font-weight: normal; font-size: 23px; }
+  .tile p { margin: 0; color: var(--ink-2); font-size: 14px; }
+  .tile .go { display: inline-block; margin-top: 10px; color: var(--gold); font-weight: 700; font-size: 14px; }
+  .tile-art { position: relative; width: 92px; height: 92px; flex: none; }
+  .tile-art .card { --cw: 52px; --ch: 73px; position: absolute; }
+  .tile-art .card:nth-child(1) { left: 4px; top: 12px; transform: rotate(-10deg); }
+  .tile-art .card:nth-child(2) { left: 34px; top: 6px; transform: rotate(8deg); }
+  .vault {
+    width: 84px; height: 84px; margin: 4px; border-radius: 50%;
+    background: radial-gradient(circle, #f2d488 0 26%, #b98f3e 27% 32%, #d3a744 33% 62%, #8a6522 63% 66%, #c99a3c 67%);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 0 3px rgba(0, 0, 0, .18);
+    display: grid; place-items: center;
+    font: 700 26px/1 var(--font-display); color: var(--on-gold);
+  }
+
+  /* ---------- Bank ---------- */
+  .bankpage { width: 100%; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  .bank-hero { text-align: center; padding-top: 14px; }
+  .bank-hero h1 { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: clamp(28px, 6vw, 40px); color: var(--gold); text-wrap: balance; }
+  .bank-hero p { margin: 6px 0 0; color: var(--ink-3); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+  .atm {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 18px; border-radius: 18px;
+    background: linear-gradient(180deg, #2b2f33, #1b1e21);
+    border: 1px solid rgba(255, 255, 255, .08);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .4);
+  }
+  .atm-screen {
+    padding: 16px; border-radius: 12px;
+    background: #0c2a1c; border: 1px solid rgba(134, 232, 176, .18);
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, .5);
+    font-family: var(--font-mono); color: var(--win);
+  }
+  .atm-screen .lbl { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
+  .atm-screen .big { margin-top: 4px; font-size: clamp(24px, 7vw, 40px); font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .facts { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; opacity: .85; }
+  .facts b { color: var(--ink); }
+  .atm label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .amount { display: flex; gap: 8px; align-items: stretch; }
+  .amount .cur {
+    display: grid; place-items: center; padding: 0 12px; border-radius: 10px;
+    background: rgba(0, 0, 0, .35); border: 1px solid var(--line);
+    color: var(--gold); font-weight: 700;
+  }
+  .amount input { flex: 1; font-family: var(--font-mono); font-size: 18px; }
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; }
+  .teller { margin: 0; min-height: 20px; color: var(--ink-2); font-size: 14px; }
+  .stamp {
+    position: absolute; right: 18px; top: 18px;
+    padding: 6px 12px; border: 3px solid #e25a5a; border-radius: 6px;
+    color: #e25a5a; font: 800 20px/1 var(--font-body); letter-spacing: .12em;
+    transform: rotate(-12deg); opacity: 0; pointer-events: none;
+  }
+  .stamp.show { animation: stamp 1.1s ease-out forwards; }
+  @keyframes stamp {
+    0% { opacity: 0; transform: rotate(-12deg) scale(2.2); }
+    22% { opacity: .95; transform: rotate(-12deg) scale(1); }
+    75% { opacity: .95; transform: rotate(-12deg) scale(1); }
+    100% { opacity: 0; transform: rotate(-12deg) scale(1); }
+  }
+  .ledger-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .ledger-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .ledger-list li:last-child { border-bottom: none; }
+  .ledger-list .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ledger-list .when { color: var(--ink-3); font-size: 12px; }
+  .ledger-list .amt { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .amt.plus { color: var(--win); }
+  .amt.minus { color: var(--lose); }
+
+  /* ---------- Roulette ---------- */
+  .roulette { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
+  .rtop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: center; }
+  .wheel-wrap { width: 300px; max-width: 74vw; aspect-ratio: 1; }
+  .wheel-wrap canvas { display: block; width: 100%; height: 100%; }
+  .rside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .rtitle { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: 30px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+  .rsub { margin-top: -8px; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+  .rresult { display: flex; align-items: center; gap: 14px; min-height: 64px; }
+  .rnum {
+    flex: none; width: 60px; height: 60px; border-radius: 50%;
+    display: grid; place-items: center;
+    font: 700 26px/1 var(--font-display); color: #fff;
+    background: rgba(0, 0, 0, .35); border: 2px solid rgba(255, 255, 255, .22);
+  }
+  .rnum.red, .rhist .red { background: #b3262f; }
+  .rnum.black, .rhist .black { background: #1d1f24; }
+  .rnum.green, .rhist .green { background: #127a46; }
+  .rnum.pop { animation: pop .4s cubic-bezier(.2, .8, .3, 1.3); }
+  .rmsg-title { font-family: var(--font-display); font-size: 22px; line-height: 1.2; }
+  .rmsg-sub { font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .rresult.win .rmsg-title { color: var(--gold); }
+  .rresult.win .rmsg-sub { color: var(--win); }
+  .rresult.lose .rmsg-sub { color: var(--lose); }
+  .rhist { display: flex; gap: 5px; flex-wrap: wrap; min-height: 26px; }
+  .rhist span { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; }
+  .rhist span:first-child { box-shadow: 0 0 0 2px var(--gold); }
+  .rtotals { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .rtotals b { margin-left: 4px; color: var(--gold); font-size: 18px; }
+  .rside .row { justify-content: flex-start; }
+  .rboard {
+    display: grid;
+    grid-template-columns: 1.1fr repeat(12, minmax(0, 1fr)) 1.3fr;
+    grid-template-rows: repeat(3, 50px) 42px 42px;
+    gap: 3px;
+    padding: 8px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, .22);
+    border: 2px solid rgba(233, 196, 106, .35);
+  }
+  .rcell {
+    grid-row: var(--r); grid-column: var(--c);
+    position: relative; min-width: 0; padding: 0;
+    appearance: none; cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, .2); border-radius: 4px;
+    color: #fff; font: 700 15px/1 var(--font-body);
+    display: grid; place-items: center;
+    transition: filter .15s, box-shadow .15s;
+  }
+  .rcell.red { background: #b3262f; }
+  .rcell.black { background: #1d1f24; }
+  .rcell.green { background: #127a46; }
+  .rcell.out { background: rgba(0, 0, 0, .18); color: var(--ink); font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+  .rcell.out.is-red { background: rgba(179, 38, 47, .75); }
+  .rcell.out.is-black { background: rgba(29, 31, 36, .85); }
+  .rcell:hover, .rcell.cover { filter: brightness(1.28); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+  .rcell[aria-disabled="true"] { cursor: default; }
+  .rcell.win { box-shadow: 0 0 0 2px var(--gold), 0 0 16px rgba(233, 196, 106, .65); z-index: 1; }
+  @keyframes hitpulse {
+    0%, 100% { box-shadow: 0 0 0 2px var(--gold), 0 0 0 rgba(233, 196, 106, 0); }
+    50% { box-shadow: 0 0 0 3px var(--gold), 0 0 24px rgba(233, 196, 106, .95); }
+  }
+  .rcell.hit { animation: hitpulse 1s ease-in-out 3; z-index: 2; box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(233, 196, 106, .7); }
+  .rchip {
+    position: absolute; right: 2px; bottom: 2px;
+    min-width: 24px; height: 24px; padding: 0 4px;
+    border-radius: 12px;
+    background: var(--c, #c8303c);
+    border: 2px dashed rgba(255, 255, 255, .85);
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 800; color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .5);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .45);
+    pointer-events: none;
+  }
+  .rcontrols { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .chip.sel { transform: translateY(-4px); box-shadow: 0 0 0 3px var(--gold), 0 3px 0 rgba(0, 0, 0, .38), 0 8px 18px rgba(0, 0, 0, .4); }
+  .payouts { text-align: center; color: var(--ink-3); font-size: 12px; }
+  .mini-wheel {
+    width: 84px; height: 84px; margin: 4px; border-radius: 50%;
+    background:
+      radial-gradient(circle, #d8b25a 0 9%, #5a3015 10% 46%, transparent 47%),
+      repeating-conic-gradient(#b3262f 0deg 9.73deg, #1d1f24 9.73deg 19.46deg);
+    border: 5px solid #4a250f;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 0 2px #c99a3c;
+  }
+
+  @media (max-width: 760px) {
+    .seats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    :root { --cw: 60px; --ch: 84px; --chip: 46px; }
+    .chips { gap: 10px; }
+    .tiles { grid-template-columns: minmax(0, 1fr); }
+    .rtop { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 16px; }
+    .wheel-wrap { width: 240px; }
+    .rside { align-items: center; text-align: center; width: 100%; }
+    .rside .row, .rtotals { justify-content: center; }
+    .rhist { justify-content: center; }
+    .rboard { grid-template-columns: 1fr 1fr repeat(3, 1.3fr); grid-template-rows: 42px repeat(12, 36px) 40px; }
+    .rcell { grid-row: var(--vr); grid-column: var(--vc); }
+    .rcell.out { font-size: 12px; }
+    .lgrid { grid-template-columns: minmax(0, 1fr); }
+    .shoe { display: none; }
+    .msg .title { font-size: 21px; }
+    .seat { --cw: 46px; --ch: 64px; min-height: 170px; }
+    .seats.solo .seat { --cw: 62px; --ch: 87px; }
+    .row { width: 100%; flex-wrap: nowrap; gap: 8px; }
+    .row .btn { flex: 1; min-width: 0; padding: 12px 8px; }
+    .bet-amt { min-width: 0; flex: 1; }
+    .room-title .rname { font-size: 18px; }
+  }
+  @media (hover: none) {
+    kbd, .keys { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card.deal-in, .msg.pop { animation-duration: 1ms; }
+    .card .inner { transition-duration: 1ms; }
+  }
+</style>
+
+<div class="wrap" id="app">
+
+  <header class="casino-bar" id="casino-bar">
+    <button class="brand-btn" id="home-btn">Mini Casino</button>
+    <div class="bar-right">
+      <button class="toggle" id="nav-blackjack">Blackjack</button>
+      <button class="toggle" id="nav-roulette">Roulette</button>
+      <button class="toggle" id="nav-bank">Bank</button>
+      <div class="wallet-pill">Wallet<span id="wallet-amt">—</span></div>
+    </div>
+  </header>
+
+  <!-- ================= Home ================= -->
+  <section class="home" id="home" hidden>
+    <div class="hero">
+      <h1>Mini Casino</h1>
+      <p>Play money only · The bank never says no</p>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <!-- ================= Bank ================= -->
+  <section class="bankpage" id="bank-view" hidden>
+    <div class="bank-hero">
+      <h1>The Bottomless Bank</h1>
+      <p>Member of nothing · Open 24/7 · Est. a moment ago</p>
+    </div>
+    <div class="atm">
+      <div class="stamp" id="stamp" aria-hidden="true">APPROVED</div>
+      <div class="atm-screen">
+        <div class="lbl">Your wallet</div>
+        <div class="big" id="atm-big">$0</div>
+        <div class="facts"><span>Vault <b>∞</b></span><span>Interest <b>0%</b></span><span>Credit check <b>Skipped</b></span></div>
+      </div>
+      <label for="wd-amount">How much do you want?</label>
+      <div class="amount">
+        <span class="cur">$</span>
+        <input class="text" id="wd-amount" inputmode="decimal" autocomplete="off" placeholder="Any amount. Try 1m or 2.5b">
+        <button class="btn primary" id="wd-btn">Withdraw</button>
+      </div>
+      <div class="quick" id="quick">
+        <button class="btn small" data-a="1000">$1K</button>
+        <button class="btn small" data-a="10000">$10K</button>
+        <button class="btn small" data-a="100000">$100K</button>
+        <button class="btn small" data-a="1000000">$1M</button>
+        <button class="btn small" data-a="1000000000">$1B</button>
+        <button class="btn small" data-a="999999999999">Max</button>
+      </div>
+      <p class="teller" id="teller" role="status" aria-live="polite">Take as much as you like. Nobody is counting.</p>
+    </div>
+    <div class="lcard">
+      <h2>Statement</h2>
+      <p class="fine" id="ledger-summary"></p>
+      <ul class="ledger-list" id="ledger-list"></ul>
+    </div>
+    <p class="fine" style="text-align:center">Roulette bets straight from your wallet. At blackjack, add chips with the <b>+</b> next to your chip count.</p>
+  </section>
+
+  <!-- ================= Roulette ================= -->
+  <section class="roulette" id="roulette-view" hidden>
+    <div class="rtop">
+      <div class="wheel-wrap"><canvas id="r-wheel" role="img" aria-label="Roulette wheel"></canvas></div>
+      <div class="rside">
+        <h1 class="rtitle">Roulette</h1>
+        <div class="rsub">Single zero · Bets come straight from your wallet</div>
+        <div class="rresult" id="r-result" role="status" aria-live="polite">
+          <span class="rnum" id="r-num">–</span>
+          <div><div class="rmsg-title" id="r-title"></div><div class="rmsg-sub" id="r-sub"></div></div>
+        </div>
+        <div class="rhist" id="r-hist" aria-label="Recent numbers"></div>
+        <div class="rtotals"><span>Bet<b id="r-total">$0</b></span><span>Wallet<b id="r-wallet">—</b></span></div>
+        <div class="row"><button class="btn primary" id="r-spin">Spin <kbd>Space</kbd></button></div>
+      </div>
+    </div>
+    <div class="rboard" id="r-board" aria-label="Betting board"></div>
+    <div class="rcontrols">
+      <div class="chips" id="r-chips" aria-label="Chip value"></div>
+      <div class="row">
+        <button class="btn" id="r-undo">Undo <kbd>U</kbd></button>
+        <button class="btn" id="r-clear">Clear <kbd>C</kbd></button>
+        <button class="btn" id="r-rebet">Rebet <kbd>R</kbd></button>
+        <button class="btn" id="r-double">×2 <kbd>X</kbd></button>
+      </div>
+      <div class="row" id="r-low" hidden>
+        <span class="pnote">Your wallet is running low.</span>
+        <button class="btn small primary" id="r-bank">Go to the Bank</button>
+      </div>
+      <div class="payouts">Number 35 to 1 · Dozen or column 2 to 1 · Red/Black, Odd/Even, 1–18/19–36 1 to 1 · Zero loses outside bets</div>
+      <div class="keys">Keys: 1–6 pick a chip · Space spin · U undo · C clear · R rebet · X double · right-click a bet to remove it</div>
+    </div>
+  </section>
+
+  <!-- ================= Blackjack lobby ================= -->
+  <section class="lobby" id="lobby" hidden>
+    <div class="hero">
+      <h1>Blackjack</h1>
+      <p>Rooms for up to four players</p>
+    </div>
+    <p class="note" id="lobby-note" hidden></p>
+    <div class="lgrid">
+      <div class="lcard">
+        <h2>Start a room</h2>
+        <label for="room-name">Room name</label>
+        <div class="field">
+          <input class="text" id="room-name" maxlength="28" placeholder="Friday night" autocomplete="off">
+          <button class="btn primary" id="create-btn">Create</button>
+        </div>
+        <p class="fine">You'll get an invite link to send to up to three friends.</p>
+      </div>
+      <div class="lcard">
+        <h2>Join with a code</h2>
+        <label for="join-code">Room code</label>
+        <div class="field">
+          <input class="text" id="join-code" maxlength="12" placeholder="K7M2QX" autocomplete="off" autocapitalize="characters">
+          <button class="btn" id="join-btn">Join</button>
+        </div>
+        <p class="fine">Codes are six letters and numbers, shown at the top of every room.</p>
+      </div>
+    </div>
+    <div class="lcard">
+      <h2>Open rooms</h2>
+      <ul class="room-list" id="room-list"></ul>
+      <p class="fine" id="room-empty"></p>
+    </div>
+    <div class="solo-row">
+      <button class="btn" id="solo-btn">Play solo</button>
+      <span>Practice against the dealer on your own.</span>
+    </div>
+    <div class="lobby-rules">6 decks · Blackjack pays 3 to 2 · Dealer stands on all 17s</div>
+  </section>
+
+  <!-- ================= Table ================= -->
+  <section id="table-view" hidden>
+    <header class="topbar">
+      <button class="toggle" id="back-btn">← Rooms</button>
+      <div class="room-title"><span class="rname" id="t-name"></span><span class="rcode" id="t-code"></span></div>
+      <div class="top-right">
+        <button class="toggle" id="invite-btn" aria-expanded="false">Invite</button>
+        <button class="toggle hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
+        <button class="bank" id="bank-pill" aria-expanded="false" title="Add chips from your wallet">Chips<span id="bank">—</span><b class="plus" aria-hidden="true">+</b></button>
+      </div>
+    </header>
+
+    <div class="invite" id="chips-panel" hidden>
+      <div class="row" style="justify-content:space-between">
+        <span class="pnote" style="text-align:left">Move money from your wallet to this table</span>
+        <span class="pnote">Wallet <b id="cp-wallet">—</b></span>
+      </div>
+      <div class="row" id="cp-buttons">
+        <button class="btn small" data-a="500">+$500</button>
+        <button class="btn small" data-a="1000">+$1K</button>
+        <button class="btn small" data-a="5000">+$5K</button>
+        <button class="btn small" data-a="25000">+$25K</button>
+        <button class="btn small primary" data-a="all" id="cp-all">All</button>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <p class="fine" id="cp-help"></p>
+        <button class="btn small" id="cp-bank">Go to the Bank</button>
+      </div>
+    </div>
+
+    <div class="invite" id="invite-panel" hidden>
+      <div class="row" style="justify-content:space-between">
+        <span class="pnote" style="text-align:left">Room code</span>
+        <span class="bigcode" id="invite-code"></span>
+      </div>
+      <div class="field">
+        <input class="text" id="invite-link" readonly aria-label="Invite link">
+        <button class="btn primary" id="copy-btn">Copy link</button>
+      </div>
+      <p class="fine" id="invite-help"></p>
+    </div>
+
+    <p class="note" id="t-note" hidden></p>
+
+    <div id="game">
+      <div class="rules">
+        <div class="big">Blackjack pays 3 to 2</div>
+        <div class="small">Dealer stands on all 17s · Insurance pays 2 to 1</div>
+      </div>
+
+      <section class="dealer" aria-label="Dealer">
+        <div class="shoe" id="shoe" aria-hidden="true"><div class="cardback"></div><div class="cardback"></div><div class="cardback"></div></div>
+        <div class="label">Dealer <span class="badge" id="dealer-total"></span></div>
+        <div class="cards" id="dealer-cards"></div>
+      </section>
+
+      <div class="msg" id="msg" role="status" aria-live="polite"><div class="title" id="msg-title"></div><div class="sub" id="msg-sub"></div></div>
+      <div class="status-line" id="status-line"></div>
+
+      <section class="seats" id="seats" aria-label="Seats"></section>
+
+      <section class="controls">
+        <div class="panel" id="bet-panel" hidden>
+          <div class="chips">
+            <button class="chip chipface" data-v="5" style="--c:#c8303c" aria-label="Add $5 chip">5</button>
+            <button class="chip chipface" data-v="25" style="--c:#2f6fd0" aria-label="Add $25 chip">25</button>
+            <button class="chip chipface" data-v="100" style="--c:#2a2c32" aria-label="Add $100 chip">100</button>
+            <button class="chip chipface" data-v="500" style="--c:#7a3fb8" aria-label="Add $500 chip">500</button>
+            <button class="chip chip-x" id="x2-btn" aria-label="Double your bet">×2</button>
+            <button class="chip chip-x" id="max-btn" aria-label="Bet all your chips">Max</button>
+          </div>
+          <div class="row">
+            <button class="btn" id="clear-btn">Clear</button>
+            <div class="bet-amt" id="bet-amt"></div>
+            <button class="btn" id="out-btn">Sit out</button>
+            <button class="btn primary" id="ready-btn">Ready <kbd>Space</kbd></button>
+            <button class="btn primary" id="rebuy-btn" hidden>Add chips</button>
+          </div>
+        </div>
+
+        <div class="panel" id="ins-panel" hidden>
+          <div class="pnote" id="ins-text"></div>
+          <div class="row">
+            <button class="btn primary" id="ins-yes"></button>
+            <button class="btn" id="ins-no">No thanks <kbd>N</kbd></button>
+          </div>
+        </div>
+
+        <div class="panel" id="play-panel" hidden>
+          <div class="pnote" id="play-note"></div>
+          <div class="row">
+            <button class="btn" id="hit-btn">Hit <kbd>H</kbd></button>
+            <button class="btn" id="stand-btn">Stand <kbd>S</kbd></button>
+            <button class="btn" id="double-btn">Double <kbd>D</kbd></button>
+            <button class="btn" id="split-btn">Split <kbd>P</kbd></button>
+          </div>
+        </div>
+
+        <div class="panel" id="info-panel" hidden>
+          <div class="pnote" id="info-text"></div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span id="stats"></span>
+        <button class="linkbtn" id="leave-btn" hidden>Leave seat</button>
+      </footer>
+      <div class="keys">Keys: 1–4 add chips · 5 double bet · 6 max · Space ready · H hit · S stand · D double · P split · Y/N insurance</div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+
+/* ================= Config ================= */
+const ARTIFACT_URL = 'https://claude.ai/artifact/Jr9pJxUStQxXb7Un3cHvPZ';
+const SEATS = 4;
+const DECKS = 6;
+const SHOE = DECKS * 52;
+const CUT = 78;                 // reshuffle when a quarter of the shoe is left
+const MIN_BET = 5;
+const START_BANK = 1000;
+const MAX_HANDS = 4;            // per player, after splits
+const TURN_MS = 30000;          // time to act when other players are waiting
+const BET_MS = 15000;           // countdown once someone is ready
+const AWAY_MS = 8000;           // missing from the room this long counts as away
+const AWAY_SEAT_MS = 120000;    // away this long during betting frees the seat
+const WARM_MS = 3000;
+const STAGGER = 170;
+const DENOMS = [500, 100, 25, 5];
+const CHIP_COLORS = { 5: '#c8303c', 25: '#2f6fd0', 100: '#2a2c32', 500: '#7a3fb8' };
+const SUIT_CH = { S: '♠', H: '♥', D: '♦', C: '♣' };
+const SUIT_NAMES = { S: 'Spades', H: 'Hearts', D: 'Diamonds', C: 'Clubs' };
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const RANK_NAMES = { A: 'Ace', J: 'Jack', Q: 'Queen', K: 'King' };
+const RESULT_LABEL = { win: 'Win', lose: 'Lose', push: 'Push', bust: 'Bust', blackjack: 'Blackjack' };
+const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
+const TEXT_VS = '︎';
+const SOLO_ID = 'solo';
+const WALLET_MAX = 1e15;              // the vault's idea of infinity
+const WITHDRAW_MAX = 999999999999;
+const MAX_CHIPS = 1e15;
+const GAMES = [
+  { go: 'blackjack', name: 'Blackjack', blurb: 'Rooms for up to four players with invite links, or practice solo.', cta: 'Play', art: 'cards' },
+  { go: 'roulette', name: 'Roulette', blurb: 'Single-zero wheel. Bet on numbers, colors, dozens and more, straight from your wallet.', cta: 'Play', art: 'wheel' },
+  { go: 'bank', name: 'The Bottomless Bank', blurb: 'Withdraw as much money as you want. Nobody is counting.', cta: 'Visit', art: 'vault' },
+];
+const QUIPS = [
+  'Approved. We didn’t check.',
+  'The vault is still full. Somehow.',
+  'Repayment date: never.',
+  'Our risk department is on a permanent lunch break.',
+  'Counting it would take too long, so we didn’t.',
+  'Fresh off the printer. Still warm.',
+  'No questions asked. Not even one.',
+  'Have a nice day. You can afford it.',
+];
+
+/* ================= Rules engine (pure, deterministic) =================
+   A table is one JSON document. Every change is applied by the reducer below,
+   so whichever player's browser runs it produces the same result. */
+
+function hash32(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const shoeCache = new Map();
+function getShoe(seed, no) {
+  const key = seed + ':' + no;
+  let shoe = shoeCache.get(key);
+  if (shoe) return shoe;
+  const rnd = mulberry32(hash32(key));
+  shoe = [];
+  for (let d = 0; d < DECKS; d++) for (const s of 'SHDC') for (const r of RANKS) shoe.push(r + s);
+  for (let i = shoe.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
+  }
+  if (shoeCache.size > 8) shoeCache.clear();
+  shoeCache.set(key, shoe);
+  return shoe;
+}
+
+const rankOf = c => c.slice(0, -1);
+const suitOf = c => c.slice(-1);
+function val(c) {
+  const r = rankOf(c);
+  if (r === 'A') return 1;
+  if (r === 'J' || r === 'Q' || r === 'K') return 10;
+  return Number(r);
+}
+function score(cards) {
+  let total = 0, aces = 0;
+  for (const c of cards) { total += val(c); if (rankOf(c) === 'A') aces++; }
+  const soft = aces > 0 && total + 10 <= 21;
+  return { total: soft ? total + 10 : total, soft };
+}
+const isBJ = h => !h.split && h.cards.length === 2 && score(h.cards).total === 21;
+
+function newTable(code, name, seed, now) {
+  return {
+    v: 1, code, name, seed, created: now, updated: now, rev: 0,
+    shoeNo: 0, pos: 0, n: 0, turn: 0, readyAt: 0, turnAt: 0,
+    seats: [null, null, null, null], players: {}, phase: 'betting', round: null, processed: {},
+  };
+}
+function newPlayer() {
+  return { bank: START_BANK, bet: 0, lastBet: 0, status: 'betting', leaving: false, stats: { w: 0, l: 0, p: 0, bj: 0 } };
+}
+function newHand(R, seat, uid, bet) {
+  return { id: R.nextId++, seat, uid, bet, cards: [], done: false, doubled: false, split: false, splitAces: false, result: null };
+}
+function draw(T) {
+  if (T.pos >= SHOE) { T.shoeNo++; T.pos = 0; }
+  return getShoe(T.seed, T.shoeNo)[T.pos++];
+}
+const isPresent = (ctx, uid) => !ctx.present || ctx.present.has(uid);
+const roundLive = T => !!(T.round && !T.round.over);
+function activeHandOf(T) {
+  const R = T.round;
+  return R && !R.over && T.phase === 'player' ? R.hands[R.active] || null : null;
+}
+function seatedPresent(T, ctx) {
+  return T.seats.filter(u => u && T.players[u] && isPresent(ctx, u) && !T.players[u].leaving);
+}
+const timersOn = (T, ctx) => seatedPresent(T, ctx).length >= 2;
+
+function canDouble(T, h) {
+  const P = T.players[h.uid];
+  return !!P && h.cards.length === 2 && !h.splitAces && P.bank >= h.bet;
+}
+function canSplit(T, h) {
+  const P = T.players[h.uid];
+  return !!P && h.cards.length === 2 && val(h.cards[0]) === val(h.cards[1]) && !h.splitAces
+    && T.round.hands.filter(x => x.uid === h.uid).length < MAX_HANDS && P.bank >= h.bet;
+}
+
+function applyIntent(T, uid, m, ctx) {
+  const P = T.players[uid];
+  const seat = T.seats.indexOf(uid);
+  switch (m.t) {
+    case 'sit': {
+      const k = Number(m.seat);
+      if (seat >= 0 || !(k >= 0 && k < SEATS) || T.seats[k]) return;
+      T.seats[k] = uid;
+      const p = T.players[uid] || (T.players[uid] = newPlayer());
+      p.leaving = false;
+      p.status = 'betting';
+      return;
+    }
+    case 'leave': {
+      if (seat < 0) return;
+      if (roundLive(T) && T.round.hands.some(h => h.uid === uid)) P.leaving = true;
+      else { T.seats[seat] = null; P.status = 'betting'; P.leaving = false; }
+      return;
+    }
+    case 'rebuy':
+      if (seat >= 0 && T.phase === 'betting' && P.bank < MIN_BET) { P.bank += START_BANK; P.status = 'betting'; }
+      return;
+    case 'chips': {
+      const a = Math.floor(Number(m.a) || 0);
+      if (seat < 0 || !(a > 0) || a > MAX_CHIPS) return;
+      P.bank = Math.min(P.bank + a, MAX_CHIPS);
+      return;
+    }
+    case 'bet': {
+      if (seat < 0 || T.phase !== 'betting') return;
+      let a = Math.floor((Number(m.a) || 0) / 5) * 5;
+      a = Math.max(0, Math.min(a, Math.floor(P.bank / 5) * 5));
+      P.bet = a;
+      P.status = 'betting';
+      return;
+    }
+    case 'ready':
+      if (seat >= 0 && T.phase === 'betting' && P.bet >= MIN_BET && P.bet <= P.bank) P.status = 'ready';
+      return;
+    case 'unready':
+      if (seat >= 0 && T.phase === 'betting') P.status = 'betting';
+      return;
+    case 'out':
+      if (seat >= 0 && T.phase === 'betting') P.status = 'out';
+      return;
+    case 'ins': {
+      if (T.phase !== 'insurance' || !P) return;
+      for (const h of T.round.hands) {
+        if (h.uid !== uid || T.round.ins[h.id] !== null) continue;
+        if (m.y && P.bank >= h.bet / 2) { P.bank -= h.bet / 2; T.round.ins[h.id] = 'yes'; }
+        else T.round.ins[h.id] = 'no';
+      }
+      return;
+    }
+    case 'hit': case 'stand': case 'double': case 'split': {
+      const h = activeHandOf(T);
+      if (!h || h.uid !== uid || m.k !== T.turn) return;
+      play(T, h, m.t, ctx);
+      return;
+    }
+  }
+}
+
+function play(T, h, t, ctx) {
+  const P = T.players[h.uid];
+  const R = T.round;
+  if (t === 'hit') {
+    h.cards.push(draw(T));
+    const total = score(h.cards).total;
+    if (total > 21) { h.done = true; h.result = 'bust'; }
+    else if (total === 21) h.done = true;
+  } else if (t === 'stand') {
+    h.done = true;
+  } else if (t === 'double') {
+    if (!canDouble(T, h)) return;
+    P.bank -= h.bet; h.bet *= 2; h.doubled = true;
+    h.cards.push(draw(T));
+    h.done = true;
+    if (score(h.cards).total > 21) h.result = 'bust';
+  } else if (t === 'split') {
+    if (!canSplit(T, h)) return;
+    P.bank -= h.bet;
+    const nh = newHand(R, h.seat, h.uid, h.bet);
+    nh.cards.push(h.cards.pop());
+    h.split = nh.split = true;
+    if (rankOf(h.cards[0]) === 'A') h.splitAces = nh.splitAces = true;
+    R.hands.splice(R.active + 1, 0, nh);
+  }
+  T.turn++;
+  T.turnAt = ctx.now;
+  advance(T, ctx);
+}
+
+/* Move to the next hand that needs a decision, or play the dealer. */
+function advance(T, ctx) {
+  const R = T.round;
+  let i = Math.max(0, R.active);
+  while (i < R.hands.length) {
+    const h = R.hands[i];
+    if (!h.done) {
+      if (h.cards.length === 1) {
+        h.cards.push(draw(T));
+        if (h.splitAces) { h.done = true; i++; continue; }
+      }
+      if (score(h.cards).total >= 21) { h.done = true; i++; continue; }
+      if (R.active !== i) { R.active = i; T.turn++; T.turnAt = ctx.now; }
+      return;
+    }
+    i++;
+  }
+  R.active = -1;
+  dealerPlay(T, ctx);
+}
+
+function deal(T, ctx) {
+  if (T.pos > SHOE - CUT) { T.shoeNo++; T.pos = 0; }
+  const R = {
+    n: T.n + 1, nextId: 1, dealer: [], holeUp: false, hands: [], active: -1,
+    ins: {}, over: false, start: {}, net: {}, how: '', shuffled: T.pos === 0,
+  };
+  for (let s = 0; s < SEATS; s++) {
+    const uid = T.seats[s];
+    if (!uid) continue;
+    const P = T.players[uid];
+    if (P.status === 'ready' && isPresent(ctx, uid) && !P.leaving && P.bet >= MIN_BET && P.bet <= P.bank) {
+      R.start[uid] = P.bank;
+      P.bank -= P.bet;
+      P.lastBet = P.bet;
+      R.hands.push(newHand(R, s, uid, P.bet));
+    }
+  }
+  if (!R.hands.length) return false;
+  T.n = R.n;
+  T.round = R;
+  T.turn++;
+  T.readyAt = 0;
+  for (const h of R.hands) h.cards.push(draw(T));
+  R.dealer.push(draw(T));
+  for (const h of R.hands) h.cards.push(draw(T));
+  R.dealer.push(draw(T));
+  if (rankOf(R.dealer[0]) === 'A') {
+    T.phase = 'insurance';
+    T.turnAt = ctx.now;
+    for (const h of R.hands) R.ins[h.id] = T.players[h.uid].bank >= h.bet / 2 ? null : 'no';
+  } else {
+    peek(T, ctx);
+  }
+  return true;
+}
+
+function peek(T, ctx) {
+  const R = T.round;
+  const up = R.dealer[0];
+  R.peeked = rankOf(up) === 'A' || val(up) === 10;
+  if (R.peeked && score(R.dealer).total === 21) {
+    R.holeUp = true;
+    for (const h of R.hands) {
+      const P = T.players[h.uid];
+      if (R.ins[h.id] === 'yes') P.bank += h.bet * 1.5;      // stake back plus 2 to 1
+      if (isBJ(h)) { h.result = 'push'; P.bank += h.bet; } else h.result = 'lose';
+      h.done = true;
+    }
+    finish(T, ctx, 'bj');
+    return;
+  }
+  for (const h of R.hands) {
+    if (isBJ(h)) { h.result = 'blackjack'; h.done = true; T.players[h.uid].bank += h.bet * 2.5; }
+  }
+  T.phase = 'player';
+  R.active = -1;
+  advance(T, ctx);
+}
+
+function dealerPlay(T, ctx) {
+  const R = T.round;
+  R.holeUp = true;
+  if (R.hands.some(h => !h.result)) {
+    while (score(R.dealer).total < 17) R.dealer.push(draw(T));   // stands on all 17s
+  }
+  const d = score(R.dealer).total;
+  for (const h of R.hands) {
+    if (h.result) continue;
+    const P = T.players[h.uid];
+    const p = score(h.cards).total;
+    if (d > 21 || p > d) { h.result = 'win'; P.bank += h.bet * 2; }
+    else if (p === d) { h.result = 'push'; P.bank += h.bet; }
+    else h.result = 'lose';
+  }
+  finish(T, ctx, d > 21 ? 'bust' : 'stand');
+}
+
+function finish(T, ctx, how) {
+  const R = T.round;
+  R.over = true;
+  R.how = how;
+  R.active = -1;
+  for (const h of R.hands) {
+    const st = T.players[h.uid].stats;
+    if (h.result === 'win' || h.result === 'blackjack') st.w++;
+    else if (h.result === 'push') st.p++;
+    else st.l++;
+    if (h.result === 'blackjack') st.bj++;
+  }
+  for (const uid of Object.keys(R.start)) R.net[uid] = T.players[uid].bank - R.start[uid];
+  T.phase = 'betting';
+  T.turn++;
+  T.readyAt = 0;
+  T.turnAt = 0;
+  for (let s = 0; s < SEATS; s++) {
+    const uid = T.seats[s];
+    if (!uid) continue;
+    const P = T.players[uid];
+    if (P.leaving) { T.seats[s] = null; P.leaving = false; P.status = 'betting'; continue; }
+    P.status = 'betting';
+    const cap = Math.floor(P.bank / 5) * 5;
+    P.bet = Math.min(uid in R.start ? P.lastBet : P.bet, cap);
+  }
+}
+
+/* Changes that happen on their own: dealing once everyone is ready, timeouts, players who left. */
+function step(T, ctx) {
+  if (T.phase === 'betting') {
+    if (ctx.longAway && ctx.longAway.size) {
+      for (let s = 0; s < SEATS; s++) {
+        const u = T.seats[s];
+        if (u && ctx.longAway.has(u)) { T.seats[s] = null; T.players[u].status = 'betting'; }
+      }
+    }
+    const sp = seatedPresent(T, ctx);
+    const ready = sp.filter(u => T.players[u].status === 'ready');
+    if (!ready.length) { T.readyAt = 0; return; }
+    const waiting = sp.filter(u => T.players[u].status === 'betting');
+    if (!waiting.length || (T.readyAt && ctx.now >= T.readyAt + BET_MS)) { deal(T, ctx); return; }
+    if (!T.readyAt) T.readyAt = ctx.now;
+    return;
+  }
+  if (T.phase === 'insurance') {
+    const R = T.round;
+    const expired = timersOn(T, ctx) && ctx.now >= T.turnAt + TURN_MS;
+    for (const h of R.hands) {
+      if (R.ins[h.id] === null && (expired || !isPresent(ctx, h.uid) || T.players[h.uid].leaving)) R.ins[h.id] = 'no';
+    }
+    if (R.hands.every(h => R.ins[h.id] !== null)) { T.turn++; peek(T, ctx); }
+    return;
+  }
+  if (T.phase === 'player') {
+    const h = activeHandOf(T);
+    if (!h) return;
+    const P = T.players[h.uid];
+    const expired = timersOn(T, ctx) && ctx.now >= T.turnAt + TURN_MS;
+    if (!isPresent(ctx, h.uid) || !P || P.leaving || expired) {
+      h.done = true;
+      T.turn++;
+      T.turnAt = ctx.now;
+      advance(T, ctx);
+    }
+  }
+}
+function autoAdvance(T, ctx) {
+  for (let i = 0; i < 24; i++) {
+    const before = T.turn + ':' + T.phase + ':' + T.n + ':' + T.readyAt + ':' + T.seats.join(',');
+    step(T, ctx);
+    if (before === T.turn + ':' + T.phase + ':' + T.n + ':' + T.readyAt + ':' + T.seats.join(',')) break;
+  }
+}
+
+function nextDeadline(T, ctx) {
+  if (!T) return 0;
+  if (T.phase === 'betting' && T.readyAt) return T.readyAt + BET_MS;
+  if ((T.phase === 'insurance' || T.phase === 'player') && timersOn(T, ctx)) return T.turnAt + TURN_MS;
+  return 0;
+}
+
+/* Basic strategy: 6 decks, dealer stands on soft 17, double after split allowed. */
+function recommend(T, h, up) {
+  const d = rankOf(up) === 'A' ? 11 : val(up);
+  const canD = canDouble(T, h);
+  if (canSplit(T, h)) {
+    const v = val(h.cards[0]);
+    const p = v === 1 ? 11 : v;
+    const split =
+      p === 11 || p === 8 ? true :
+      p === 9 ? [2, 3, 4, 5, 6, 8, 9].includes(d) :
+      p === 7 || p === 3 || p === 2 ? d <= 7 :
+      p === 6 ? d <= 6 :
+      p === 4 ? d === 5 || d === 6 :
+      false;
+    if (split) return 'split';
+  }
+  const { total, soft } = score(h.cards);
+  if (soft) {
+    if (total >= 19) return 'stand';
+    if (total === 18) {
+      if (d >= 3 && d <= 6) return canD ? 'double' : 'stand';
+      return d <= 8 ? 'stand' : 'hit';
+    }
+    if (total === 17) return d >= 3 && d <= 6 && canD ? 'double' : 'hit';
+    if (total >= 15) return d >= 4 && d <= 6 && canD ? 'double' : 'hit';
+    return d >= 5 && d <= 6 && canD ? 'double' : 'hit';
+  }
+  if (total >= 17) return 'stand';
+  if (total >= 13) return d <= 6 ? 'stand' : 'hit';
+  if (total === 12) return d >= 4 && d <= 6 ? 'stand' : 'hit';
+  if (total === 11) return d <= 10 && canD ? 'double' : 'hit';
+  if (total === 10) return d <= 9 && canD ? 'double' : 'hit';
+  if (total === 9) return d >= 3 && d <= 6 && canD ? 'double' : 'hit';
+  return 'hit';
+}
+
+/* ================= App state ================= */
+const app = {
+  view: 'home', solo: false, code: null, routeKey: '', hashOverride: null,
+  chipsOpen: false, teller: '', lastQuip: -1,
+  capsReady: false, db: null, user: null, room: null, nroom: null,
+  me: null, canWrite: null, readOnly: false,
+  T: null, confirmed: false, missing: false, loadErr: '', slow: false,
+  tableRef: null, moves: {},
+  myQ: [], seq: 0, captured: 0, writing: false, writeAgain: false,
+  opt: null, pendingPlay: null,
+  lastSeen: new Map(), joinedAt: 0, present: null, longAway: null, presentKey: 'all',
+  hostBusy: false, hostAgain: false, hostTimer: 0, backupTimer: 0, workSince: 0,
+  names: {}, namesPending: false,
+  lobby: [], lobbyState: 'idle',
+  hints: false, inviteOpen: false,
+  unsubs: [], timers: [],
+  renderedRound: -1, animTimer: 0, msgKey: '',
+};
+
+const $ = id => document.getElementById(id);
+const ui = {
+  casinoBar: $('casino-bar'), homeBtn: $('home-btn'), navBlackjack: $('nav-blackjack'), navRoulette: $('nav-roulette'), navBank: $('nav-bank'), walletAmt: $('wallet-amt'),
+  rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
+  rHist: $('r-hist'), rTotal: $('r-total'), rWallet: $('r-wallet'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
+  rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'), rBank: $('r-bank'),
+  home: $('home'), tiles: $('tiles'),
+  bankView: $('bank-view'), stamp: $('stamp'), atmBig: $('atm-big'), wdAmount: $('wd-amount'), wdBtn: $('wd-btn'),
+  quick: [...document.querySelectorAll('#quick [data-a]')], teller: $('teller'), ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'),
+  chipsPanel: $('chips-panel'), cpWallet: $('cp-wallet'), cpButtons: [...document.querySelectorAll('#cp-buttons [data-a]')],
+  cpAll: $('cp-all'), cpHelp: $('cp-help'), cpBank: $('cp-bank'), x2: $('x2-btn'), max: $('max-btn'),
+  lobby: $('lobby'), lobbyNote: $('lobby-note'), roomName: $('room-name'), createBtn: $('create-btn'),
+  joinCode: $('join-code'), joinBtn: $('join-btn'), roomList: $('room-list'), roomEmpty: $('room-empty'), soloBtn: $('solo-btn'),
+  tableView: $('table-view'), backBtn: $('back-btn'), tName: $('t-name'), tCode: $('t-code'),
+  inviteBtn: $('invite-btn'), hintToggle: $('hint-toggle'), bankPill: $('bank-pill'), bank: $('bank'),
+  invitePanel: $('invite-panel'), inviteCode: $('invite-code'), inviteLink: $('invite-link'), copyBtn: $('copy-btn'), inviteHelp: $('invite-help'),
+  tNote: $('t-note'), game: $('game'), shoe: $('shoe'),
+  dealerCards: $('dealer-cards'), dealerTotal: $('dealer-total'),
+  msg: $('msg'), msgTitle: $('msg-title'), msgSub: $('msg-sub'), statusLine: $('status-line'), seats: $('seats'),
+  betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
+  chips: [...document.querySelectorAll('.chips .chip[data-v]')], clear: $('clear-btn'), betAmt: $('bet-amt'),
+  out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
+  insText: $('ins-text'), insYes: $('ins-yes'), insNo: $('ins-no'),
+  playNote: $('play-note'), hit: $('hit-btn'), stand: $('stand-btn'), dbl: $('double-btn'), split: $('split-btn'),
+  infoText: $('info-text'), stats: $('stats'), leave: $('leave-btn'), toast: $('toast'),
+};
+
+/* ================= Small helpers ================= */
+function moneyFull(n) {
+  const v = Math.abs(n);
+  const s = Number.isInteger(v)
+    ? v.toLocaleString('en-US')
+    : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (n < 0 ? '−' : '') + '$' + s;
+}
+/* Short form once the bank gets involved: $2.5M, $1T */
+function money(n) {
+  const v = Math.abs(n);
+  if (v < 1e6) return moneyFull(n);
+  return (n < 0 ? '−' : '') + '$' + v.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 2 });
+}
+function parseAmount(str) {
+  const s = String(str).toLowerCase().replace(/[$,\s_]/g, '');
+  const m = s.match(/^(\d+(?:\.\d+)?)(k|m|b|t|thousand|million|billion|trillion)?$/);
+  if (!m) return NaN;
+  const mult = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, b: 1e9, billion: 1e9, t: 1e12, trillion: 1e12 }[m[2]] || 1;
+  return Math.floor(parseFloat(m[1]) * mult);
+}
+function chipColor(amount) {
+  for (const d of DENOMS) if (amount >= d) return CHIP_COLORS[d];
+  return CHIP_COLORS[5];
+}
+function randomString(n, chars) {
+  const a = new Uint32Array(n);
+  try { crypto.getRandomValues(a); } catch (e) { for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 4294967296); }
+  let s = '';
+  for (let i = 0; i < n; i++) s += chars[a[i] % chars.length];
+  return s;
+}
+const makeCode = () => randomString(6, CODE_CHARS);
+const makeSeed = () => randomString(16, 'abcdefghijklmnopqrstuvwxyz0123456789');
+const clone = o => JSON.parse(JSON.stringify(o));
+const myId = () => (app.solo ? SOLO_ID : app.me);
+const curT = () => app.T;
+function myP() { const T = app.T; return T ? T.players[myId()] || null : null; }
+function mySeat() { const T = app.T; return T ? T.seats.indexOf(myId()) : -1; }
+function processedMe() { const T = app.T; return (T && T.processed && T.processed[myId()]) || 0; }
+function optLive() { return app.opt && processedMe() < app.opt.s; }
+function viewBet() { const P = myP(); if (!P) return 0; return optLive() && app.opt.bet != null ? app.opt.bet : P.bet; }
+function viewStatus() { const P = myP(); if (!P) return 'betting'; return optLive() && app.opt.status ? app.opt.status : P.status; }
+function canPlayHere() { return app.solo || (!!app.db && !!app.me && app.canWrite !== false && !app.readOnly); }
+function ctxNow() { return { now: Date.now(), present: app.solo ? new Set([SOLO_ID]) : app.present, longAway: app.solo ? null : app.longAway }; }
+function nameOf(uid, seat) {
+  if (uid === myId()) return 'You';
+  const n = app.names[uid];
+  return (n && n.name) || `Player ${seat + 1}`;
+}
+let toastTimer = 0;
+function toast(text) {
+  ui.toast.textContent = text;
+  ui.toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { ui.toast.hidden = true; }, 2200);
+}
+function inviteURL(code) {
+  return ARTIFACT_URL ? `${ARTIFACT_URL}#table-${code}` : '';
+}
+function prefsLoad() {
+  try { const p = JSON.parse(localStorage.getItem('bj.rooms.prefs') || '{}'); app.hints = !!p.hints; } catch (e) { /* storage unavailable */ }
+}
+function prefsSave() {
+  try { localStorage.setItem('bj.rooms.prefs', JSON.stringify({ hints: app.hints })); } catch (e) { /* storage unavailable */ }
+}
+
+/* ================= Routing ================= */
+function route() {
+  const h = app.hashOverride != null ? app.hashOverride : decodeURIComponent(location.hash.slice(1));
+  let target = { view: 'home', code: '' };
+  if (h === 'solo') target = { view: 'solo', code: SOLO_ID };
+  else if (h === 'blackjack') target = { view: 'lobby', code: '' };
+  else if (h === 'bank') target = { view: 'bank', code: '' };
+  else if (h === 'roulette') target = { view: 'roulette', code: '' };
+  else if (/^table-[a-z0-9]{4,12}$/.test(h)) target = { view: 'table', code: h.slice(6) };
+  const net = target.view === 'lobby' || target.view === 'table';
+  const key = `${target.view}:${target.code}:${net ? app.capsReady : ''}`;
+  if (key === app.routeKey) { render(); return; }
+  app.routeKey = key;
+  teardown();
+  if (target.view === 'lobby') enterLobby();
+  else if (target.view === 'solo') enterSolo();
+  else if (target.view === 'table') enterTable(target.code);
+  else { app.view = target.view; app.solo = false; render(); }
+  window.scrollTo(0, 0);
+}
+function go(hash) {
+  try { location.hash = hash; } catch (e) { /* hash locked in this frame */ }
+  app.hashOverride = decodeURIComponent(location.hash.slice(1)) === hash ? null : hash;
+  route();
+}
+function teardown() {
+  for (const u of app.unsubs) { try { u(); } catch (e) { /* already closed */ } }
+  app.unsubs = [];
+  for (const t of app.timers) clearInterval(t);
+  app.timers = [];
+  clearTimeout(app.hostTimer);
+  clearTimeout(app.backupTimer);
+  if (app.nroom) { app.nroom.leave().catch(() => {}); app.nroom = null; }
+  app.T = null; app.confirmed = false; app.missing = false; app.loadErr = ''; app.slow = false;
+  app.moves = {}; app.myQ = []; app.opt = null; app.pendingPlay = null;
+  app.lastSeen = new Map(); app.present = null; app.longAway = null; app.presentKey = 'all';
+  app.inviteOpen = false; app.chipsOpen = false; app.renderedRound = -1; app.msgKey = '';
+  cardEls.clear(); handEls.clear();
+  ui.dealerCards.textContent = '';
+  for (const s of seatEls) s.querySelector('.hands').textContent = '';
+  ui.game.classList.remove('animating');
+}
+
+/* ================= Lobby ================= */
+function enterLobby() {
+  app.view = 'lobby';
+  app.solo = false;
+  render();
+  if (!app.capsReady || !app.db) return;
+  app.lobbyState = 'loading';
+  const t = setTimeout(() => { if (app.lobbyState === 'loading') { app.lobbyState = 'slow'; render(); } }, 10000);
+  app.unsubs.push(() => clearTimeout(t));
+  app.unsubs.push(app.db.collection('tables').orderBy('updated', 'desc').limit(30).onSnapshot(snap => {
+    app.lobby = snap.docs.map(d => d.data()).filter(Boolean);
+    if (!snap.metadata.fromCache) app.lobbyState = 'ready';
+    render();
+  }, () => { app.lobbyState = 'error'; render(); }));
+  const tick = setInterval(() => { if (app.view === 'lobby') render(); }, 30000);
+  app.timers.push(tick);
+}
+
+async function createRoom() {
+  if (!app.db || !app.me || app.canWrite === false) return;
+  const name = ui.roomName.value.replace(/\s+/g, ' ').trim().slice(0, 28) || 'Blackjack table';
+  const code = makeCode();
+  const now = Date.now();
+  const T = newTable(code, name, makeSeed(), now);
+  T.seats[0] = app.me;
+  T.players[app.me] = newPlayer();
+  ui.createBtn.disabled = true;
+  try {
+    await app.db.doc('tables/' + code).set(T);
+    ui.roomName.value = '';
+    app.inviteOpenNext = true;
+    go('table-' + code);
+  } catch (e) {
+    toast(e && e.code === 'quota_exceeded' ? 'This page has run out of room storage.' : 'Could not create the room. Try again.');
+  } finally {
+    ui.createBtn.disabled = false;
+  }
+}
+
+function joinByCode() {
+  const code = ui.joinCode.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (code.length < 4) { toast('Enter the room code, for example K7M2QX.'); return; }
+  ui.joinCode.value = '';
+  go('table-' + code);
+}
+
+function renderLobby() {
+  ui.lobby.hidden = false;
+  ui.tableView.hidden = true;
+  let note = '';
+  if (!app.capsReady) note = 'Connecting…';
+  else if (!app.db) note = 'Rooms work when this page is opened on claude.ai while signed in. You can still play solo.';
+  else if (!app.me) note = 'Sign in to claude.ai to create or join rooms. You can still play solo.';
+  else if (app.canWrite === false) note = 'You can watch rooms here. To play, ask the owner of this page to share it with you with edit access.';
+  ui.lobbyNote.textContent = note;
+  ui.lobbyNote.hidden = !note;
+  const netOK = app.capsReady && !!app.db && !!app.me && app.canWrite !== false;
+  ui.createBtn.disabled = !netOK;
+  ui.roomName.disabled = !netOK;
+  ui.joinBtn.disabled = !(app.capsReady && app.db);
+  ui.joinCode.disabled = !(app.capsReady && app.db);
+
+  const cutoff = Date.now() - 24 * 3600 * 1000;
+  const rooms = app.lobby.filter(t => t && typeof t.code === 'string' && Array.isArray(t.seats) && (t.updated || 0) > cutoff);
+  ensureNames(rooms.flatMap(t => t.seats.filter(Boolean)));
+  ui.roomList.textContent = '';
+  for (const t of rooms) {
+    const li = document.createElement('li');
+    li.className = 'room-item';
+    const left = document.createElement('div');
+    left.style.minWidth = '0';
+    const rn = document.createElement('div');
+    rn.className = 'rn';
+    rn.textContent = t.name || 'Blackjack table';
+    const rm = document.createElement('div');
+    rm.className = 'rm';
+    const pips = document.createElement('span');
+    pips.className = 'pips';
+    const seated = t.seats.filter(Boolean);
+    for (let s = 0; s < SEATS; s++) { const i = document.createElement('i'); if (t.seats[s]) i.className = 'on'; pips.appendChild(i); }
+    rm.appendChild(pips);
+    const who = seated.map(u => (u === app.me ? 'you' : (app.names[u] && app.names[u].name) || null)).filter(Boolean);
+    rm.appendChild(document.createTextNode(
+      `${seated.length}/${SEATS} seated` + (who.length ? ' · ' + who.join(', ') : '') + ` · ${String(t.code).toUpperCase()} · ${ago(t.updated)}`
+    ));
+    left.append(rn, rm);
+    const btn = document.createElement('button');
+    btn.className = 'btn small' + (t.seats.includes(app.me) ? ' primary' : '');
+    btn.textContent = t.seats.includes(app.me) ? 'Rejoin' : seated.length >= SEATS ? 'Watch' : 'Join';
+    btn.addEventListener('click', () => go('table-' + t.code));
+    li.append(left, btn);
+    ui.roomList.appendChild(li);
+  }
+  let empty = '';
+  if (!app.capsReady || (app.db && app.lobbyState === 'loading')) empty = 'Looking for rooms…';
+  else if (!app.db) empty = 'Rooms are not available here.';
+  else if (app.lobbyState === 'slow') empty = 'Rooms can’t be reached yet. Check your connection.';
+  else if (app.lobbyState === 'error') empty = 'Rooms could not be loaded. Reload the page to try again.';
+  else if (!rooms.length) empty = 'No rooms in the last day. Start one above and invite a friend.';
+  ui.roomEmpty.textContent = empty;
+  ui.roomEmpty.hidden = !empty;
+}
+function ago(ms) {
+  const s = Math.max(0, Math.round((Date.now() - (ms || 0)) / 1000));
+  if (s < 60) return 'active now';
+  const m = Math.round(s / 60);
+  if (m < 60) return `active ${m} min ago`;
+  return `active ${Math.round(m / 60)} h ago`;
+}
+
+/* ================= Solo table (local only) ================= */
+let soloT = null;
+function enterSolo() {
+  app.view = 'table';
+  app.solo = true;
+  app.code = SOLO_ID;
+  if (!soloT) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('bj.rooms.solo') || 'null');
+      if (saved && Array.isArray(saved.seats) && saved.players && saved.players[SOLO_ID]) soloT = saved;
+    } catch (e) { /* storage unavailable */ }
+  }
+  if (!soloT) {
+    soloT = newTable(SOLO_ID, 'Solo table', makeSeed(), Date.now());
+    soloT.seats[0] = SOLO_ID;
+    soloT.players[SOLO_ID] = newPlayer();
+  }
+  app.T = soloT;
+  app.confirmed = true;
+  render();
+}
+function soloApply(m) {
+  const T = clone(app.T);
+  m.s = (T.processed[SOLO_ID] || 0) + 1;
+  const ctx = ctxNow();
+  applyIntent(T, SOLO_ID, m, ctx);
+  T.processed[SOLO_ID] = m.s;
+  autoAdvance(T, ctx);
+  T.rev = (T.rev || 0) + 1;
+  T.updated = ctx.now;
+  soloT = T;
+  app.T = T;
+  try { localStorage.setItem('bj.rooms.solo', JSON.stringify(T)); } catch (e) { /* storage unavailable */ }
+  render();
+  return m.s;
+}
+
+/* ================= Shared room ================= */
+function enterTable(code) {
+  app.view = 'table';
+  app.solo = false;
+  app.code = code;
+  app.inviteOpen = !!app.inviteOpenNext;
+  app.inviteOpenNext = false;
+  render();
+  if (!app.capsReady || !app.db) return;
+
+  const ref = app.db.doc('tables/' + code);
+  app.tableRef = ref;
+  const slow = setTimeout(() => { if (!app.T) { app.slow = true; render(); } }, 10000);
+  app.unsubs.push(() => clearTimeout(slow));
+  app.unsubs.push(ref.onSnapshot(snap => {
+    clearTimeout(slow);
+    app.slow = false;
+    if (!snap.exists) {
+      if (!snap.metadata.fromCache) { app.missing = true; app.T = null; render(); }
+      return;
+    }
+    const d = snap.data();
+    if (!d || !Array.isArray(d.seats) || !d.players) { app.loadErr = 'This room’s data is damaged.'; render(); return; }
+    app.T = d;
+    if (!snap.metadata.fromCache) app.confirmed = true;
+    onTable();
+  }, err => { app.loadErr = err && err.code === 'revoked' ? '' : 'Lost the connection to this room. Reload to try again.'; render(); }));
+
+  app.unsubs.push(app.db.collection('moves').where('table', '==', code).onSnapshot(snap => {
+    const m = {};
+    for (const d of snap.docs) { const x = d.data(); if (x && Array.isArray(x.q)) m[d.id] = x.q; }
+    app.moves = m;
+    hostPump();
+  }, () => {}));
+
+  if (app.me) {
+    app.db.doc('moves/' + app.me).get().then(s => {
+      if (app.code !== code) return;
+      const x = s.exists ? s.data() : null;
+      const q = x && Array.isArray(x.q) ? x.q : [];
+      for (const e of q) if (e && e.s > app.seq) app.seq = e.s;
+      if (x && x.table === code && !app.myQ.length) app.myQ = q.map(e => ({ ...e }));
+      app.captured = Math.max(app.captured, ...q.map(e => (e && e.s) || 0));
+    }).catch(() => {});
+  }
+
+  const tick = setInterval(() => {
+    if (app.view !== 'table' || app.solo) return;
+    refreshPeers();
+    recomputePresence();
+    render();
+  }, 1000);
+  app.timers.push(tick);
+  joinRoom(code);
+}
+
+async function joinRoom(code) {
+  if (!app.room) { recomputePresence(); return; }
+  try {
+    const r = await app.room.join('bj-' + code);
+    if (app.code !== code || app.view !== 'table') { r.leave().catch(() => {}); return; }
+    app.nroom = r;
+    app.joinedAt = Date.now();
+    r.presence({ uid: app.me || null }).catch(() => {});
+    app.unsubs.push(r.onPeers(() => { refreshPeers(); recomputePresence(); }, () => {}));
+    app.unsubs.push(r.on('move', msg => { if (!msg.sameTab && msg.by) refreshMoves(msg.by); }, () => {}));
+    app.unsubs.push(r.on('sync', msg => { if (!msg.sameTab) refreshTable(); }, () => {}));
+  } catch (e) {
+    app.nroom = null;
+    recomputePresence();
+  }
+}
+
+function refreshPeers() {
+  if (!app.nroom) return;
+  const now = Date.now();
+  for (const p of app.nroom.peers()) {
+    const u = p.by || (p.presence && typeof p.presence.uid === 'string' ? p.presence.uid : null);
+    if (u) app.lastSeen.set(u, now);
+  }
+}
+function recomputePresence() {
+  let present = null, longAway = null;
+  const now = Date.now();
+  if (app.nroom && now - app.joinedAt > WARM_MS) {
+    present = new Set();
+    longAway = new Set();
+    if (app.me) present.add(app.me);
+    for (const [u, t] of app.lastSeen) if (now - t < AWAY_MS) present.add(u);
+    if (app.T) {
+      for (const u of app.T.seats) {
+        if (u && !present.has(u) && now - (app.lastSeen.get(u) || app.joinedAt) > AWAY_SEAT_MS) longAway.add(u);
+      }
+    }
+  }
+  const key = present ? [...present].sort().join(',') + '|' + [...longAway].sort().join(',') : 'all';
+  if (key === app.presentKey) return;
+  app.presentKey = key;
+  app.present = present;
+  app.longAway = longAway;
+  render();
+  hostPump();
+}
+function refreshMoves(uid) {
+  if (!app.db) return;
+  const code = app.code;
+  app.db.doc('moves/' + uid).get().then(s => {
+    const x = s.exists ? s.data() : null;
+    if (app.code !== code || !x || x.table !== code || !Array.isArray(x.q)) return;
+    app.moves = { ...app.moves, [uid]: x.q };
+    hostPump();
+  }).catch(() => {});
+}
+function refreshTable() {
+  if (!app.tableRef) return;
+  const code = app.code;
+  app.tableRef.get().then(s => {
+    if (app.code !== code || !s.exists) return;
+    const d = s.data();
+    if (d && (d.rev || 0) > ((app.T && app.T.rev) || 0)) { app.T = d; onTable(); }
+  }).catch(() => {});
+}
+function onTable() {
+  const T = app.T;
+  const pm = (T.processed && T.processed[app.me]) || 0;
+  if (pm > app.seq) { app.seq = pm; app.captured = Math.max(app.captured, pm); }
+  render();
+  hostPump();
+}
+
+/* ---- Sending moves: each player appends to their own queue document ---- */
+function send(m) {
+  if (app.solo) return soloApply(m);
+  if (!canPlayHere()) return 0;
+  const last = app.myQ[app.myQ.length - 1];
+  if (m.t === 'bet' && last && last.t === 'bet' && last.s > app.captured) {
+    last.a = m.a;
+    m.s = last.s;
+  } else {
+    m.s = ++app.seq;
+    app.myQ.push(m);
+    if (app.myQ.length > 20) app.myQ.splice(0, app.myQ.length - 20);
+  }
+  flushMoves();
+  return m.s;
+}
+async function flushMoves(retry = true) {
+  if (app.writing) { app.writeAgain = true; return; }
+  app.writing = true;
+  const code = app.code;
+  let failed = null;
+  try {
+    do {
+      app.writeAgain = false;
+      const q = app.myQ.map(e => ({ ...e }));
+      const top = q.length ? q[q.length - 1].s : 0;
+      app.captured = Math.max(app.captured, top);
+      await app.db.doc('moves/' + app.me).set({ table: code, q, at: Date.now() });
+      if (app.nroom) app.nroom.emit('move', { s: top }).catch(() => {});
+    } while (app.writeAgain && app.code === code);
+  } catch (e) {
+    failed = e || {};
+  } finally {
+    app.writing = false;
+  }
+  if (!failed) return;
+  if (failed.code === 'invalid_argument') { app.readOnly = true; render(); }
+  else if (retry) setTimeout(() => { if (app.code === code) flushMoves(false); }, 900 + Math.random() * 400);
+  else toast('Your move did not reach the room. Try again.');
+}
+
+/* ---- Host: one player's browser applies everyone's moves to the table ---- */
+function hostUid() {
+  const T = app.T;
+  if (!T) return null;
+  const pres = app.present;
+  for (const u of T.seats) if (u && (!pres || pres.has(u))) return u;
+  if (pres) return [...pres].sort()[0] || null;
+  return null;
+}
+function hasWork() {
+  const T = app.T;
+  if (!T) return false;
+  const pr = T.processed || {};
+  for (const [uid, q] of Object.entries(app.moves)) {
+    for (const m of q) if (m && typeof m.s === 'number' && m.s > (pr[uid] || 0)) return true;
+  }
+  const dl = nextDeadline(T, ctxNow());
+  return !!dl && Date.now() >= dl;
+}
+function shouldProcess() {
+  if (app.solo || !app.T || !app.confirmed || !app.me || !app.tableRef || app.canWrite === false || app.readOnly) return false;
+  if (hostUid() === app.me) return true;
+  return !!app.workSince && Date.now() - app.workSince > 5000;
+}
+async function hostPump() {
+  if (app.solo || !app.T) return;
+  if (hasWork()) { if (!app.workSince) app.workSince = Date.now(); } else app.workSince = 0;
+  if (!shouldProcess()) { scheduleHost(); return; }
+  if (app.hostBusy) { app.hostAgain = true; return; }
+  app.hostBusy = true;
+  const code = app.code;
+  try {
+    do {
+      app.hostAgain = false;
+      const base = app.T;
+      const T = clone(base);
+      T.processed = T.processed || {};
+      const ctx = ctxNow();
+      for (const uid of Object.keys(app.moves).sort()) {
+        for (const m of app.moves[uid]) {
+          if (!m || typeof m.s !== 'number' || m.s <= (T.processed[uid] || 0)) continue;
+          try { applyIntent(T, uid, m, ctx); } catch (e) { /* ignore a malformed move */ }
+          T.processed[uid] = m.s;
+          autoAdvance(T, ctx);
+        }
+      }
+      autoAdvance(T, ctx);
+      if (JSON.stringify(T) !== JSON.stringify(base)) {
+        T.rev = (base.rev || 0) + 1;
+        T.updated = ctx.now;
+        app.T = T;
+        render();
+        await app.tableRef.set(T);
+        if (app.nroom) app.nroom.emit('sync', { rev: T.rev }).catch(() => {});
+      }
+      app.workSince = 0;
+    } while (app.hostAgain && app.code === code);
+  } catch (e) {
+    if (e && e.code === 'invalid_argument') { app.readOnly = true; render(); }
+  } finally {
+    app.hostBusy = false;
+  }
+  scheduleHost();
+}
+function scheduleHost() {
+  clearTimeout(app.hostTimer);
+  clearTimeout(app.backupTimer);
+  if (app.solo || !app.T) return;
+  const dl = nextDeadline(app.T, ctxNow());
+  if (dl && dl > Date.now()) app.hostTimer = setTimeout(hostPump, dl - Date.now() + 80);
+  if (app.workSince) app.backupTimer = setTimeout(hostPump, 5200);
+}
+
+/* ================= Player actions ================= */
+function sit(seat) {
+  if (!canPlayHere() || app.solo || mySeat() >= 0) return;
+  send({ t: 'sit', seat });
+}
+function leaveSeat() {
+  if (app.solo || mySeat() < 0) return;
+  send({ t: 'leave' });
+  toast('You left your seat. Your chips stay with this room.');
+}
+function setBet(nb) {
+  const T = app.T, P = myP();
+  if (!T || !P || T.phase !== 'betting' || mySeat() < 0) return;
+  nb = Math.max(0, Math.min(Math.floor(nb / 5) * 5, Math.floor(P.bank / 5) * 5));
+  if (nb === viewBet()) return;
+  const s = send({ t: 'bet', a: nb });
+  if (s) app.opt = { s, bet: nb, status: 'betting' };
+  render();
+}
+function addChip(v) {
+  const P = myP();
+  if (!P || viewBet() + v > P.bank) return;
+  setBet(viewBet() + v);
+}
+function doubleBet() { const b = viewBet(); setBet(b ? b * 2 : MIN_BET); }
+function maxBet() { const P = myP(); if (P) setBet(P.bank); }
+function clearBet() {
+  const T = app.T;
+  if (!T || T.phase !== 'betting' || mySeat() < 0 || !viewBet()) return;
+  const s = send({ t: 'bet', a: 0 });
+  if (s) app.opt = { s, bet: 0, status: 'betting' };
+  render();
+}
+function toggleReady() {
+  const T = app.T, P = myP();
+  if (!T || !P || T.phase !== 'betting' || mySeat() < 0) return;
+  if (P.bank < MIN_BET) return;
+  if (viewStatus() === 'ready') {
+    const s = send({ t: 'unready' });
+    if (s) app.opt = { s, bet: viewBet(), status: 'betting' };
+  } else {
+    if (viewBet() < MIN_BET) { toast(`Place a bet of at least ${money(MIN_BET)} first.`); return; }
+    const bet = viewBet();
+    const s = send({ t: 'ready' });
+    if (s) app.opt = { s, bet, status: 'ready' };
+  }
+  render();
+}
+function sitOut() {
+  const T = app.T;
+  if (!T || T.phase !== 'betting' || mySeat() < 0) return;
+  const next = viewStatus() === 'out' ? 'betting' : 'out';
+  const s = send({ t: next === 'out' ? 'out' : 'unready' });
+  if (s) app.opt = { s, bet: viewBet(), status: next };
+  render();
+}
+function rebuy() {
+  app.chipsOpen = true;
+  app.inviteOpen = false;
+  render();
+}
+
+/* ================= Wallet & the Bottomless Bank =================
+   One wallet per person for the whole casino. Signed in, it lives in a private
+   document only you can read; otherwise in this browser. */
+const wallet = { balance: 0, withdrawn: 0, count: 0, log: [], ready: false, ref: null, local: false, writing: false, again: false };
+
+function walletInit() {
+  if (app.db && app.me) {
+    wallet.ref = app.db.doc(`data/users/${app.me}/wallet`);
+    wallet.ref.onSnapshot(s => {
+      walletLoad(s.exists ? s.data() : null);
+      wallet.ready = true;
+      render();
+    }, () => { wallet.ready = true; render(); });
+  } else {
+    wallet.local = true;
+    try { walletLoad(JSON.parse(localStorage.getItem('mini-casino.wallet') || 'null')); } catch (e) { /* storage unavailable */ }
+    wallet.ready = true;
+  }
+}
+function walletLoad(d) {
+  if (!d) return;
+  if (Number.isFinite(d.balance) && d.balance >= 0) wallet.balance = d.balance;
+  if (Number.isFinite(d.withdrawn) && d.withdrawn >= 0) wallet.withdrawn = d.withdrawn;
+  if (Number.isFinite(d.count) && d.count >= 0) wallet.count = d.count;
+  if (Array.isArray(d.log)) wallet.log = d.log.filter(e => e && Number.isFinite(e.a)).slice(0, 12);
+}
+async function walletSave() {
+  const body = () => ({ balance: wallet.balance, withdrawn: wallet.withdrawn, count: wallet.count, log: wallet.log });
+  if (wallet.local) {
+    try { localStorage.setItem('mini-casino.wallet', JSON.stringify(body())); } catch (e) { /* storage unavailable */ }
+    return;
+  }
+  if (!wallet.ref) return;
+  if (wallet.writing) { wallet.again = true; return; }
+  wallet.writing = true;
+  try {
+    do { wallet.again = false; await wallet.ref.set({ ...body(), at: Date.now() }); } while (wallet.again);
+  } catch (e) {
+    toast('The bank couldn’t save that. Try again.');
+  } finally {
+    wallet.writing = false;
+  }
+}
+/* opts.withdraw counts it as a bank withdrawal; opts.log replaces the default statement line. */
+function walletChange(delta, what, opts = {}) {
+  if (!wallet.ready) return false;
+  let next = wallet.balance + delta;
+  if (next < 0) return false;
+  if (next > WALLET_MAX) { if (opts.withdraw) return false; next = WALLET_MAX; }
+  wallet.balance = next;
+  if (opts.withdraw) { wallet.withdrawn = Math.min(wallet.withdrawn + delta, Number.MAX_SAFE_INTEGER); wallet.count++; }
+  const entry = opts.log || (what ? { a: delta, w: what } : null);
+  if (entry) wallet.log = [{ a: entry.a, w: String(entry.w).slice(0, 60), at: Date.now() }, ...wallet.log].slice(0, 12);
+  walletSave();
+  render();
+  return true;
+}
+
+function withdraw(amount) {
+  if (!wallet.ready) return;
+  const a = amount != null ? amount : parseAmount(ui.wdAmount.value);
+  if (!Number.isFinite(a) || a < 1) { app.teller = 'Type an amount. Any amount. Try 1m or 2.5b.'; render(); return; }
+  if (a > WITHDRAW_MAX) { app.teller = `That’s more zeros than the vault can count. The limit is ${moneyFull(WITHDRAW_MAX)} per withdrawal.`; render(); return; }
+  if (wallet.balance + a > WALLET_MAX) { app.teller = 'Your wallet is full. Literally. Go spend some.'; render(); return; }
+  walletChange(a, 'Withdrawal', { withdraw: true });
+  ui.wdAmount.value = '';
+  let i;
+  do { i = Math.floor(Math.random() * QUIPS.length); } while (i === app.lastQuip && QUIPS.length > 1);
+  app.lastQuip = i;
+  app.teller = a >= 1e9 ? `${moneyFull(a)}. That’s a lot of zeros. Enjoy every one.` : `${moneyFull(a)}. ${QUIPS[i]}`;
+  ui.stamp.classList.remove('show');
+  void ui.stamp.offsetWidth;
+  ui.stamp.classList.add('show');
+  render();
+}
+
+function addTableChips(amount) {
+  const T = app.T;
+  if (!T || mySeat() < 0 || !canPlayHere()) return;
+  const a = Math.floor(Math.min(amount, wallet.balance));
+  if (!(a > 0)) return;
+  const where = app.solo ? 'Solo table' : (T.name || 'Blackjack table');
+  if (!walletChange(-a, `Chips · ${where}`)) return;
+  send({ t: 'chips', a });
+  app.chipsOpen = false;
+  toast(`${moneyFull(a)} in chips added`);
+  render();
+}
+
+function renderBank() {
+  ui.atmBig.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
+  ui.wdBtn.disabled = !wallet.ready;
+  ui.quick.forEach(b => { b.disabled = !wallet.ready; });
+  ui.teller.textContent = app.teller || 'Take as much as you like. Nobody is counting.';
+  ui.ledgerSummary.textContent = wallet.count
+    ? `You’ve withdrawn ${moneyFull(wallet.withdrawn)} over ${wallet.count} withdrawal${wallet.count === 1 ? '' : 's'}. Amount owed: $0.00.`
+    : 'No withdrawals yet. The vault is getting impatient.';
+  ui.ledgerList.textContent = '';
+  for (const e of wallet.log) {
+    const li = document.createElement('li');
+    const left = document.createElement('div');
+    left.style.minWidth = '0';
+    const what = document.createElement('div');
+    what.className = 'what';
+    what.textContent = e.w || (e.a > 0 ? 'Withdrawal' : 'Chips');
+    const when = document.createElement('div');
+    when.className = 'when';
+    when.textContent = ago(e.at).replace('active ', '');
+    left.append(what, when);
+    const amt = document.createElement('div');
+    amt.className = 'amt ' + (e.a > 0 ? 'plus' : 'minus');
+    amt.textContent = (e.a > 0 ? '+' : '') + money(e.a);
+    li.append(left, amt);
+    ui.ledgerList.appendChild(li);
+  }
+}
+
+function buildTiles() {
+  for (const g of GAMES) {
+    const b = document.createElement('button');
+    b.className = 'tile';
+    const art = document.createElement('div');
+    art.className = 'tile-art';
+    art.setAttribute('aria-hidden', 'true');
+    if (g.art === 'cards') {
+      art.innerHTML =
+        `<div class="card ace"><div class="inner"><div class="face">${faceHTML('AS')}</div></div></div>` +
+        `<div class="card red"><div class="inner"><div class="face">${faceHTML('KH')}</div></div></div>`;
+    } else if (g.art === 'wheel') {
+      art.innerHTML = '<div class="mini-wheel"></div>';
+    } else {
+      art.innerHTML = '<div class="vault">∞</div>';
+    }
+    const body = document.createElement('div');
+    const h = document.createElement('h2');
+    h.textContent = g.name;
+    const p = document.createElement('p');
+    p.textContent = g.blurb;
+    const go_ = document.createElement('span');
+    go_.className = 'go';
+    go_.textContent = g.cta + ' →';
+    body.append(h, p, go_);
+    b.append(art, body);
+    b.addEventListener('click', () => go(g.go));
+    ui.tiles.appendChild(b);
+  }
+}
+
+/* ================= Roulette (single zero, solo, plays from the wallet) ================= */
+const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+const R_CHIPS = [5, 25, 100, 500, 1000, 10000];
+const R_CHIP_COLORS = { 5: '#c8303c', 25: '#2f6fd0', 100: '#2a2c32', 500: '#7a3fb8', 1000: '#d9822b', 10000: '#1f8a8a' };
+const SPIN_MS = 5600;
+const TAU = Math.PI * 2;
+const STEP = TAU / 37;
+const OUTSIDE = {
+  col1: 'Column 1 (1, 4 … 34)', col2: 'Column 2 (2, 5 … 35)', col3: 'Column 3 (3, 6 … 36)',
+  doz1: '1st dozen (1–12)', doz2: '2nd dozen (13–24)', doz3: '3rd dozen (25–36)',
+  low: '1 to 18', high: '19 to 36', even: 'Even', odd: 'Odd', red: 'Red', black: 'Black',
+};
+const colorOf = n => (n === 0 ? 'green' : REDS.has(n) ? 'red' : 'black');
+const colorName = n => (n === 0 ? 'Green' : REDS.has(n) ? 'Red' : 'Black');
+const coverCache = new Map();
+function coversOf(key) {
+  let s = coverCache.get(key);
+  if (s) return s;
+  const all = Array.from({ length: 36 }, (_, i) => i + 1);
+  const pick = {
+    col1: n => n % 3 === 1, col2: n => n % 3 === 2, col3: n => n % 3 === 0,
+    doz1: n => n <= 12, doz2: n => n > 12 && n <= 24, doz3: n => n > 24,
+    low: n => n <= 18, high: n => n >= 19, even: n => n % 2 === 0, odd: n => n % 2 === 1,
+    red: n => REDS.has(n), black: n => !REDS.has(n),
+  }[key];
+  s = new Set(key[0] === 'n' ? [Number(key.slice(1))] : pick ? all.filter(pick) : []);
+  coverCache.set(key, s);
+  return s;
+}
+const oddsOf = key => (key[0] === 'n' ? 35 : /^(col|doz)/.test(key) ? 2 : 1);
+const rlTotal = (b = rl.bets) => Object.values(b).reduce((s, v) => s + v, 0);
+function rChipColor(a) {
+  for (const d of [...R_CHIPS].reverse()) if (a >= d) return R_CHIP_COLORS[d];
+  return R_CHIP_COLORS[5];
+}
+function chipLabel(a) {
+  return a < 1000 ? String(a) : a.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+}
+function randInt(n) {
+  try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
+  catch (e) { return Math.floor(Math.random() * n); }
+}
+
+const rl = {
+  chip: 25, bets: {}, undo: [], last: null, history: [],
+  spinning: false, live: null, result: null, net: 0, payout: 0, wins: new Set(), showResult: false, popNum: false,
+  anim: null, w: 0, rel: 0, br: 0,
+};
+function rlLoad() {
+  try {
+    const d = JSON.parse(localStorage.getItem('mini-casino.roulette') || 'null');
+    if (!d) return;
+    if (Array.isArray(d.history)) rl.history = d.history.filter(n => Number.isInteger(n) && n >= 0 && n <= 36).slice(0, 14);
+    if (d.last && typeof d.last === 'object') {
+      const last = {};
+      for (const [k, v] of Object.entries(d.last)) if (coversOf(k).size && Number.isFinite(v) && v > 0) last[k] = v;
+      if (Object.keys(last).length) rl.last = last;
+    }
+    if (R_CHIPS.includes(d.chip)) rl.chip = d.chip;
+  } catch (e) { /* storage unavailable */ }
+}
+function rlSave() {
+  try { localStorage.setItem('mini-casino.roulette', JSON.stringify({ history: rl.history, last: rl.last, chip: rl.chip })); } catch (e) { /* storage unavailable */ }
+}
+
+function rlSnapshot() { rl.undo.push({ ...rl.bets }); if (rl.undo.length > 100) rl.undo.shift(); }
+function rlFresh() { if (rl.showResult) { rl.showResult = false; rl.wins = new Set(); } }
+function rlPlace(key) {
+  if (rl.spinning || !wallet.ready) return;
+  rlFresh();
+  if (rl.chip > wallet.balance - rlTotal()) { toast('Not enough in your wallet for that chip. The bank can fix that.'); render(); return; }
+  rlSnapshot();
+  rl.bets[key] = (rl.bets[key] || 0) + rl.chip;
+  render();
+}
+function rlRemove(key) {
+  if (rl.spinning || !rl.bets[key]) return;
+  rlSnapshot();
+  delete rl.bets[key];
+  render();
+}
+function rlUndo() { if (rl.spinning || !rl.undo.length) return; rl.bets = rl.undo.pop(); render(); }
+function rlClear() { if (rl.spinning || !rlTotal()) return; rlSnapshot(); rl.bets = {}; render(); }
+function rlRebet() {
+  if (rl.spinning || !rl.last || rlTotal()) return false;
+  if (rlTotal(rl.last) > wallet.balance) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
+  rlFresh();
+  rlSnapshot();
+  rl.bets = { ...rl.last };
+  render();
+  return true;
+}
+function rlDouble() {
+  const t = rlTotal();
+  if (rl.spinning || !t) return;
+  if (t * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
+  rlSnapshot();
+  for (const k of Object.keys(rl.bets)) rl.bets[k] *= 2;
+  render();
+}
+function rlPickChip(v) { if (R_CHIPS.includes(v)) { rl.chip = v; rlSave(); render(); } }
+
+function rlSpin() {
+  if (rl.spinning || !wallet.ready) return;
+  if (!rlTotal() && rl.last && !rlRebet()) return;
+  const total = rlTotal();
+  if (!total) { toast('Pick a chip, then tap the board to bet.'); return; }
+  if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
+  if (!walletChange(-total, null)) return;
+  const result = randInt(37);
+  rl.live = { bets: { ...rl.bets }, total, result };
+  rl.last = { ...rl.bets };
+  rl.spinning = true;
+  rl.showResult = false;
+  rl.wins = new Set();
+  rlSave();
+  rlAnimate(result);
+  render();
+}
+function rlSettle() {
+  const live = rl.live;
+  if (!live) return;
+  let payout = 0;
+  const wins = new Set();
+  for (const [k, a] of Object.entries(live.bets)) {
+    if (coversOf(k).has(live.result)) { payout += a * (oddsOf(k) + 1); wins.add(k); }
+  }
+  const net = payout - live.total;
+  rl.live = null;
+  rl.spinning = false;
+  rl.result = live.result;
+  rl.net = net;
+  rl.payout = payout;
+  rl.wins = wins;
+  rl.showResult = true;
+  rl.popNum = true;
+  rl.bets = {};
+  rl.undo = [];
+  rl.history = [live.result, ...rl.history].slice(0, 14);
+  rlSave();
+  walletChange(payout, null, { log: { a: net, w: `Roulette · ${live.result} ${colorName(live.result)}` } });
+  render();
+}
+
+/* Wheel turns clockwise; the ball runs the other way, drops in, then rides the wheel. */
+const easeOutCubic = x => 1 - Math.pow(1 - x, 3);
+function rlAnimate(result) {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const D = reduce ? 700 : SPIN_MS;
+  const pocket = WHEEL.indexOf(result) * STEP;
+  const back = (((rl.rel - pocket) % TAU) + TAU) % TAU + TAU * (reduce ? 0 : 3);
+  rl.anim = { t0: performance.now(), D, w0: rl.w, W: TAU * (reduce ? 0.2 : 1.6), rel0: rl.rel, R: -back, br0: rl.br };
+  requestAnimationFrame(rlFrame);
+  setTimeout(rlSettle, D + 60);
+}
+function rlFrame(now) {
+  const a = rl.anim;
+  if (!a) return;
+  const p = Math.min(1, (now - a.t0) / a.D);
+  const pd = 0.8;
+  rl.w = a.w0 + a.W * easeOutCubic(p);
+  rl.rel = a.rel0 + a.R * easeOutCubic(Math.min(1, p / pd));
+  if (p < 0.08) rl.br = a.br0 + (1 - a.br0) * (p / 0.08);
+  else if (p < pd - 0.22) rl.br = 1;
+  else if (p < pd) { const q = (p - (pd - 0.22)) / 0.22; rl.br = 1 - q * q; }
+  else { const q = (p - pd) / (1 - pd); rl.br = Math.max(0, 0.16 * Math.abs(Math.sin(q * Math.PI * 3)) * (1 - q)); }
+  rlDraw();
+  if (p < 1) requestAnimationFrame(rlFrame);
+  else {
+    rl.anim = null;
+    rl.br = 0;
+    rl.w %= TAU;
+    rl.rel = ((rl.rel % TAU) + TAU) % TAU;
+    rlDraw();
+  }
+}
+
+let wheelImgs = null;
+function circle(g, r) { g.beginPath(); g.arc(0, 0, r, 0, TAU); }
+function buildWheelImgs(px) {
+  const R = px / 2;
+  const bowl = document.createElement('canvas');
+  bowl.width = bowl.height = px;
+  let g = bowl.getContext('2d');
+  g.translate(R, R);
+  let grad = g.createRadialGradient(0, 0, R * 0.8, 0, 0, R);
+  grad.addColorStop(0, '#6b3a1c'); grad.addColorStop(0.6, '#4a250f'); grad.addColorStop(1, '#2a1407');
+  circle(g, R); g.fillStyle = grad; g.fill();
+  grad = g.createRadialGradient(0, 0, R * 0.82, 0, 0, R * 0.93);
+  grad.addColorStop(0, '#120f0c'); grad.addColorStop(1, '#2c2723');
+  circle(g, R * 0.93); g.fillStyle = grad; g.fill();
+  g.lineWidth = Math.max(1, R * 0.012); g.strokeStyle = '#c99a3c';
+  circle(g, R * 0.93); g.stroke();
+  g.fillStyle = '#d8b25a';
+  for (let i = 0; i < 8; i++) {
+    g.save(); g.rotate(i * TAU / 8 + TAU / 16);
+    g.beginPath(); g.moveTo(0, -R * 0.905); g.lineTo(R * 0.018, -R * 0.875); g.lineTo(0, -R * 0.845); g.lineTo(-R * 0.018, -R * 0.875); g.closePath(); g.fill();
+    g.restore();
+  }
+
+  const rr = Math.ceil(R * 0.84);
+  const rotor = document.createElement('canvas');
+  rotor.width = rotor.height = rr * 2;
+  g = rotor.getContext('2d');
+  g.translate(rr, rr);
+  for (let i = 0; i < 37; i++) {
+    const n = WHEEL[i];
+    const a0 = i * STEP - STEP / 2 - Math.PI / 2;
+    g.beginPath(); g.arc(0, 0, R * 0.83, a0, a0 + STEP); g.arc(0, 0, R * 0.6, a0 + STEP, a0, true); g.closePath();
+    g.fillStyle = n === 0 ? '#127a46' : REDS.has(n) ? '#b3262f' : '#1d1f24';
+    g.fill();
+  }
+  g.beginPath(); g.arc(0, 0, R * 0.7, 0, TAU); g.arc(0, 0, R * 0.6, TAU, 0, true); g.fillStyle = 'rgba(0,0,0,.38)'; g.fill();
+  g.strokeStyle = '#d8b25a'; g.lineWidth = Math.max(1, R * 0.008);
+  for (let i = 0; i < 37; i++) {
+    g.save(); g.rotate(i * STEP - STEP / 2);
+    g.beginPath(); g.moveTo(0, -R * 0.6); g.lineTo(0, -R * 0.83); g.stroke();
+    g.restore();
+  }
+  for (const r of [0.83, 0.7, 0.6]) { circle(g, R * r); g.stroke(); }
+  g.fillStyle = '#fff';
+  g.font = `700 ${Math.round(R * 0.072)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (let i = 0; i < 37; i++) { g.save(); g.rotate(i * STEP); g.fillText(String(WHEEL[i]), 0, -R * 0.765); g.restore(); }
+  grad = g.createRadialGradient(0, -R * 0.15, R * 0.05, 0, 0, R * 0.6);
+  grad.addColorStop(0, '#8a5a2e'); grad.addColorStop(1, '#3d1f0c');
+  circle(g, R * 0.6); g.fillStyle = grad; g.fill();
+  g.strokeStyle = '#c99a3c'; g.lineWidth = Math.max(1, R * 0.006);
+  for (const r of [0.42, 0.25]) { circle(g, R * r); g.stroke(); }
+  grad = g.createLinearGradient(-R * 0.2, -R * 0.2, R * 0.2, R * 0.2);
+  grad.addColorStop(0, '#f2d488'); grad.addColorStop(1, '#a37a2c');
+  g.fillStyle = grad;
+  for (let i = 0; i < 4; i++) {
+    g.save(); g.rotate(i * Math.PI / 2);
+    g.fillRect(-R * 0.018, -R * 0.3, R * 0.036, R * 0.3);
+    g.beginPath(); g.arc(0, -R * 0.3, R * 0.035, 0, TAU); g.fill();
+    g.restore();
+  }
+  circle(g, R * 0.075); g.fill();
+  return { px, bowl, rotor, rr };
+}
+function rlDraw() {
+  const cv = ui.rWheel;
+  if (!cv || ui.rouletteView.hidden) return;
+  const css = cv.clientWidth;
+  if (!css) return;
+  const px = Math.round(css * Math.min(2, window.devicePixelRatio || 1));
+  if (cv.width !== px) { cv.width = px; cv.height = px; }
+  if (!wheelImgs || wheelImgs.px !== px) wheelImgs = buildWheelImgs(px);
+  const g = cv.getContext('2d');
+  const R = px / 2;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, px, px);
+  g.drawImage(wheelImgs.bowl, 0, 0);
+  g.save();
+  g.translate(R, R);
+  g.rotate(rl.w);
+  g.drawImage(wheelImgs.rotor, -wheelImgs.rr, -wheelImgs.rr);
+  g.restore();
+  if (!rl.history.length && !rl.spinning) return;      // no ball until the first spin
+  const ang = rl.w + rl.rel;
+  const r = R * 0.655 + (R * 0.875 - R * 0.655) * rl.br;
+  const x = R + Math.sin(ang) * r;
+  const y = R - Math.cos(ang) * r;
+  const br = R * 0.034;
+  g.beginPath(); g.arc(x + br * 0.25, y + br * 0.35, br, 0, TAU); g.fillStyle = 'rgba(0,0,0,.4)'; g.fill();
+  const bg = g.createRadialGradient(x - br * 0.35, y - br * 0.35, br * 0.1, x, y, br);
+  bg.addColorStop(0, '#ffffff'); bg.addColorStop(1, '#bdbdbd');
+  g.beginPath(); g.arc(x, y, br, 0, TAU); g.fillStyle = bg; g.fill();
+}
+
+const rCells = new Map();
+function buildRoulette() {
+  const add = (key, label, cls, h, v) => {
+    const b = document.createElement('button');
+    b.className = 'rcell ' + cls;
+    b.style.setProperty('--r', h[0]); b.style.setProperty('--c', h[1]);
+    b.style.setProperty('--vr', v[0]); b.style.setProperty('--vc', v[1]);
+    const lab = document.createElement('span');
+    lab.textContent = label;
+    const chip = document.createElement('span');
+    chip.className = 'rchip';
+    chip.hidden = true;
+    b.append(lab, chip);
+    b.setAttribute('aria-label', key[0] === 'n' ? `Bet on ${label}` : `Bet on ${OUTSIDE[key]}`);
+    b.addEventListener('click', () => rlPlace(key));
+    b.addEventListener('contextmenu', e => { e.preventDefault(); rlRemove(key); });
+    if (key[0] !== 'n') {
+      b.addEventListener('pointerenter', () => { for (const n of coversOf(key)) rCells.get('n' + n).classList.add('cover'); });
+      b.addEventListener('pointerleave', () => { for (const n of coversOf(key)) rCells.get('n' + n).classList.remove('cover'); });
+    }
+    ui.rBoard.appendChild(b);
+    rCells.set(key, b);
+  };
+  // Horizontal board (desktop) and vertical board (phone) share the same cells
+  add('n0', '0', 'green', ['1 / span 3', '1'], ['1', '3 / span 3']);
+  for (let n = 1; n <= 36; n++) {
+    const k = Math.ceil(n / 3);
+    add('n' + n, String(n), colorOf(n), [String(3 - ((n - 1) % 3)), String(k + 1)], [String(k + 1), String(((n - 1) % 3) + 3)]);
+  }
+  for (let j = 1; j <= 3; j++) add('col' + j, '2 to 1', 'out', [String(4 - j), '14'], ['14', String(j + 2)]);
+  ['1st 12', '2nd 12', '3rd 12'].forEach((l, i) => add('doz' + (i + 1), l, 'out', ['4', `${2 + i * 4} / span 4`], [`${2 + i * 4} / span 4`, '1']));
+  [['low', '1–18'], ['even', 'Even'], ['red', 'Red'], ['black', 'Black'], ['odd', 'Odd'], ['high', '19–36']].forEach(([k, l], i) =>
+    add(k, l, 'out' + (k === 'red' ? ' is-red' : k === 'black' ? ' is-black' : ''), ['5', `${2 + i * 2} / span 2`], [`${2 + i * 2} / span 2`, '2']));
+
+  for (const v of R_CHIPS) {
+    const c = document.createElement('button');
+    c.className = 'chip chipface';
+    c.style.setProperty('--c', R_CHIP_COLORS[v]);
+    c.dataset.v = String(v);
+    c.textContent = chipLabel(v);
+    c.setAttribute('aria-label', `Use ${moneyFull(v)} chips`);
+    c.addEventListener('click', () => rlPickChip(v));
+    ui.rChips.appendChild(c);
+  }
+}
+
+function renderRoulette() {
+  const bal = wallet.ready ? wallet.balance : 0;
+  const bets = rl.live ? rl.live.bets : rl.bets;
+  const total = rlTotal(bets);
+  ui.rWallet.textContent = wallet.ready ? money(bal) : '—';
+  ui.rTotal.textContent = money(total);
+  for (const [key, el] of rCells) {
+    const amt = bets[key] || 0;
+    const chip = el.lastElementChild;
+    chip.hidden = !amt;
+    if (amt) { chip.textContent = chipLabel(amt); chip.style.setProperty('--c', rChipColor(amt)); }
+    el.classList.toggle('win', rl.showResult && rl.wins.has(key));
+    el.classList.toggle('hit', rl.showResult && key === 'n' + rl.result);
+    el.setAttribute('aria-disabled', String(rl.spinning));
+  }
+
+  // Result and message
+  let title, sub = '', tone = '';
+  ui.rNum.className = 'rnum';
+  if (rl.spinning) {
+    title = 'No more bets';
+    sub = 'The ball is rolling…';
+    ui.rNum.textContent = '…';
+  } else {
+    const r = rl.result;
+    ui.rNum.textContent = r == null ? '–' : String(r);
+    if (r != null) ui.rNum.classList.add(colorOf(r));
+    if (r != null && rl.showResult) {
+      title = `${r} ${colorName(r)}`;
+      if (rl.net > 0) { sub = `You win +${money(rl.net)}`; tone = 'win'; }
+      else if (rl.payout > 0 && rl.net < 0) { sub = `${money(rl.payout)} back · ${money(rl.net)} overall`; tone = 'lose'; }
+      else if (rl.payout > 0) sub = 'You break even';
+      else { sub = `No luck · ${money(rl.net)}`; tone = 'lose'; }
+      if (rl.popNum) { rl.popNum = false; void ui.rNum.offsetWidth; ui.rNum.classList.add('pop'); }
+    } else {
+      title = 'Place your bets';
+      sub = total ? `${Object.keys(bets).length} bet${Object.keys(bets).length === 1 ? '' : 's'} on the board` : 'Pick a chip, then tap the board.';
+    }
+  }
+  ui.rTitle.textContent = title;
+  ui.rSub.textContent = sub;
+  ui.rResult.className = 'rresult' + (tone ? ' ' + tone : '');
+
+  ui.rHist.textContent = '';
+  for (const n of rl.history) {
+    const s = document.createElement('span');
+    s.className = colorOf(n);
+    s.textContent = String(n);
+    ui.rHist.appendChild(s);
+  }
+
+  // Controls
+  const lastTotal = rl.last ? rlTotal(rl.last) : 0;
+  const canRebet = !rl.spinning && !total && lastTotal > 0 && lastTotal <= bal;
+  ui.rSpin.disabled = rl.spinning || !wallet.ready || (!total && !canRebet);
+  ui.rSpin.innerHTML = !total && canRebet ? 'Rebet &amp; spin <kbd>Space</kbd>' : 'Spin <kbd>Space</kbd>';
+  ui.rUndo.disabled = rl.spinning || !rl.undo.length;
+  ui.rClear.disabled = rl.spinning || !total;
+  ui.rRebet.disabled = !canRebet;
+  ui.rDouble.disabled = rl.spinning || !total || total * 2 > bal;
+  for (const c of ui.rChips.children) {
+    const v = Number(c.dataset.v);
+    c.classList.toggle('sel', v === rl.chip);
+    c.disabled = rl.spinning || !wallet.ready || v > bal - total;
+  }
+  ui.rLow.hidden = rl.spinning || !wallet.ready || bal - total >= 25;
+  if (!rl.anim) rlDraw();
+}
+function myTurnHand() {
+  const T = app.T;
+  if (!T) return null;
+  const h = activeHandOf(T);
+  return h && h.uid === myId() ? h : null;
+}
+function playPending() {
+  const p = app.pendingPlay;
+  return !!p && app.T && p.k === app.T.turn && Date.now() - p.at < 5000;
+}
+function act(t) {
+  const T = app.T;
+  const h = myTurnHand();
+  if (!h || playPending()) return;
+  if (t === 'double' && !canDouble(T, h)) return;
+  if (t === 'split' && !canSplit(T, h)) return;
+  const k = T.turn;
+  const s = send({ t, k });
+  if (s && !app.solo) app.pendingPlay = { s, k, at: Date.now() };
+  render();
+}
+function insure(y) {
+  const T = app.T;
+  if (!T || T.phase !== 'insurance' || !myUndecided()) return;
+  send({ t: 'ins', y: !!y });
+}
+function myUndecided() {
+  const T = app.T;
+  if (!T || T.phase !== 'insurance') return null;
+  return T.round.hands.find(h => h.uid === myId() && T.round.ins[h.id] === null) || null;
+}
+
+/* ================= Rendering ================= */
+const cardEls = new Map();
+const handEls = new Map();
+const seatEls = [];
+for (let s = 0; s < SEATS; s++) {
+  const el = document.createElement('div');
+  el.className = 'seat';
+  el.innerHTML =
+    '<div class="seat-head"><span class="avatar"></span><span class="pname"></span><span class="you" hidden>You</span><span class="dot"></span></div>' +
+    '<div class="seat-sub"><span class="sbank"></span><span class="sstatus"></span></div>' +
+    '<div class="hands"></div>' +
+    '<div class="empty-label" hidden>Empty seat</div>' +
+    '<button class="btn small sit-btn" hidden>Sit here</button>' +
+    '<div class="timer" hidden><i></i></div>';
+  el.querySelector('.sit-btn').addEventListener('click', () => sit(s));
+  ui.seats.appendChild(el);
+  seatEls.push(el);
+}
+
+function faceHTML(c) {
+  const r = rankOf(c);
+  const s = SUIT_CH[suitOf(c)] + TEXT_VS;
+  const corner = cls => `<div class="corner ${cls}"><b>${r}</b><i>${s}</i></div>`;
+  const mid = (r === 'J' || r === 'Q' || r === 'K')
+    ? `<div class="court"><b>${r}</b><i>${s}</i></div>`
+    : `<div class="pip">${s}</div>`;
+  return corner('tl') + mid + corner('br');
+}
+
+/* Cards are keyed by round, hand, position and value, so each element is created once. */
+function cardEl(key, card, up, used) {
+  used.add(key);
+  let e = cardEls.get(key);
+  let fresh = false;
+  if (!e) {
+    e = document.createElement('div');
+    e.className = 'card' + (up ? '' : ' down');
+    e.setAttribute('role', 'img');
+    e.innerHTML = '<div class="inner"><div class="face"></div><div class="back cardback"></div></div>';
+    e.addEventListener('animationend', ev => {
+      if (ev.animationName === 'dealIn') { e.classList.remove('deal-in'); e.style.animationDelay = ''; }
+    });
+    cardEls.set(key, e);
+    fresh = true;
+  }
+  const face = e.firstElementChild.firstElementChild;
+  if (up && !face.firstChild) {
+    face.innerHTML = faceHTML(card);
+    e.classList.toggle('red', 'HD'.includes(suitOf(card)));
+    e.classList.toggle('ace', rankOf(card) === 'A');
+  }
+  const flip = !fresh && up && e.classList.contains('down');
+  if (!up) e.classList.add('down');
+  e.setAttribute('aria-label', up ? `${RANK_NAMES[rankOf(card)] || rankOf(card)} of ${SUIT_NAMES[suitOf(card)]}` : 'Face-down card');
+  return { e, fresh, flip };
+}
+function syncCards(container, items, anim, info) {
+  items.forEach((it, i) => {
+    const r = cardEl(it.key, it.card, it.up, anim.used);
+    if (container.children[i] !== r.e) container.insertBefore(r.e, container.children[i] || null);
+    if (r.fresh) anim.fresh.push({ e: r.e, lvl: i, dealer: info.dealer, hi: info.hi });
+    if (r.flip) anim.flip = r.e;
+  });
+  while (container.children.length > items.length) container.lastElementChild.remove();
+}
+function launch(e, delay) {
+  const r = e.getBoundingClientRect();
+  const s = ui.shoe.getBoundingClientRect();
+  const sx = s.width ? s.left + s.width / 2 : window.innerWidth - 30;
+  const sy = s.width ? s.top + s.height / 2 : -80;
+  e.style.setProperty('--dx', `${sx - (r.left + r.width / 2)}px`);
+  e.style.setProperty('--dy', `${sy - (r.top + r.height / 2)}px`);
+  e.style.animationDelay = `${delay}ms`;
+  e.classList.add('deal-in');
+}
+function runAnimations(anim, initial) {
+  let t = 0;
+  const fresh = anim.fresh;
+  if (initial) {
+    fresh.sort((a, b) => a.lvl - b.lvl || a.dealer - b.dealer || a.hi - b.hi);
+    for (const f of fresh) { launch(f.e, t); t += STAGGER; }
+  } else {
+    const hands = fresh.filter(f => !f.dealer).sort((a, b) => a.hi - b.hi || a.lvl - b.lvl);
+    const dealer = fresh.filter(f => f.dealer).sort((a, b) => a.lvl - b.lvl);
+    for (const f of hands) { launch(f.e, t); t += STAGGER; }
+    if (anim.flip) {
+      const inner = anim.flip.firstElementChild;
+      inner.style.transitionDelay = `${t + 150}ms`;
+      anim.flip.classList.remove('down');
+      const done = t + 700;
+      setTimeout(() => { inner.style.transitionDelay = ''; }, done);
+      t += 650;
+    }
+    for (const f of dealer) { launch(f.e, t); t += STAGGER + 160; }
+  }
+  if (anim.flip && initial) anim.flip.classList.remove('down');
+  if (!fresh.length && !anim.flip) return;
+  const total = t + (fresh.length ? 380 : 0);
+  ui.game.classList.add('animating');
+  clearTimeout(app.animTimer);
+  app.animTimer = setTimeout(() => { ui.game.classList.remove('animating'); app.msgKey = ''; render(); }, total);
+}
+
+function totalText(cards, showSoft) {
+  const { total, soft } = score(cards);
+  if (total > 21) return `Bust · ${total}`;
+  if (soft && showSoft && total < 21) return `${total - 10} / ${total}`;
+  return String(total);
+}
+
+function ensureNames(ids) {
+  if (!app.user || app.namesPending) return;
+  const missing = [...new Set(ids)].filter(id => id && id !== SOLO_ID && !(id in app.names));
+  if (!missing.length) return;
+  app.namesPending = true;
+  app.user.profiles(missing).then(ps => {
+    for (const id of missing) {
+      const p = ps && ps[id];
+      app.names[id] = { name: (p && p.name) || '', avatar: (p && p.avatarUrl) || '' };
+    }
+  }).catch(() => {
+    for (const id of missing) app.names[id] = { name: '', avatar: '' };
+  }).finally(() => { app.namesPending = false; render(); });
+}
+
+function render() {
+  const v = app.view;
+  ui.casinoBar.hidden = v === 'table';
+  ui.home.hidden = v !== 'home';
+  ui.bankView.hidden = v !== 'bank';
+  ui.rouletteView.hidden = v !== 'roulette';
+  ui.lobby.hidden = v !== 'lobby';
+  ui.tableView.hidden = v !== 'table';
+  ui.navBlackjack.classList.toggle('active', v === 'lobby');
+  ui.navRoulette.classList.toggle('active', v === 'roulette');
+  ui.navBank.classList.toggle('active', v === 'bank');
+  ui.walletAmt.textContent = wallet.ready ? money(wallet.balance) : '—';
+  if (v === 'lobby') renderLobby();
+  else if (v === 'bank') renderBank();
+  else if (v === 'roulette') renderRoulette();
+  else if (v === 'table') renderTable();
+}
+
+function renderChipsPanel() {
+  const open = app.chipsOpen && !!app.T && mySeat() >= 0;
+  ui.chipsPanel.hidden = !open;
+  ui.bankPill.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  const bal = wallet.ready ? wallet.balance : 0;
+  ui.cpWallet.textContent = wallet.ready ? money(bal) : '—';
+  ui.cpButtons.forEach(b => {
+    if (b.dataset.a === 'all') { b.disabled = bal < 1; b.textContent = bal >= 1 ? `All ${money(bal)}` : 'All'; }
+    else b.disabled = bal < Number(b.dataset.a);
+  });
+  ui.cpHelp.textContent = bal < 500
+    ? 'Your wallet is nearly empty. The bank will happily give you more.'
+    : 'Chips stay with this table when you leave.';
+}
+
+function renderTable() {
+  ui.lobby.hidden = true;
+  ui.tableView.hidden = false;
+  const T = app.T;
+  const me = myId();
+
+  // Header
+  ui.tName.textContent = app.solo ? 'Solo table' : (T && T.name) || 'Blackjack table';
+  ui.tCode.textContent = app.solo ? '' : String(app.code || '').toUpperCase();
+  ui.inviteBtn.hidden = app.solo;
+  ui.inviteBtn.setAttribute('aria-expanded', String(app.inviteOpen));
+  ui.invitePanel.hidden = app.solo || !app.inviteOpen;
+  ui.hintToggle.setAttribute('aria-pressed', String(app.hints));
+  if (!app.solo) {
+    const link = inviteURL(app.code);
+    ui.inviteCode.textContent = String(app.code || '').toUpperCase();
+    ui.inviteLink.value = link || 'Use Share → Copy link while this room is open';
+    ui.copyBtn.disabled = !link;
+    ui.inviteHelp.textContent = 'Your friend needs access to this page as well: in Claude, open Share and invite them by email with edit access. People who open it through a public link can only watch.';
+  }
+
+  // Loading and error states
+  let note = '';
+  if (!app.solo) {
+    if (!app.capsReady) note = 'Connecting to the room…';
+    else if (!app.db) note = 'Rooms work when this page is opened on claude.ai while signed in.';
+    else if (app.missing) note = 'This room doesn’t exist. Check the code or start a new room.';
+    else if (app.loadErr) note = app.loadErr;
+    else if (!T) note = app.slow ? 'The room can’t be reached yet. Check your connection.' : 'Opening the room…';
+  }
+  ui.tNote.textContent = note;
+  ui.tNote.hidden = !note;
+  ui.game.hidden = !T;
+  ui.bankPill.hidden = !T || mySeat() < 0;
+  if (!T) { ui.chipsPanel.hidden = true; return; }
+
+  const R = T.round;
+  const ctx = ctxNow();
+  const anim = { fresh: [], flip: null, used: new Set() };
+  const initial = !!R && R.n !== app.renderedRound;
+
+  // Dealer
+  const ditems = R ? R.dealer.map((c, i) => ({ key: `${R.n}:d:${i}:${c}`, card: c, up: i !== 1 || R.holeUp })) : [];
+  syncCards(ui.dealerCards, ditems, anim, { dealer: 1, hi: 0 });
+  const visible = R ? R.dealer.filter((c, i) => i !== 1 || R.holeUp) : [];
+  if (visible.length) {
+    const t = score(visible).total;
+    ui.dealerTotal.textContent = t > 21 ? `Bust · ${t}` : String(t);
+    ui.dealerTotal.className = 'badge' + (t > 21 ? ' bust' : '');
+  } else {
+    ui.dealerTotal.textContent = '';
+    ui.dealerTotal.className = 'badge';
+  }
+
+  // Seats
+  ensureNames(T.seats.filter(Boolean));
+  renderSeats(T, R, ctx, anim);
+
+  for (const k of [...cardEls.keys()]) if (!anim.used.has(k)) cardEls.delete(k);
+  runAnimations(anim, initial);
+  if (R) app.renderedRound = R.n;
+
+  // Chips at this table
+  const P = myP();
+  if (P) ui.bank.textContent = money(P.bank - (T.phase === 'betting' ? viewBet() : 0));
+  renderChipsPanel();
+
+  renderMessage(T, R, ctx);
+  renderControls(T, R, ctx);
+
+  const st = P ? P.stats : null;
+  ui.stats.textContent = st ? `Won ${st.w} · Lost ${st.l} · Pushed ${st.p} · Blackjacks ${st.bj}` : '';
+  ui.leave.hidden = app.solo || mySeat() < 0;
+}
+
+function renderSeats(T, R, ctx, anim) {
+  const me = myId();
+  const act = activeHandOf(T);
+  const usedHands = new Set();
+  ui.seats.classList.toggle('solo', app.solo);
+  const playable = canPlayHere();
+  const iSit = mySeat() >= 0;
+  for (let s = 0; s < SEATS; s++) {
+    const el = seatEls[s];
+    const uid = T.seats[s];
+    const P = uid ? T.players[uid] : null;
+    el.hidden = app.solo && uid !== me;
+    el.classList.toggle('empty', !uid);
+    el.classList.toggle('mine', !!uid && uid === me && !app.solo);
+    el.classList.toggle('turn', !!act && act.seat === s && !app.solo);
+    const q = sel => el.querySelector(sel);
+    q('.empty-label').hidden = !!uid;
+    q('.sit-btn').hidden = !!uid || app.solo || !playable || iSit;
+    q('.seat-head').hidden = !uid;
+    q('.seat-sub').hidden = !uid;
+
+    const hands = R && uid ? R.hands.filter(h => h.seat === s && h.uid === uid) : [];
+    const hc = q('.hands');
+    hands.forEach((h, i) => {
+      const hk = `${R.n}:${h.id}`;
+      usedHands.add(hk);
+      let he = handEls.get(hk);
+      if (!he) {
+        he = document.createElement('div');
+        he.className = 'hand';
+        he.innerHTML = '<div class="cards"></div><div class="meta"><span class="badge total"></span><span class="wager"></span><span class="tag" hidden></span></div>';
+        handEls.set(hk, he);
+      }
+      if (hc.children[i] !== he) hc.insertBefore(he, hc.children[i] || null);
+      const items = h.cards.map((c, ci) => ({ key: `${hk}:${ci}:${c}`, card: c, up: true }));
+      syncCards(he.firstElementChild, items, anim, { dealer: 0, hi: R.hands.indexOf(h) });
+      const [tot, wager, tag] = he.lastElementChild.children;
+      const total = score(h.cards).total;
+      tot.textContent = totalText(h.cards, !R.over && !h.done);
+      tot.className = 'badge total' + (total > 21 ? ' bust' : total === 21 ? ' gold' : '');
+      wager.textContent = money(h.bet);
+      wager.style.setProperty('--wc', chipColor(h.bet));
+      const label = h.result ? RESULT_LABEL[h.result] : h.doubled ? 'Doubled' : '';
+      tag.textContent = label;
+      tag.className = 'tag ' + (h.result || (h.doubled ? 'double' : ''));
+      tag.hidden = !label;
+      he.classList.toggle('active', act === h);
+      he.classList.toggle('lost', h.result === 'lose' || h.result === 'bust');
+    });
+    while (hc.children.length > hands.length) hc.lastElementChild.remove();
+
+    if (!uid || !P) { q('.timer').hidden = true; continue; }
+
+    // Name, presence, bank, status
+    const n = app.names[uid];
+    const av = q('.avatar');
+    const url = n && n.avatar ? n.avatar : '';
+    av.style.backgroundImage = url ? `url("${url.replace(/"/g, '%22')}")` : '';
+    q('.pname').textContent = uid === me ? ((app.names[uid] && app.names[uid].name) || 'You') : nameOf(uid, s);
+    q('.you').hidden = uid !== me;
+    const here = isPresent(ctx, uid);
+    q('.dot').className = 'dot' + (here ? '' : ' away');
+    q('.dot').title = here ? 'In the room' : 'Away';
+    const bet = uid === me ? viewBet() : P.bet;
+    const status = uid === me ? viewStatus() : P.status;
+    q('.sbank').textContent = money(P.bank - (T.phase === 'betting' ? bet : 0));
+    let st = '';
+    if (!here) st = 'Away';
+    else if (T.phase === 'betting') {
+      st = status === 'ready' ? `Ready · ${money(bet)}` : status === 'out' ? 'Sitting out' : bet ? `Betting ${money(bet)}` : 'Choosing a bet';
+      if (P.bank < MIN_BET && !bet) st = 'Out of chips';
+    } else if (!hands.length) st = 'Sitting out this hand';
+    else if (T.phase === 'insurance' && hands.some(h => R.ins[h.id] === null)) st = 'Deciding on insurance';
+    else if (P.leaving) st = 'Leaving after this hand';
+    q('.sstatus').textContent = st;
+
+    // Turn timer
+    const timer = q('.timer');
+    const showTimer = !app.solo && timersOn(T, ctx) && (
+      (T.phase === 'player' && act && act.seat === s) ||
+      (T.phase === 'insurance' && hands.some(h => R.ins[h.id] === null)));
+    timer.hidden = !showTimer;
+    if (showTimer) {
+      const k = `${T.turn}:${T.turnAt}`;
+      if (timer.dataset.k !== k) {
+        timer.dataset.k = k;
+        const bar = timer.firstElementChild;
+        const elapsed = Math.max(0, Math.min(TURN_MS, Date.now() - T.turnAt));
+        bar.style.animation = 'none';
+        void bar.offsetWidth;
+        bar.style.animation = `drain ${TURN_MS}ms linear ${-elapsed}ms forwards`;
+      }
+    } else timer.dataset.k = '';
+  }
+  for (const k of [...handEls.keys()]) if (!usedHands.has(k)) handEls.delete(k);
+}
+
+function renderMessage(T, R, ctx) {
+  const me = myId();
+  let title = '', sub = '', tone = '';
+  if (T.phase === 'betting') {
+    if (R && R.over) {
+      const d = score(R.dealer).total;
+      title = R.how === 'bj' ? 'Dealer has Blackjack' : d > 21 ? `Dealer busts with ${d}` : `Dealer has ${d}`;
+      if (me in R.net) {
+        const net = R.net[me];
+        const mine = R.hands.filter(h => h.uid === me);
+        const bj = mine.some(h => h.result === 'blackjack');
+        if (net > 0) { sub = `${bj ? 'Blackjack! ' : 'You win '}+${money(net)}`; tone = 'win'; }
+        else if (net < 0) { sub = `You lose ${money(-net)}`; tone = 'lose'; }
+        else { sub = mine.every(h => h.result === 'push') ? 'Push. Your bet comes back.' : 'You break even'; tone = 'push'; }
+        if (R.how === 'bj' && mine.some(h => R.ins[h.id] === 'yes') && net === 0) sub = 'Insurance covered your bet';
+      }
+    } else title = app.solo ? 'Place your bet' : 'Place your bets';
+  } else if (T.phase === 'insurance') {
+    title = 'Dealer shows an Ace';
+    sub = myUndecided() ? 'Insurance?' : 'Waiting for insurance decisions';
+  } else if (T.phase === 'player') {
+    const h = activeHandOf(T);
+    if (h) {
+      const mine = R.hands.filter(x => x.uid === h.uid);
+      title = h.uid === me ? (app.solo ? '' : 'Your turn') : `${nameOf(h.uid, h.seat)}’s turn`;
+      if (mine.length > 1) sub = `Hand ${mine.indexOf(h) + 1} of ${mine.length}`;
+    }
+  }
+  ui.msgTitle.textContent = title;
+  ui.msgSub.textContent = sub;
+  ui.msg.className = 'msg' + (tone ? ' ' + tone : '');
+  const key = title + '|' + sub;
+  if (key !== app.msgKey) {
+    app.msgKey = key;
+    if (title) { void ui.msg.offsetWidth; ui.msg.classList.add('pop'); }
+  }
+
+  // Status line: countdowns and who we're waiting for
+  let line = '';
+  if (T.phase === 'betting' && !app.solo) {
+    const sp = seatedPresent(T, ctx);
+    if (T.readyAt) {
+      const secs = Math.max(0, Math.ceil((T.readyAt + BET_MS - Date.now()) / 1000));
+      line = `Dealing in ${secs}s`;
+      const waiting = sp.filter(u => T.players[u].status === 'betting' && u !== me).map(u => nameOf(u, T.seats.indexOf(u)));
+      if (waiting.length) line += ` · waiting for ${waiting.join(', ')}`;
+    } else if (sp.length > 1) line = 'The next hand deals when everyone is ready.';
+    else if (T.seats.filter(Boolean).length < 2) line = 'Invite a friend, or press Ready to play now.';
+  } else if (T.phase === 'player' && !app.solo && timersOn(T, ctx)) {
+    const secs = Math.max(0, Math.ceil((T.turnAt + TURN_MS - Date.now()) / 1000));
+    line = `${secs}s to act`;
+  }
+  if (R && R.shuffled && T.phase !== 'betting' && R.n === T.n && !line) line = 'Fresh shoe shuffled';
+  ui.statusLine.textContent = line;
+}
+
+function renderControls(T, R, ctx) {
+  const me = myId();
+  const P = myP();
+  const seat = mySeat();
+  const playable = canPlayHere();
+  ui.betPanel.hidden = ui.insPanel.hidden = ui.playPanel.hidden = ui.infoPanel.hidden = true;
+
+  if (!app.solo && (!playable || seat < 0)) {
+    let text;
+    if (!app.me) text = 'Sign in to claude.ai to take a seat.';
+    else if (!playable) text = 'You can watch this room. To play, ask the owner of this page to share it with you with edit access.';
+    else if (T.seats.some(u => !u)) text = 'Pick an empty seat to join the game.';
+    else text = 'All four seats are taken. You’re watching.';
+    ui.infoText.textContent = text;
+    ui.infoPanel.hidden = false;
+    return;
+  }
+  if (!P) return;
+
+  if (T.phase === 'betting') {
+    ui.betPanel.hidden = false;
+    const bet = viewBet();
+    const status = viewStatus();
+    const broke = P.bank < MIN_BET;
+    ui.chips.forEach(c => { c.disabled = broke || bet + Number(c.dataset.v) > P.bank; });
+    ui.x2.disabled = ui.max.disabled = broke || bet >= Math.floor(P.bank / 5) * 5;
+    ui.betAmt.innerHTML = `Bet<b>${money(bet)}</b>`;
+    ui.clear.disabled = !bet;
+    ui.out.hidden = app.solo || broke;
+    ui.out.textContent = status === 'out' ? 'Sitting out' : 'Sit out';
+    ui.out.classList.toggle('pressed', status === 'out');
+    ui.ready.hidden = broke;
+    ui.ready.disabled = bet < MIN_BET && status !== 'ready';
+    ui.ready.classList.toggle('pressed', status === 'ready');
+    ui.ready.innerHTML = app.solo ? 'Deal <kbd>Space</kbd>' : status === 'ready' ? 'Not ready <kbd>Space</kbd>' : 'Ready <kbd>Space</kbd>';
+    ui.rebuy.hidden = !broke;
+    return;
+  }
+
+  const undecided = myUndecided();
+  if (T.phase === 'insurance' && undecided) {
+    ui.insPanel.hidden = false;
+    const bj = isBJ(undecided);
+    ui.insText.innerHTML = bj
+      ? 'You have Blackjack and the dealer shows an Ace. Take even money?'
+      : `Insure your hand for <b>${money(undecided.bet / 2)}</b>? It pays 2 to 1 if the dealer has Blackjack.`;
+    ui.insYes.innerHTML = `${bj ? 'Even money' : 'Insure'} <kbd>Y</kbd>`;
+    return;
+  }
+
+  ui.playPanel.hidden = false;
+  const h = myTurnHand();
+  const ok = !!h && !playPending();
+  ui.hit.disabled = ui.stand.disabled = !ok;
+  ui.dbl.disabled = !(ok && canDouble(T, h));
+  ui.split.disabled = !(ok && canSplit(T, h));
+  const btnFor = { hit: ui.hit, stand: ui.stand, double: ui.dbl, split: ui.split };
+  Object.values(btnFor).forEach(b => b.classList.remove('recommend'));
+  let note = '';
+  if (h && app.hints) {
+    const rec = recommend(T, h, R.dealer[0]);
+    btnFor[rec].classList.add('recommend');
+    note = `Basic strategy says <b>${rec[0].toUpperCase() + rec.slice(1)}</b>`;
+  } else if (!h && T.phase === 'player') {
+    const a = activeHandOf(T);
+    const hasHand = R && R.hands.some(x => x.uid === me);
+    note = a ? (hasHand ? `Waiting for ${nameOf(a.uid, a.seat)}` : 'You’re sitting out this hand') : '';
+  } else if (T.phase === 'insurance') note = 'Waiting for the other players';
+  ui.playNote.innerHTML = note;
+  ui.playNote.hidden = !note;
+}
+
+/* ================= Input ================= */
+ui.createBtn.addEventListener('click', createRoom);
+ui.roomName.addEventListener('keydown', e => { if (e.key === 'Enter') createRoom(); });
+ui.joinBtn.addEventListener('click', joinByCode);
+ui.joinCode.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
+ui.soloBtn.addEventListener('click', () => go('solo'));
+ui.backBtn.addEventListener('click', () => go('blackjack'));
+ui.homeBtn.addEventListener('click', () => go('home'));
+ui.navBlackjack.addEventListener('click', () => go('blackjack'));
+ui.navBank.addEventListener('click', () => go('bank'));
+ui.navRoulette.addEventListener('click', () => go('roulette'));
+ui.rSpin.addEventListener('click', rlSpin);
+ui.rUndo.addEventListener('click', rlUndo);
+ui.rClear.addEventListener('click', rlClear);
+ui.rRebet.addEventListener('click', rlRebet);
+ui.rDouble.addEventListener('click', rlDouble);
+ui.rBank.addEventListener('click', () => go('bank'));
+window.addEventListener('resize', () => { if (app.view === 'roulette' && !rl.anim) rlDraw(); });
+ui.inviteBtn.addEventListener('click', () => { app.inviteOpen = !app.inviteOpen; app.chipsOpen = false; render(); });
+ui.bankPill.addEventListener('click', () => { app.chipsOpen = !app.chipsOpen; app.inviteOpen = false; render(); });
+ui.cpButtons.forEach(b => b.addEventListener('click', () => addTableChips(b.dataset.a === 'all' ? wallet.balance : Number(b.dataset.a))));
+ui.cpBank.addEventListener('click', () => go('bank'));
+ui.wdBtn.addEventListener('click', () => withdraw());
+ui.wdAmount.addEventListener('keydown', e => { if (e.key === 'Enter') withdraw(); });
+ui.quick.forEach(b => b.addEventListener('click', () => withdraw(Number(b.dataset.a))));
+ui.x2.addEventListener('click', doubleBet);
+ui.max.addEventListener('click', maxBet);
+ui.hintToggle.addEventListener('click', () => { app.hints = !app.hints; prefsSave(); render(); });
+ui.copyBtn.addEventListener('click', () => {
+  const text = ui.inviteLink.value;
+  const fallback = () => { ui.inviteLink.focus(); ui.inviteLink.select(); toast('Press ⌘C or Ctrl+C to copy the link'); };
+  try {
+    navigator.clipboard.writeText(text).then(() => toast('Invite link copied'), fallback);
+  } catch (e) { fallback(); }
+});
+ui.chips.forEach(c => c.addEventListener('click', () => addChip(Number(c.dataset.v))));
+ui.clear.addEventListener('click', clearBet);
+ui.ready.addEventListener('click', toggleReady);
+ui.out.addEventListener('click', sitOut);
+ui.rebuy.addEventListener('click', rebuy);
+ui.hit.addEventListener('click', () => act('hit'));
+ui.stand.addEventListener('click', () => act('stand'));
+ui.dbl.addEventListener('click', () => act('double'));
+ui.split.addEventListener('click', () => act('split'));
+ui.insYes.addEventListener('click', () => insure(true));
+ui.insNo.addEventListener('click', () => insure(false));
+ui.leave.addEventListener('click', leaveSeat);
+
+document.addEventListener('keydown', e => {
+  if (app.view !== 'roulette' && (app.view !== 'table' || !app.T)) return;
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  const t = e.target;
+  if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
+  if ((e.key === ' ' || e.key === 'Enter') && t instanceof HTMLButtonElement) {
+    let keyboardFocus = true;
+    try { keyboardFocus = t.matches(':focus-visible'); } catch (err) { /* older browser */ }
+    if (keyboardFocus) return;
+  }
+  const k = e.key.toLowerCase();
+  if (app.view === 'roulette') {
+    let used = true;
+    if (k === ' ' || k === 'enter') rlSpin();
+    else if (k >= '1' && k <= '6') rlPickChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'u' || k === 'backspace') rlUndo();
+    else if (k === 'c') rlClear();
+    else if (k === 'r') rlRebet();
+    else if (k === 'x') rlDouble();
+    else used = false;
+    if (used) e.preventDefault();
+    return;
+  }
+  const phase = app.T.phase;
+  let handled = true;
+  if (phase === 'player') {
+    if (k === 'h') act('hit');
+    else if (k === 's') act('stand');
+    else if (k === 'd') act('double');
+    else if (k === 'p') act('split');
+    else handled = false;
+  } else if (phase === 'insurance') {
+    if (k === 'y') insure(true);
+    else if (k === 'n') insure(false);
+    else handled = false;
+  } else if (phase === 'betting') {
+    if (k === ' ' || k === 'enter') toggleReady();
+    else if (k >= '1' && k <= '4') addChip([5, 25, 100, 500][Number(k) - 1]);
+    else if (k === '5') doubleBet();
+    else if (k === '6') maxBet();
+    else if (k === 'backspace' || k === 'c') clearBet();
+    else handled = false;
+  } else handled = false;
+  if (handled) e.preventDefault();
+});
+
+/* ================= Start ================= */
+async function boot() {
+  prefsLoad();
+  rlLoad();
+  buildTiles();
+  buildRoulette();
+  window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
+  route();
+  const C = window.claude;
+  if (C && typeof C.use === 'function') {
+    const safe = p => Promise.resolve(p).catch(() => null);
+    const [db, user, room] = await Promise.all([safe(C.use('db')), safe(C.use('user')), safe(C.use('room'))]);
+    app.db = db;
+    app.user = user;
+    app.room = room;
+    if (user) {
+      try { app.me = await user.id(); } catch (e) { app.me = null; }
+      try { app.canWrite = await user.can('data.write'); } catch (e) { app.canWrite = null; }
+    }
+  }
+  app.capsReady = true;
+  walletInit();
+  route();
+}
+boot();
+</script>
