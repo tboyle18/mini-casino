@@ -2,8 +2,8 @@
 
 A play-money casino in a single HTML page, designed for phones first. Game controls sit at the bottom of the screen within thumb reach, extras open as bottom sheets, and roulette spins the wheel full screen. On a computer it shows the same layout in a phone-width column.
 
-- **Blackjack**: rooms for up to 4 players with invite links, or solo practice. 6 decks, blackjack pays 3 to 2, dealer stands on all 17s, with splits, doubles and insurance. An optional hints toggle highlights the basic-strategy move.
-- **Roulette**: a single-zero wheel with straight-up and all outside bets, paid from your casino wallet.
+- **Blackjack**: rooms for up to 4 players with invite links, or solo practice. 6 decks, blackjack pays 3 to 2, dealer stands on all 17s, with splits, doubles and insurance. An optional hints toggle highlights the basic-strategy move. Tap chips to build an amount, then **Place bet** puts it on the table; your bet carries over to the next hand.
+- **Roulette**: a single-zero wheel with straight-up and all outside bets, paid from your casino wallet. Tap chips for the amount, tap the spots you want, then **Place** puts that amount on each spot.
 - **The Bottomless Bank**: withdraw as much (fake) money as you want. Interest rate 0%, credit check skipped.
 
 ## Files

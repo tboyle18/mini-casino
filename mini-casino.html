@@ -151,6 +151,7 @@
     kbd { display: inline-block; }
     .btn:hover:not(:disabled) { background: rgba(0, 0, 0, .55); }
     .btn.primary:hover:not(:disabled) { background: linear-gradient(#f7dd98, #dcb150); }
+    .btn.google-btn:hover:not(:disabled) { background: #f1f3f4; }
     .tile:hover { border-color: rgba(233, 196, 106, .45); }
     .chip:hover:not(:disabled) { transform: translateY(-3px); }
     .rcell:hover { filter: brightness(1.28); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
@@ -361,6 +362,12 @@
   .auth-error { margin: 0; min-height: 18px; color: var(--lose); font-size: 14px; }
   .auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
   .auth-links .linkbtn { color: var(--ink-2); padding: 6px 0; }
+  /* Google's light sign-in button: white, grey outline, the four-colour G */
+  .btn.google-btn { background: #fff; color: #1f1f1f; font-weight: 600; gap: 10px; box-shadow: inset 0 0 0 1px #747775, 0 2px 0 rgba(0, 0, 0, .25); }
+  .btn.google-btn:active:not(:disabled) { background: #e8eaed; }
+  .google-btn svg { width: 20px; height: 20px; flex: none; }
+  .or { display: flex; align-items: center; gap: 10px; color: var(--ink-3); font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
   /* ---------- Home ---------- */
   .wallet-card {
@@ -781,6 +788,7 @@
   .rcell.out.is-red { background: rgba(179, 38, 47, .75); }
   .rcell.out.is-black { background: rgba(29, 31, 36, .85); }
   .rcell.cover, .rcell:active { filter: brightness(1.28); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+  .rcell.pick { filter: brightness(1.2); box-shadow: inset 0 0 0 3px var(--gold), 0 0 12px rgba(233, 196, 106, .5); z-index: 1; }
   .rcell[aria-disabled="true"] { cursor: default; }
   .rcell.win { box-shadow: 0 0 0 2px var(--gold), 0 0 16px rgba(233, 196, 106, .65); z-index: 1; }
   @keyframes hitpulse {
@@ -935,7 +943,7 @@
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="r-total">$0</b></span>
-        <span class="dt-item">Wallet<b id="r-wallet">—</b></span>
+        <span class="dt-item">In hand<b id="r-amount">$0</b></span>
       </div>
       <div class="rlow" id="r-low" hidden>Running low? <button class="linkbtn" id="r-bank">Get more from the Bank</button></div>
       <div class="chips" id="r-chips" aria-label="Chip value"></div>
@@ -944,6 +952,7 @@
         <button class="btn" id="r-clear">Clear <kbd>C</kbd></button>
         <button class="btn" id="r-rebet">Rebet <kbd>R</kbd></button>
         <button class="btn" id="r-double">×2 <kbd>X</kbd></button>
+        <button class="btn primary wide" id="r-place" hidden>Place</button>
         <button class="btn primary wide" id="r-spin">Spin <kbd>Space</kbd></button>
       </div>
     </div>
@@ -1023,12 +1032,13 @@
               <button class="chip chipface" data-v="25" style="--c:#2f6fd0" aria-label="Add $25 chip">25</button>
               <button class="chip chipface" data-v="100" style="--c:#2a2c32" aria-label="Add $100 chip">100</button>
               <button class="chip chipface" data-v="500" style="--c:#7a3fb8" aria-label="Add $500 chip">500</button>
-              <button class="chip chip-x" id="x2-btn" aria-label="Double your bet">×2</button>
-              <button class="chip chip-x" id="max-btn" aria-label="Bet all your chips">Max</button>
+              <button class="chip chip-x" id="x2-btn" aria-label="Double the amount in your hand">×2</button>
+              <button class="chip chip-x" id="max-btn" aria-label="Take all your chips">Max</button>
             </div>
             <div class="row">
               <button class="btn" id="clear-btn">Clear</button>
               <button class="btn" id="out-btn">Sit out</button>
+              <button class="btn primary wide" id="place-btn" hidden>Place bet</button>
               <button class="btn primary wide" id="ready-btn">Ready <kbd>Space</kbd></button>
               <button class="btn primary wide" id="rebuy-btn" hidden>Add chips</button>
             </div>
@@ -1105,6 +1115,8 @@
   <form class="auth-card" id="auth-form" novalidate>
     <h2 id="auth-title">Sign in</h2>
     <p class="fine" id="auth-sub"></p>
+    <button type="button" class="btn google-btn" id="auth-google"></button>
+    <div class="or">or use email</div>
     <div class="auth-field" id="auth-name-row">
       <label for="auth-name">Name</label>
       <input class="text" id="auth-name" autocomplete="nickname" maxlength="40">
@@ -1597,6 +1609,7 @@ const app = {
   hints: false, inviteOpen: false,
   unsubs: [], timers: [],
   renderedRound: -1, animTimer: 0, msgKey: '', turnKey: '',
+  pending: 0,   // blackjack chips in your hand, not yet bet
 };
 
 const $ = id => document.getElementById(id);
@@ -1610,9 +1623,11 @@ const ui = {
   account: $('account'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
   authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
   authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
+  authGoogle: $('auth-google'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
-  rHist: $('r-hist'), rTotal: $('r-total'), rWallet: $('r-wallet'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
+  rHist: $('r-hist'), rTotal: $('r-total'), rAmount: $('r-amount'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
   rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'), rBank: $('r-bank'),
+  rPlace: $('r-place'),
   home: $('home'), tiles: $('tiles'),
   bankView: $('bank-view'), stamp: $('stamp'), atmBig: $('atm-big'), wdAmount: $('wd-amount'), wdBtn: $('wd-btn'),
   quick: [...document.querySelectorAll('#quick [data-a]')], teller: $('teller'), ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'),
@@ -1628,7 +1643,7 @@ const ui = {
   msg: $('msg'), msgTitle: $('msg-title'), msgSub: $('msg-sub'), statusLine: $('status-line'), seats: $('seats'),
   betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
   chips: [...document.querySelectorAll('.chips .chip[data-v]')], clear: $('clear-btn'), betAmt: $('bet-amt'),
-  out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
+  out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'), place: $('place-btn'),
   insText: $('ins-text'), insYes: $('ins-yes'), insNo: $('ins-no'),
   playNote: $('play-note'), hit: $('hit-btn'), stand: $('stand-btn'), dbl: $('double-btn'), split: $('split-btn'),
   infoText: $('info-text'), stats: $('stats'), leave: $('leave-btn'), toast: $('toast'),
@@ -1745,7 +1760,7 @@ function teardown() {
   app.T = null; app.confirmed = false; app.missing = false; app.loadErr = ''; app.slow = false;
   app.moves = {}; app.myQ = []; app.opt = null; app.pendingPlay = null;
   app.lastSeen = new Map(); app.present = null; app.longAway = null; app.presentKey = 'all';
-  app.inviteOpen = false; app.chipsOpen = false; app.renderedRound = -1; app.msgKey = '';
+  app.inviteOpen = false; app.chipsOpen = false; app.renderedRound = -1; app.msgKey = ''; app.pending = 0;
   cardEls.clear(); handEls.clear();
   ui.dealerCards.textContent = '';
   for (const s of seatEls) s.querySelector('.hands').textContent = '';
@@ -2164,15 +2179,40 @@ function setBet(nb) {
   if (s) app.opt = { s, bet: nb, status: 'betting' };
   render();
 }
-function addChip(v) {
+/* Chips build an amount in your hand (app.pending). Nothing is bet until Place bet puts it on the table. */
+function pendingRoom() {
   const P = myP();
-  if (!P || viewBet() + v > P.bank) return;
-  setBet(viewBet() + v);
+  return P ? Math.max(0, Math.floor((P.bank - viewBet()) / 5) * 5) : 0;
 }
-function doubleBet() { const b = viewBet(); setBet(b ? b * 2 : MIN_BET); }
-function maxBet() { const P = myP(); if (P) setBet(P.bank); }
+function canBetNow() { const T = app.T; return !!T && T.phase === 'betting' && mySeat() >= 0 && !!myP(); }
+function addChip(v) {
+  if (!canBetNow()) return;
+  if (app.pending + v > pendingRoom()) { toast('Not enough chips at the table. Tap + to bring more.'); return; }
+  app.pending += v;
+  buzz();
+  render();
+}
+// ×2 doubles the amount in your hand, or, with nothing in hand, matches your current bet (placing it doubles the bet)
+function doubleBet() {
+  if (!canBetNow()) return;
+  const next = Math.min(app.pending ? app.pending * 2 : viewBet(), pendingRoom());
+  if (!next) return;
+  app.pending = next;
+  buzz();
+  render();
+}
+function maxBet() { if (canBetNow()) { app.pending = pendingRoom(); buzz(); render(); } }
+function placeBet() {
+  if (!canBetNow() || !app.pending) return;
+  const add = Math.min(app.pending, pendingRoom());
+  app.pending = 0;
+  buzz(15);
+  setBet(viewBet() + add);
+  render();
+}
 function clearBet() {
   const T = app.T;
+  if (app.pending) { app.pending = 0; render(); return; }   // first clear what's in your hand
   if (!T || T.phase !== 'betting' || mySeat() < 0 || !viewBet()) return;
   const s = send({ t: 'bet', a: 0 });
   if (s) app.opt = { s, bet: 0, status: 'betting' };
@@ -2406,6 +2446,7 @@ const rl = {
   spinning: false, live: null, result: null, net: 0, payout: 0, wins: new Set(), showResult: false, popNum: false,
   anim: null, w: 0, rel: 0, br: 0,
   stage: null, stageTimer: 0,   // full-screen wheel: 'spin' while the ball rolls, 'result' once it lands
+  amount: 0, picks: new Set(),  // chips in your hand and the spots you've tapped, not yet bet
 };
 function rlLoad() {
   try {
@@ -2427,13 +2468,34 @@ function rlSave() {
 
 function rlSnapshot() { rl.undo.push({ ...rl.bets }); if (rl.undo.length > 100) rl.undo.shift(); }
 function rlFresh() { if (rl.showResult) { rl.showResult = false; rl.wins = new Set(); } }
-function rlPlace(key) {
+/* Chips build an amount, taps on the board pick spots, and Place puts the amount on each picked spot. */
+function rlRoom() { return Math.max(0, (wallet.ready ? wallet.balance : 0) - rlTotal()); }
+function rlPending() { return rl.amount > 0 || rl.picks.size > 0; }
+function rlAddAmount(v) {
+  if (rl.spinning || !wallet.ready || !R_CHIPS.includes(v)) return;
+  rlFresh();
+  if (rl.amount + v > rlRoom()) { toast('Not enough in your wallet for that. The bank can fix that.'); render(); return; }
+  rl.amount += v;
+  buzz(5);
+  render();
+}
+function rlPick(key) {
   if (rl.spinning || !wallet.ready) return;
   rlFresh();
-  if (rl.chip > wallet.balance - rlTotal()) { toast('Not enough in your wallet for that chip. The bank can fix that.'); render(); return; }
-  rlSnapshot();
-  rl.bets[key] = (rl.bets[key] || 0) + rl.chip;
+  if (rl.picks.has(key)) rl.picks.delete(key); else rl.picks.add(key);
   buzz();
+  render();
+}
+function rlPlace() {
+  if (rl.spinning || !wallet.ready) return;
+  if (!rl.amount) { toast('Tap chips to choose how much to bet.'); return; }
+  if (!rl.picks.size) { toast('Tap the spots on the board you want to bet on.'); return; }
+  if (rl.amount * rl.picks.size > rlRoom()) { toast('Your wallet can’t cover that many. The bank can.'); return; }
+  rlSnapshot();
+  for (const k of rl.picks) rl.bets[k] = (rl.bets[k] || 0) + rl.amount;
+  rl.picks.clear();
+  rl.amount = 0;
+  buzz(15);
   render();
 }
 function rlRemove(key) {
@@ -2443,7 +2505,14 @@ function rlRemove(key) {
   render();
 }
 function rlUndo() { if (rl.spinning || !rl.undo.length) return; rl.bets = rl.undo.pop(); render(); }
-function rlClear() { if (rl.spinning || !rlTotal()) return; rlSnapshot(); rl.bets = {}; render(); }
+function rlClear() {
+  if (rl.spinning) return;
+  if (rlPending()) { rl.amount = 0; rl.picks.clear(); render(); return; }   // first clear what isn't placed yet
+  if (!rlTotal()) return;
+  rlSnapshot();
+  rl.bets = {};
+  render();
+}
 function rlRebet() {
   if (rl.spinning || !rl.last || rlTotal()) return false;
   if (rlTotal(rl.last) > wallet.balance) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
@@ -2461,7 +2530,6 @@ function rlDouble() {
   for (const k of Object.keys(rl.bets)) rl.bets[k] *= 2;
   render();
 }
-function rlPickChip(v) { if (R_CHIPS.includes(v)) { rl.chip = v; buzz(5); rlSave(); render(); } }
 
 function rlSpin() {
   if (rl.spinning || !wallet.ready) return;
@@ -2471,6 +2539,8 @@ function rlSpin() {
   if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
   if (!walletChange(-total, null)) return;
   const result = randInt(37);
+  rl.amount = 0;
+  rl.picks.clear();
   rl.live = { bets: { ...rl.bets }, total, result };
   rl.last = { ...rl.bets };
   rl.spinning = true;
@@ -2675,8 +2745,8 @@ function buildRoulette() {
     chip.className = 'rchip';
     chip.hidden = true;
     b.append(lab, chip);
-    b.setAttribute('aria-label', key[0] === 'n' ? `Bet on ${label}` : `Bet on ${OUTSIDE[key]}`);
-    b.addEventListener('click', () => rlPlace(key));
+    b.setAttribute('aria-label', key[0] === 'n' ? `Pick ${label}` : `Pick ${OUTSIDE[key]}`);
+    b.addEventListener('click', () => rlPick(key));
     b.addEventListener('contextmenu', e => { e.preventDefault(); rlRemove(key); });
     if (key[0] !== 'n') {
       b.addEventListener('pointerenter', () => { for (const n of coversOf(key)) rCells.get('n' + n).classList.add('cover'); });
@@ -2698,8 +2768,8 @@ function buildRoulette() {
     c.style.setProperty('--c', R_CHIP_COLORS[v]);
     c.dataset.v = String(v);
     c.textContent = chipLabel(v);
-    c.setAttribute('aria-label', `Use ${moneyFull(v)} chips`);
-    c.addEventListener('click', () => rlPickChip(v));
+    c.setAttribute('aria-label', `Add ${moneyFull(v)}`);
+    c.addEventListener('click', () => rlAddAmount(v));
     ui.rChips.appendChild(c);
   }
 }
@@ -2708,8 +2778,8 @@ function renderRoulette() {
   const bal = wallet.ready ? wallet.balance : 0;
   const bets = rl.live ? rl.live.bets : rl.bets;
   const total = rlTotal(bets);
-  ui.rWallet.textContent = wallet.ready ? money(bal) : '—';
   ui.rTotal.textContent = money(total);
+  ui.rAmount.textContent = money(rl.amount);
   for (const [key, el] of rCells) {
     const amt = bets[key] || 0;
     const chip = el.lastElementChild;
@@ -2717,6 +2787,8 @@ function renderRoulette() {
     if (amt) { chip.textContent = chipLabel(amt); chip.style.setProperty('--c', rChipColor(amt)); }
     el.classList.toggle('win', rl.showResult && rl.wins.has(key));
     el.classList.toggle('hit', rl.showResult && key === 'n' + rl.result);
+    el.classList.toggle('pick', rl.picks.has(key));
+    el.setAttribute('aria-pressed', String(rl.picks.has(key)));
     el.setAttribute('aria-disabled', String(rl.spinning));
   }
 
@@ -2739,8 +2811,16 @@ function renderRoulette() {
       else { sub = `No luck · ${money(rl.net)}`; tone = 'lose'; }
       if (rl.popNum) { rl.popNum = false; void ui.rNum.offsetWidth; ui.rNum.classList.add('pop'); }
     } else {
-      title = 'Place your bets';
-      sub = total ? `${Object.keys(bets).length} bet${Object.keys(bets).length === 1 ? '' : 's'} on the board` : 'Pick a chip, then tap the board.';
+      // Walk the player through: chips for the amount, spots on the board, then Place
+      const n = rl.picks.size, a = rl.amount;
+      const spots = `${n} spot${n === 1 ? '' : 's'}`;
+      if (a && n) { title = `${money(a)} on ${spots}`; sub = 'Tap Place to put it down.'; }
+      else if (a) { title = `${money(a)} in hand`; sub = 'Now tap the spots you want.'; }
+      else if (n) { title = `${spots} picked`; sub = 'Tap chips to choose the amount.'; }
+      else {
+        title = 'Place your bets';
+        sub = total ? `${Object.keys(bets).length} bet${Object.keys(bets).length === 1 ? '' : 's'} on the board` : 'Chips, then spots, then Place.';
+      }
     }
   }
   ui.rTitle.textContent = title;
@@ -2769,18 +2849,23 @@ function renderRoulette() {
   // Controls
   const lastTotal = rl.last ? rlTotal(rl.last) : 0;
   const canRebet = !rl.spinning && !total && lastTotal > 0 && lastTotal <= bal;
+  const pending = rlPending();
+  const placeAmt = rl.amount * rl.picks.size;
+  ui.rPlace.hidden = !pending;               // one main button: Place while you're choosing, Spin once bets are down
+  ui.rSpin.hidden = pending;
+  ui.rPlace.disabled = rl.spinning || !rl.amount || !rl.picks.size;
+  ui.rPlace.innerHTML = placeAmt ? `Place ${money(placeAmt)} <kbd>Space</kbd>` : 'Place <kbd>Space</kbd>';
   ui.rSpin.disabled = rl.spinning || !wallet.ready || (!total && !canRebet);
   ui.rSpin.setAttribute('aria-label', !total && canRebet ? 'Rebet and spin' : 'Spin');
   ui.rUndo.disabled = rl.spinning || !rl.undo.length;
-  ui.rClear.disabled = rl.spinning || !total;
+  ui.rClear.disabled = rl.spinning || (!total && !pending);
   ui.rRebet.disabled = !canRebet;
   ui.rDouble.disabled = rl.spinning || !total || total * 2 > bal;
   ui.rRebet.hidden = total > 0;      // one slot: Rebet before you bet, ×2 once chips are down
   ui.rDouble.hidden = !total;
   for (const c of ui.rChips.children) {
     const v = Number(c.dataset.v);
-    c.classList.toggle('sel', v === rl.chip);
-    c.disabled = rl.spinning || !wallet.ready || v > bal - total;
+    c.disabled = rl.spinning || !wallet.ready || rl.amount + v > bal - total;
   }
   ui.rLow.hidden = rl.spinning || !wallet.ready || bal - total >= 25;
   if (!rl.anim) rlDraw();
@@ -2794,6 +2879,22 @@ const cloud = { on: false, user: null, version: 0, timer: 0, saving: false, agai
 async function cloudInit() {
   if (window.claude && typeof window.claude.use === 'function') return;
   if (!/^https?:$/.test(location.protocol)) return;
+
+  // Back from "Continue with Google": trade the one-time verifier for a session cookie on this site
+  const params = new URLSearchParams(location.search);
+  const verifier = params.get(VERIFIER_PARAM);
+  const googleFailed = params.get('signin') === 'failed';
+  if (verifier || googleFailed) {
+    const clean = new URL(location.href);
+    for (const k of [VERIFIER_PARAM, 'signin', 'error', 'error_description']) clean.searchParams.delete(k);
+    history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+  }
+  if (verifier) {
+    try {
+      await fetch(`/api/auth/get-session?${VERIFIER_PARAM}=${encodeURIComponent(verifier)}`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    } catch (e) { /* reported below when /api/me comes back signed out */ }
+  }
+
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin', headers: { accept: 'application/json' } });
     if (!res.ok || !(res.headers.get('content-type') || '').includes('application/json')) return;
@@ -2802,7 +2903,45 @@ async function cloudInit() {
     cloud.user = d && d.user ? d.user : null;
   } catch (e) { return; }
   render();
+  if (verifier && cloud.user) toast(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
+  else if (verifier || googleFailed) toast('Google sign-in didn’t finish. Try again.');
   if (cloud.user) await cloudPull();
+}
+
+/* ---------- Continue with Google ---------- */
+const VERIFIER_PARAM = 'neon_auth_session_verifier';
+const GOOGLE_G = '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+  '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
+  '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +
+  '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>' +
+  '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+function googleButton(el) {
+  el.innerHTML = GOOGLE_G + '<span>Continue with Google</span>';
+  el.addEventListener('click', googleSignIn);
+  return el;
+}
+/* Neon starts the Google flow and hands back Google's address. Google returns the player to
+   Neon, which sends them back here with a one-time verifier (handled in cloudInit). */
+async function googleSignIn() {
+  const btns = document.querySelectorAll('.google-btn');
+  btns.forEach(b => { b.disabled = true; });
+  buzz();
+  try {
+    const res = await fetch('/api/auth/sign-in/social', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ provider: 'google', callbackURL: `${location.origin}/`, errorCallbackURL: `${location.origin}/?signin=failed` }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok && d && typeof d.url === 'string' && /^https:\/\//.test(d.url)) { location.href = d.url; return; }
+    throw new Error('no_redirect');
+  } catch (e) {
+    btns.forEach(b => { b.disabled = false; });
+    const msg = 'Couldn’t start Google sign-in. Try again.';
+    if (!ui.auth.hidden) ui.authError.textContent = msg;
+    else toast(msg);
+  }
 }
 
 function readSoloLocal() {
@@ -2933,6 +3072,10 @@ function renderAccount() {
     line.textContent = 'Keep your wallet on every device.';
     btn('Sign in', () => openAuth('in'));
     btn('Create account', () => openAuth('up'), true);
+    const g = document.createElement('button');
+    g.className = 'btn google-btn';
+    el.append(text, googleButton(g), actions);
+    return;
   }
   el.append(text, actions);
 }
@@ -3282,9 +3425,10 @@ function renderTable() {
   runAnimations(anim, initial);
   if (R) app.renderedRound = R.n;
 
-  // Chips at this table
+  // Chips at this table (minus your bet and whatever is in your hand)
   const P = myP();
-  if (P) ui.bank.textContent = money(P.bank - (T.phase === 'betting' ? viewBet() : 0));
+  app.pending = canBetNow() ? Math.min(app.pending, pendingRoom()) : 0;
+  if (P) ui.bank.textContent = money(P.bank - (T.phase === 'betting' ? viewBet() + app.pending : 0));
   renderChipsPanel();
 
   renderMessage(T, R, ctx);
@@ -3362,7 +3506,7 @@ function renderSeats(T, R, ctx, anim) {
     });
     while (hc.children.length > hands.length) hc.lastElementChild.remove();
     hc.classList.toggle('multi', hands.length > 1);
-    if (big) { const b = viewBet(); hc.dataset.bet = b ? money(b) : 'BET'; }
+    if (big) { const b = viewBet(); hc.dataset.bet = b ? money(b) : app.pending ? `+${money(app.pending)}` : 'BET'; }
 
     if (!uid || !P) { q('.timer').hidden = true; continue; }
 
@@ -3495,14 +3639,20 @@ function renderControls(T, R, ctx) {
     const bet = viewBet();
     const status = viewStatus();
     const broke = P.bank < MIN_BET;
-    ui.chips.forEach(c => { c.disabled = broke || bet + Number(c.dataset.v) > P.bank; });
-    ui.x2.disabled = ui.max.disabled = broke || bet >= Math.floor(P.bank / 5) * 5;
+    const room = pendingRoom();
+    const hand = app.pending;
+    ui.chips.forEach(c => { c.disabled = broke || hand + Number(c.dataset.v) > room; });
+    ui.x2.disabled = broke || !room || (!hand && !bet) || hand >= room;
+    ui.max.disabled = broke || !room || hand >= room;
     ui.betAmt.innerHTML = `Bet<b>${money(bet)}</b>`;
-    ui.clear.disabled = !bet;
-    ui.out.hidden = app.solo || broke;
+    ui.clear.disabled = !bet && !hand;
+    ui.out.hidden = app.solo || broke || hand > 0;
     ui.out.textContent = status === 'out' ? 'Sitting out' : 'Sit out';
     ui.out.classList.toggle('pressed', status === 'out');
-    ui.ready.hidden = broke;
+    // One main button: Place bet while chips are in your hand, then Deal (or Ready with friends)
+    ui.place.hidden = broke || !hand;
+    ui.place.innerHTML = `Place bet ${money(hand)} <kbd>Space</kbd>`;
+    ui.ready.hidden = broke || hand > 0;
     ui.ready.disabled = bet < MIN_BET && status !== 'ready';
     ui.ready.classList.toggle('pressed', status === 'ready');
     ui.ready.innerHTML = app.solo ? 'Deal <kbd>Space</kbd>' : status === 'ready' ? 'Not ready <kbd>Space</kbd>' : 'Ready <kbd>Space</kbd>';
@@ -3552,6 +3702,7 @@ ui.homeBtn.addEventListener('click', () => go(app.view === 'table' ? 'blackjack'
 ui.balanceBtn.addEventListener('click', () => go('bank'));
 ui.homeBank.addEventListener('click', () => go('bank'));
 ui.authForm.addEventListener('submit', authSubmit);
+googleButton(ui.authGoogle);
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
 ui.authClose.addEventListener('click', closeAuth);
 ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
@@ -3572,6 +3723,7 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && cloud.timer) cloudPush(true); });
 ui.rSpin.addEventListener('click', rlSpin);
+ui.rPlace.addEventListener('click', rlPlace);
 ui.rUndo.addEventListener('click', rlUndo);
 ui.rClear.addEventListener('click', rlClear);
 ui.rRebet.addEventListener('click', rlRebet);
@@ -3603,8 +3755,9 @@ ui.shareBtn.addEventListener('click', async () => {
     if (!e || e.name !== 'AbortError') copyInvite();
   }
 });
-ui.chips.forEach(c => c.addEventListener('click', () => { buzz(); addChip(Number(c.dataset.v)); }));
+ui.chips.forEach(c => c.addEventListener('click', () => addChip(Number(c.dataset.v))));
 ui.clear.addEventListener('click', clearBet);
+ui.place.addEventListener('click', placeBet);
 ui.ready.addEventListener('click', toggleReady);
 ui.out.addEventListener('click', sitOut);
 ui.rebuy.addEventListener('click', rebuy);
@@ -3629,8 +3782,8 @@ document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (app.view === 'roulette') {
     let used = true;
-    if (k === ' ' || k === 'enter') rlSpin();
-    else if (k >= '1' && k <= '6') rlPickChip(R_CHIPS[Number(k) - 1]);
+    if (k === ' ' || k === 'enter') { if (rlPending()) rlPlace(); else rlSpin(); }
+    else if (k >= '1' && k <= '6') rlAddAmount(R_CHIPS[Number(k) - 1]);
     else if (k === 'u' || k === 'backspace') rlUndo();
     else if (k === 'c') rlClear();
     else if (k === 'r') rlRebet();
@@ -3652,7 +3805,7 @@ document.addEventListener('keydown', e => {
     else if (k === 'n') insure(false);
     else handled = false;
   } else if (phase === 'betting') {
-    if (k === ' ' || k === 'enter') toggleReady();
+    if (k === ' ' || k === 'enter') { if (app.pending) placeBet(); else toggleReady(); }
     else if (k >= '1' && k <= '4') addChip([5, 25, 100, 500][Number(k) - 1]);
     else if (k === '5') doubleBet();
     else if (k === '6') maxBet();
