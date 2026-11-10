@@ -2,16 +2,19 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
   :root {
-    /* Layout: one felt table. Dealer and shoe across the top, four seats in a row, the viewer's controls docked below. */
+    /* Mobile first: one column at most 520px wide. A sticky app bar on top, game controls docked
+       at the bottom within thumb reach, and bottom sheets for anything extra. */
     --felt-1: #17804f;
     --felt-2: #0e6640;
     --felt-3: #063a24;
+    --bar: rgba(5, 42, 26, .86);
+    --dock: rgba(4, 34, 21, .9);
     --gold: #e9c46a;
     --on-gold: #2a1d05;
     --ink: #f5f0e3;
     --ink-2: rgba(245, 240, 227, .74);
     --ink-3: rgba(245, 240, 227, .5);
-    --panel: rgba(0, 0, 0, .26);
+    --panel: rgba(0, 0, 0, .24);
     --panel-2: rgba(0, 0, 0, .42);
     --line: rgba(255, 255, 255, .1);
     --card-face: #fdfcf8;
@@ -23,49 +26,78 @@
     --font-display: Georgia, "Times New Roman", serif;
     --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-    --cw: 80px;
-    --ch: 112px;
-    --chip: 58px;
+    --gl: max(16px, env(safe-area-inset-left, 0px));
+    --gr: max(16px, env(safe-area-inset-right, 0px));
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --bar-h: 56px;
+    --cw: 64px;
+    --ch: 90px;
+    --chip: min(50px, 12.6vw);
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  html, body { min-height: 100%; }
+  html {
+    background: var(--felt-3);
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   body {
     margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     color: var(--ink);
-    font: 15px/1.4 var(--font-body);
-    background-color: var(--felt-3);
-    background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-      radial-gradient(ellipse 120% 90% at 50% 26%, var(--felt-1) 0%, var(--felt-2) 45%, var(--felt-3) 100%);
-    background-attachment: fixed;
+    font: 16px/1.4 var(--font-body);
     overflow-x: hidden;
+    overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
   }
+  /* The felt sits on a fixed layer so it doesn't stretch on long pages (iOS ignores background-attachment: fixed). */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 150% 80% at 50% 32%, var(--felt-1) 0%, var(--felt-2) 45%, var(--felt-3) 100%);
+  }
+  body.locked { overflow: hidden; }
+  button, .card, .chip, .rcell, .tile { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
   .wrap {
-    max-width: 1060px;
+    width: 100%;
+    max-width: 520px;
     margin: 0 auto;
-    padding-block: 12px 20px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-left: var(--gl);
+    padding-right: var(--gr);
     display: flex;
     flex-direction: column;
   }
+  .view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: calc(24px + var(--safe-bottom));
+  }
+  .view.has-dock { gap: 0; padding-bottom: 0; }
 
   /* ---------- Shared controls ---------- */
   .btn {
     appearance: none;
     border: none;
     cursor: pointer;
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 700;
-    min-width: 96px;
-    padding: 12px 18px;
-    border-radius: 10px;
+    font: 700 16px/1.1 var(--font-body);
+    min-height: 50px;
+    padding: 0 18px;
+    border-radius: 14px;
     color: var(--ink);
     background: var(--panel-2);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 2px 0 rgba(0, 0, 0, .3);
@@ -75,19 +107,20 @@
     gap: 8px;
     transition: transform .08s, background .15s, opacity .15s, box-shadow .2s;
   }
-  .btn:hover:not(:disabled) { background: rgba(0, 0, 0, .55); }
-  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:active:not(:disabled) { transform: scale(.97); background: rgba(0, 0, 0, .55); }
   .btn:disabled { opacity: .35; cursor: not-allowed; }
   .btn.primary {
     background: linear-gradient(#f2d488, #d3a744);
     color: var(--on-gold);
     box-shadow: 0 2px 0 #8a6522, 0 6px 16px rgba(0, 0, 0, .3);
   }
-  .btn.primary:hover:not(:disabled) { background: linear-gradient(#f7dd98, #dcb150); }
-  .btn.small { min-width: 0; padding: 8px 12px; font-size: 13px; }
+  .btn.primary:active:not(:disabled) { background: linear-gradient(#e4c271, #c3973a); }
+  .btn.small { min-height: 42px; padding: 0 14px; font-size: 15px; border-radius: 12px; }
+  .btn.block { width: 100%; }
   .btn.pressed { box-shadow: inset 0 0 0 2px var(--gold); }
   .btn.recommend { box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(233, 196, 106, .55); }
   kbd {
+    display: none;
     font: 600 10px/1 var(--font-mono);
     padding: 3px 5px;
     border-radius: 4px;
@@ -95,88 +128,299 @@
     opacity: .8;
   }
   .btn.primary kbd { background: rgba(0, 0, 0, .13); }
-  .toggle {
-    appearance: none;
-    border: 1px solid var(--line);
-    background: var(--panel);
-    color: var(--ink-2);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    padding: 8px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .toggle.hint::before {
-    content: "";
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, .25);
-  }
-  .toggle[aria-pressed="true"] { color: var(--gold); border-color: rgba(233, 196, 106, .45); }
-  .toggle.hint[aria-pressed="true"]::before { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
   .linkbtn {
     background: none; border: none; padding: 0;
-    font: inherit; color: var(--ink-3);
-    text-decoration: underline; text-underline-offset: 2px;
+    font: inherit; color: var(--gold);
+    text-decoration: underline; text-underline-offset: 3px;
     cursor: pointer;
   }
   input.text {
     background: rgba(0, 0, 0, .35);
     border: 1px solid var(--line);
     color: var(--ink);
-    border-radius: 10px;
-    padding: 11px 12px;
+    border-radius: 12px;
+    min-height: 50px;
+    padding: 0 14px;
     font: inherit;
-    font-size: 15px;
+    font-size: 16px;   /* 16px or more stops iOS zooming in on focus */
     min-width: 0;
   }
   input.text::placeholder { color: var(--ink-3); }
   :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  @media (hover: hover) and (pointer: fine) {
+    kbd { display: inline-block; }
+    .btn:hover:not(:disabled) { background: rgba(0, 0, 0, .55); }
+    .btn.primary:hover:not(:disabled) { background: linear-gradient(#f7dd98, #dcb150); }
+    .tile:hover { border-color: rgba(233, 196, 106, .45); }
+    .chip:hover:not(:disabled) { transform: translateY(-3px); }
+    .rcell:hover { filter: brightness(1.28); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+  }
 
-  /* ---------- Lobby ---------- */
-  .lobby { display: flex; flex-direction: column; gap: 16px; }
-  .hero { text-align: center; padding: 20px 0 8px; }
-  .hero h1 {
+  .page-head { text-align: center; padding: 18px 0 2px; }
+  .page-head h1 {
     margin: 0;
-    font-family: var(--font-display);
-    font-weight: normal;
+    font: 400 clamp(28px, 8.5vw, 36px)/1.1 var(--font-display);
     color: var(--gold);
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    font-size: clamp(30px, 6vw, 46px);
     text-wrap: balance;
   }
-  .hero p { margin: 8px 0 0; color: var(--ink-2); letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
-  .lgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .page-head p { margin: 6px 0 0; color: var(--ink-3); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+  .section-label { margin: 6px 4px -4px; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
   .lcard {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 18px;
+    border-radius: 18px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     min-width: 0;
   }
-  .lcard h2 { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: 21px; }
-  .lcard label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .lcard h2 { margin: 0; font: 400 20px/1.2 var(--font-display); }
+  .lcard label, .atm label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
   .field { display: flex; gap: 8px; }
   .field input { flex: 1; }
-  .fine { margin: 0; color: var(--ink-3); font-size: 13px; }
+  .fine { margin: 0; color: var(--ink-3); font-size: 14px; }
+  .fine.center { text-align: center; }
   .note {
     margin: 0;
-    padding: 10px 12px;
-    border-radius: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
     background: rgba(0, 0, 0, .22);
     color: var(--ink-2);
     font-size: 14px;
   }
+
+  /* ---------- App bar ---------- */
+  .appbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl));
+    padding: var(--safe-top) var(--gr) 0 var(--gl);
+    background: var(--bar);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255, 255, 255, .06);
+  }
+  .appbar-in { height: var(--bar-h); display: flex; align-items: center; gap: 8px; }
+  .back {
+    appearance: none; background: none; border: none; cursor: pointer;
+    flex: none;
+    display: inline-flex; align-items: center; gap: 2px;
+    height: 44px; padding: 0 6px 0 0; margin-left: -6px;
+    font: 600 16px/1 var(--font-body); color: var(--gold);
+  }
+  .back svg { width: 24px; height: 24px; }
+  .brand { margin: 0 auto; font: 400 21px/1 var(--font-display); color: var(--gold); letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; }
+  .bar-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+  .bt-main { max-width: 100%; font: 400 18px/1.15 var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bt-sub { margin-top: 3px; font: 600 11px/1 var(--font-mono); letter-spacing: .14em; color: var(--ink-3); }
+  .bt-sub:empty { display: none; }
+  .bar-right { margin-left: auto; flex: none; display: flex; align-items: center; gap: 2px; }
+  .appbar.is-home .bar-right { display: none; }
+  .balance {
+    appearance: none; background: none; border: none; padding: 4px 0; cursor: pointer;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+    font-family: inherit; color: inherit; text-align: right;
+  }
+  .balance-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .balance-amt { font: 400 21px/1 var(--font-display); color: var(--gold); font-variant-numeric: tabular-nums; }
+  .barbtn {
+    appearance: none; background: none; border: none; cursor: pointer;
+    height: 44px; padding: 0 8px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font: 600 15px/1 var(--font-body); color: var(--ink-2);
+  }
+  .barbtn.hint::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
+  .barbtn[aria-pressed="true"], .barbtn[aria-expanded="true"] { color: var(--gold); }
+  .barbtn.hint[aria-pressed="true"]::before { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+  /* ---------- Bottom dock (game controls) ---------- */
+  .dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl));
+    padding: 10px var(--gr) max(14px, var(--safe-bottom)) var(--gl);
+    background: var(--dock);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, .25);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dock-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; font-variant-numeric: tabular-nums; }
+  .dt-item { color: var(--ink-2); font-size: 14px; font-weight: 600; }
+  .dt-item b, .bet-amt b { margin-left: 6px; color: var(--gold); font-size: 19px; }
+  .bet-amt { color: var(--ink-2); font-size: 14px; font-weight: 600; }
+  .chipcount {
+    appearance: none; background: none; border: none; padding: 4px 0; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 600 14px/1 var(--font-body); color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .chipcount b { color: var(--gold); font-size: 19px; }
+  .chipcount .plus {
+    display: grid; place-items: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--gold); color: var(--on-gold);
+    font-size: 19px; font-weight: 800; line-height: 1;
+  }
+  .panels { display: flex; flex-direction: column; justify-content: flex-end; }
+  .panel { display: flex; flex-direction: column; gap: 10px; }
+  #play-note { min-height: 20px; }
+  .chips { display: flex; justify-content: space-between; gap: 4px; }
+  .row { display: flex; gap: 8px; }
+  .row .btn { flex: 1; min-width: 0; padding: 0 8px; }
+  .row .btn.wide { flex: 1.6; }
+  .actions .btn { min-height: 58px; font-size: 17px; }
+  .pnote { color: var(--ink-2); text-align: center; font-size: 14px; text-wrap: balance; }
+  .pnote b { color: var(--gold); }
+
+  /* ---------- Sheets and overlays ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(2, 20, 12, .6);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    animation: fadein .18s ease-out;
+  }
+  .overlay.top { align-items: flex-start; padding: calc(var(--safe-top) + 48px) 16px 16px; overflow-y: auto; }
+  .sheet {
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    max-height: 88dvh;
+    overflow-y: auto;
+    padding: 10px var(--gr) max(18px, var(--safe-bottom)) var(--gl);
+    border-radius: 24px 24px 0 0;
+    background: linear-gradient(180deg, #0f4d31, #093621);
+    border: 1px solid rgba(233, 196, 106, .3);
+    border-bottom: none;
+    box-shadow: 0 -20px 50px rgba(0, 0, 0, .45);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: sheetup .28s cubic-bezier(.2, .8, .3, 1);
+  }
+  .sheet::before { content: ""; align-self: center; width: 40px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .25); }
+  .sheet h2, .auth-card h2 { margin: 0; font: 400 23px/1.2 var(--font-display); color: var(--gold); }
+  .sheet-stats { display: flex; justify-content: space-between; gap: 12px; color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .sheet-stats b { margin-left: 6px; color: var(--gold); font-size: 18px; }
+  .sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .bigcode { font: 700 24px/1 var(--font-mono); letter-spacing: .2em; color: var(--gold); }
+  .invite-code { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--ink-2); font-size: 14px; }
+  .invite-link { font-family: var(--font-mono); font-size: 13px !important; }
+  @keyframes sheetup { from { transform: translateY(100%); } to { transform: none; } }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    top: calc(var(--safe-top) + var(--bar-h) + 10px);
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    text-align: center;
+    background: rgba(0, 0, 0, .78);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 11px 18px;
+    border-radius: 16px;
+    font-size: 15px;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    z-index: 40;
+    animation: fadein .18s ease-out;
+  }
+
+  /* ---------- Sign in ---------- */
+  .auth-card {
+    width: 100%; max-width: 420px;
+    margin: 0 auto;
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 22px 20px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #0f4d31, #0a3a25);
+    border: 1px solid rgba(233, 196, 106, .35);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+    animation: pop .25s cubic-bezier(.2, .8, .3, 1.2);
+  }
+  .auth-field { display: flex; flex-direction: column; gap: 6px; }
+  .auth-field label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .auth-error { margin: 0; min-height: 18px; color: var(--lose); font-size: 14px; }
+  .auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+  .auth-links .linkbtn { color: var(--ink-2); padding: 6px 0; }
+
+  /* ---------- Home ---------- */
+  .wallet-card {
+    margin-top: 16px;
+    padding: 20px;
+    border-radius: 24px;
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(233, 196, 106, .2), transparent 55%),
+      linear-gradient(160deg, rgba(0, 0, 0, .34), rgba(0, 0, 0, .16));
+    border: 1px solid rgba(233, 196, 106, .32);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .28);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .wc-label { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+  .wc-amt { font: 400 clamp(38px, 12vw, 50px)/1.08 var(--font-display); color: var(--gold); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .wc-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 10px; }
+  .wc-fine { color: var(--ink-3); font-size: 13px; line-height: 1.35; }
+  .wc-row .btn { flex: none; }
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .tile {
+    appearance: none;
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 16px 14px 14px;
+    border-radius: 22px;
+    background: var(--panel); border: 1px solid var(--line);
+    color: inherit; font: inherit; text-align: left; cursor: pointer;
+    transition: transform .12s, border-color .15s, background .15s;
+  }
+  .tile:active { transform: scale(.97); background: rgba(0, 0, 0, .32); }
+  .tile-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .tile h2 { margin: 0; font: 400 21px/1.15 var(--font-display); }
+  .tile p { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.35; }
+  .tile .go { margin-top: auto; padding-top: 6px; color: var(--gold); font-weight: 700; font-size: 15px; }
+  .tile-art { position: relative; width: 92px; height: 92px; flex: none; align-self: center; margin-bottom: 6px; }
+  .tile-art .card { --cw: 52px; --ch: 73px; position: absolute; }
+  .tile-art .card:nth-child(1) { left: 4px; top: 12px; transform: rotate(-10deg); }
+  .tile-art .card:nth-child(2) { left: 34px; top: 6px; transform: rotate(8deg); }
+  .mini-wheel {
+    width: 84px; height: 84px; margin: 4px; border-radius: 50%;
+    background:
+      radial-gradient(circle, #d8b25a 0 9%, #5a3015 10% 46%, transparent 47%),
+      repeating-conic-gradient(#b3262f 0deg 9.73deg, #1d1f24 9.73deg 19.46deg);
+    border: 5px solid #4a250f;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 0 2px #c99a3c;
+  }
+  .account {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 16px;
+    border-radius: 18px;
+    background: var(--panel); border: 1px solid var(--line);
+  }
+  .acct-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; color: var(--ink-2); font-size: 14px; }
+  .acct-text b { color: var(--ink); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acct-actions { display: flex; gap: 8px; }
+  .acct-actions .btn { flex: 1; }
+  .home-foot { margin-top: auto; padding-top: 6px; text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+
+  /* ---------- Blackjack lobby ---------- */
   .room-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   .room-item {
     display: grid;
@@ -184,7 +428,7 @@
     gap: 12px;
     align-items: center;
     padding: 10px 12px;
-    border-radius: 10px;
+    border-radius: 12px;
     background: rgba(0, 0, 0, .2);
   }
   .room-item .rn { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -192,63 +436,14 @@
   .pips { display: inline-flex; gap: 3px; margin-right: 6px; vertical-align: 1px; }
   .pips i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .2); }
   .pips i.on { background: var(--gold); }
-  .solo-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; color: var(--ink-3); font-size: 13px; }
+  .room-cards { display: flex; flex-direction: column; gap: 14px; }
   .lobby-rules { text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
 
-  /* ---------- Table top bar ---------- */
-  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-  .room-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex: 1; }
-  .room-title .rname {
-    font-family: var(--font-display);
-    font-size: 21px;
-    color: var(--gold);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .room-title .rcode { font: 600 12px/1 var(--font-mono); letter-spacing: .12em; color: var(--ink-3); }
-  .top-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .bank {
-    appearance: none;
-    cursor: pointer;
-    font-family: inherit;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    padding: 6px 8px 6px 14px;
-    border-radius: 999px;
-    font-size: 13px;
-    color: var(--ink-2);
-    font-variant-numeric: tabular-nums;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .bank span { font-size: 16px; font-weight: 700; color: var(--gold); margin-left: 4px; }
-  .bank .plus {
-    display: grid; place-items: center;
-    width: 22px; height: 22px; margin-left: 6px;
-    border-radius: 50%;
-    background: var(--gold); color: var(--on-gold);
-    font-size: 15px; font-weight: 800; line-height: 1;
-  }
-
-  .invite {
-    margin-top: 10px;
-    padding: 14px;
-    border-radius: 14px;
-    background: var(--panel-2);
-    border: 1px solid rgba(233, 196, 106, .35);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .invite .field input { font-family: var(--font-mono); font-size: 13px; }
-  .invite .bigcode { font: 700 22px/1 var(--font-mono); letter-spacing: .2em; color: var(--gold); }
-
-  .rules { text-align: center; margin: 12px 0 0; }
-  .rules .big { font-family: var(--font-display); color: var(--gold); letter-spacing: .24em; text-transform: uppercase; font-size: 12px; }
-  .rules .small { color: var(--ink-3); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; margin-top: 3px; }
-
-  /* ---------- Dealer ---------- */
-  .dealer { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+  /* ---------- Blackjack table ---------- */
+  #game { flex: 1; display: flex; flex-direction: column; }
+  #table-view > .note { margin-top: 12px; }
+  .felt { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 8px; padding: 12px 0 16px; }
+  .dealer { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .label {
     display: flex; align-items: center; gap: 8px;
     min-height: 26px;
@@ -272,13 +467,20 @@
   .badge:empty { display: none; }
   .badge.bust { background: var(--bust); }
   .badge.gold { background: var(--gold); color: var(--on-gold); }
-  .shoe { position: absolute; right: 0; top: 0; width: 74px; height: 96px; }
-  .shoe .cardback { position: absolute; width: 56px; height: 78px; border-radius: 6px; transform: rotate(8deg); }
-  .shoe .cardback:nth-child(2) { left: 4px; top: 3px; }
-  .shoe .cardback:nth-child(3) { left: 8px; top: 6px; }
+  .mid { display: flex; flex-direction: column; align-items: center; }
+  .rules { text-align: center; margin-bottom: 4px; }
+  .rules .big { font-family: var(--font-display); color: var(--gold); letter-spacing: .22em; text-transform: uppercase; font-size: 11px; opacity: .85; }
+  .rules .small { color: var(--ink-3); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; margin-top: 3px; }
+  .felt.multi .rules { display: none; }
 
   /* ---------- Cards ---------- */
   .cards { display: flex; justify-content: center; min-height: var(--ch); min-width: var(--cw); }
+  .dealer .cards:empty::before {
+    content: "";
+    width: var(--cw); height: var(--ch);
+    border-radius: calc(var(--cw) * .09);
+    border: 2px dashed rgba(255, 255, 255, .12);
+  }
   .card { position: relative; flex: none; width: var(--cw); height: var(--ch); perspective: 900px; }
   .cards .card + .card { margin-left: calc(var(--cw) * -0.56); }
   .card .inner {
@@ -335,50 +537,50 @@
 
   /* ---------- Message ---------- */
   .msg {
-    min-height: 62px;
-    margin: 8px 0 6px;
+    min-height: 56px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center;
     transition: opacity .25s;
   }
-  .msg .title { font-family: var(--font-display); font-size: 25px; line-height: 1.15; text-shadow: 0 2px 10px rgba(0, 0, 0, .35); text-wrap: balance; }
-  .msg .sub { margin-top: 3px; font-weight: 700; font-size: 15px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .msg .title { font-family: var(--font-display); font-size: 24px; line-height: 1.15; text-shadow: 0 2px 10px rgba(0, 0, 0, .35); text-wrap: balance; }
+  .msg .sub { margin-top: 3px; font-weight: 700; font-size: 16px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .msg.win .title { color: var(--gold); }
   .msg.win .sub { color: var(--win); }
   .msg.lose .sub { color: var(--lose); }
   @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
   .msg.pop { animation: pop .32s cubic-bezier(.2, .8, .3, 1.3); }
-  .status-line { text-align: center; color: var(--ink-2); font-size: 13px; min-height: 18px; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
-
+  .status-line { text-align: center; color: var(--ink-2); font-size: 13px; min-height: 18px; font-variant-numeric: tabular-nums; }
   .animating .msg, .animating .hand .badge, .animating .tag, .animating #dealer-total { opacity: 0; }
 
-  /* ---------- Seats ---------- */
-  .seats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+  /* ---------- Seats ----------
+     Other players are compact rows. Your own seat is big, right above the controls. */
+  .others { display: flex; flex-direction: column; gap: 8px; }
+  .my-seat { display: flex; justify-content: center; }
   .seat {
-    --cw: 56px; --ch: 78px;
+    --cw: 36px; --ch: 50px;
     position: relative;
     min-width: 0;
-    min-height: 196px;
-    padding: 10px 8px 14px;
-    border-radius: 14px;
-    background: rgba(0, 0, 0, .14);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "head hands" "sub hands";
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 3px;
+    padding: 8px 12px 10px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, .16);
     border: 1px solid var(--line);
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
     transition: box-shadow .25s, border-color .25s;
   }
-  .seat.mine { border-color: rgba(233, 196, 106, .5); }
-  .seat.turn { box-shadow: 0 0 0 2px var(--gold), 0 0 26px rgba(233, 196, 106, .28); }
-  .seat.empty { justify-content: center; border-style: dashed; background: transparent; }
-  .seats.solo { grid-template-columns: minmax(0, 1fr); }
-  .seats.solo .seat { --cw: 80px; --ch: 112px; background: transparent; border: none; min-height: 210px; }
-  .seats.solo .seat-head, .seats.solo .seat-sub { display: none; }
-  .seat-head { display: flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; }
+  .seat.turn { box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(233, 196, 106, .25); }
+  .seat.empty { display: flex; align-items: center; justify-content: space-between; min-height: 58px; border-style: dashed; background: transparent; }
+  .seat-head { grid-area: head; display: flex; align-items: center; gap: 6px; min-width: 0; }
   .avatar {
     width: 22px; height: 22px; flex: none;
     border-radius: 50%;
     background: rgba(255, 255, 255, .15) center / cover no-repeat;
   }
-  .pname { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .pname { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .you {
     flex: none;
     font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
@@ -387,21 +589,23 @@
   }
   .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--win); box-shadow: 0 0 6px var(--win); }
   .dot.away { background: rgba(255, 255, 255, .25); box-shadow: none; }
-  .seat-sub { display: flex; gap: 8px; align-items: baseline; justify-content: center; flex-wrap: wrap; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; text-align: center; }
+  .seat-sub { grid-area: sub; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; min-width: 0; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
   .seat-sub .sbank { color: var(--ink-2); font-weight: 700; }
-  .seat .hands { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 14px; }
+  .seat .hands { grid-area: hands; display: flex; justify-content: flex-end; gap: 10px; }
   .empty-label { color: var(--ink-3); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
-  .hand { display: flex; flex-direction: column; align-items: center; gap: 7px; transition: opacity .25s; }
+  .hand { display: flex; align-items: center; gap: 6px; transition: opacity .25s; }
   .hand .cards { transition: filter .25s, opacity .25s; }
+  .seat:not(.big) .cards .card + .card { margin-left: calc(var(--cw) * -0.45); }
   .hand.active .cards { filter: drop-shadow(0 0 10px rgba(233, 196, 106, .65)); }
   .hand.active .badge.total { box-shadow: 0 0 0 2px var(--gold); }
   .hand.lost .cards { opacity: .55; }
-  .meta { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; min-height: 24px; }
+  .meta { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
   .meta .badge { font-size: 13px; padding: 2px 8px; }
-  .wager { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .seat:not(.big) .wager { display: none; }
+  .wager { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
   .wager::before {
     content: "";
-    width: 13px; height: 13px; border-radius: 50%;
+    width: 14px; height: 14px; border-radius: 50%;
     background: var(--wc, #c8303c);
     border: 2px dashed rgba(255, 255, 255, .85);
   }
@@ -411,164 +615,97 @@
   .tag.lose, .tag.bust { background: rgba(0, 0, 0, .45); color: var(--lose); }
   .tag.push { background: rgba(255, 255, 255, .16); color: var(--ink); }
   .tag.double { background: rgba(255, 255, 255, .1); color: var(--ink-2); }
-  .timer { position: absolute; left: 12px; right: 12px; bottom: 6px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+  .timer { position: absolute; left: 12px; right: 12px; bottom: 4px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .12); overflow: hidden; }
   .timer i { display: block; height: 100%; background: var(--gold); transform-origin: left; }
   @keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
-  /* ---------- Chips & controls ---------- */
+  .seat.big {
+    --cw: 76px; --ch: 106px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 0 0 10px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+  }
+  .seat.big .seat-head, .seat.big .seat-sub { display: none; }   /* the dock already shows your chips and bet */
+  .my-seat { scroll-margin-top: 72px; scroll-margin-bottom: 160px; }
+  .seat.big .hands { flex-wrap: wrap; justify-content: center; gap: 12px 18px; }
+  .seat.big .hands.multi { --cw: 56px; --ch: 78px; }
+  .seat.big .hand { flex-direction: column; gap: 8px; }
+  .seat.big .meta { flex-direction: row; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; min-height: 26px; }
+  .seat.big .timer { left: 25%; right: 25%; bottom: 0; }
+  /* Betting spot: shows your bet before the first deal */
+  .seat.big .hands:empty::before {
+    content: attr(data-bet);
+    display: grid; place-items: center;
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    border: 2px dashed rgba(233, 196, 106, .4);
+    color: var(--gold);
+    font: 700 17px/1 var(--font-body);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Chips ---------- */
   .chipface {
     background:
       radial-gradient(circle closest-side, var(--c) 0 50%, rgba(255, 255, 255, .88) 51% 55%, var(--c) 56% 68%, transparent 69%),
       repeating-conic-gradient(var(--c) 0deg 20deg, #f3ede0 20deg 40deg);
   }
   .chip {
+    flex: none;
     width: var(--chip); height: var(--chip);
     border: none; border-radius: 50%; padding: 0;
     cursor: pointer;
     color: #fff;
-    font-family: inherit; font-size: 15px; font-weight: 800;
+    font-family: inherit; font-size: 14px; font-weight: 800;
     text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
     box-shadow: 0 3px 0 rgba(0, 0, 0, .38), 0 8px 14px rgba(0, 0, 0, .32), inset 0 0 0 1px rgba(0, 0, 0, .3);
     transition: transform .12s ease, opacity .15s;
   }
-  .chip:hover:not(:disabled) { transform: translateY(-3px); }
-  .chip:active:not(:disabled) { transform: scale(.95); }
+  .chip:active:not(:disabled) { transform: scale(.92); }
   .chip:disabled { opacity: .28; cursor: not-allowed; }
-  .controls { margin-top: 14px; min-height: 136px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
-  .panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-  .chips { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .row { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
-  .bet-amt { min-width: 100px; text-align: center; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-  .bet-amt b { color: var(--gold); font-size: 18px; margin-left: 4px; }
-  .pnote { color: var(--ink-2); text-align: center; font-size: 14px; max-width: 560px; }
-  .pnote b { color: var(--gold); }
-
-  .footer { margin-top: 16px; display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .keys { margin-top: 6px; text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .04em; }
-  .toast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    color: var(--ink);
-    padding: 10px 16px;
-    border-radius: 999px;
-    font-size: 14px;
-    backdrop-filter: blur(6px);
-    z-index: 5;
-  }
-
   .chip-x {
     background: rgba(0, 0, 0, .42);
     color: var(--gold);
     font-size: 14px;
     box-shadow: inset 0 0 0 2px rgba(233, 196, 106, .65), 0 3px 0 rgba(0, 0, 0, .38), 0 8px 14px rgba(0, 0, 0, .32);
   }
-
-  /* ---------- Casino bar ---------- */
-  .casino-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding-bottom: 4px; }
-  .back-home {
-    appearance: none; background: none; border: none; padding: 8px 0; cursor: pointer;
-    font: 600 15px/1 var(--font-body); color: var(--gold);
-  }
-  .back-home:hover { text-decoration: underline; text-underline-offset: 4px; }
-  .balance {
-    appearance: none; background: none; border: none; padding: 4px 0; margin-left: auto; cursor: pointer;
-    display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
-    font-family: inherit; color: inherit; text-align: right;
-  }
-  .balance-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
-  .balance-amt { font-family: var(--font-display); font-size: 22px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
-  .balance:hover .balance-label { color: var(--ink-2); }
-
-  /* ---------- Account & sign in ---------- */
-  .account { margin: -6px 0 2px; text-align: center; color: var(--ink-2); font-size: 14px; }
-  .account .linkbtn { color: var(--gold); }
-  .account .sep { margin: 0 8px; color: var(--ink-3); }
-  .auth-overlay {
-    position: fixed; inset: 0; z-index: 20;
-    display: grid; place-items: center;
-    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-    background: rgba(2, 20, 12, .72);
-    backdrop-filter: blur(4px);
-  }
-  .auth-card {
-    width: 100%; max-width: 380px;
-    display: flex; flex-direction: column; gap: 12px;
-    padding: 22px;
-    border-radius: 16px;
-    background: linear-gradient(180deg, #0f4d31, #0a3a25);
-    border: 1px solid rgba(233, 196, 106, .35);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
-  }
-  .auth-card h2 { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: 24px; color: var(--gold); }
-  .auth-field { display: flex; flex-direction: column; gap: 5px; }
-  .auth-field label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
-  .auth-error { margin: 0; min-height: 18px; color: var(--lose); font-size: 13px; }
-  .auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
-
-  /* ---------- Home ---------- */
-  .home { display: flex; flex-direction: column; gap: 18px; }
-  .home .hero h1 { font-size: clamp(36px, 8vw, 62px); }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
-  .tile {
-    appearance: none;
-    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center;
-    padding: 18px; border-radius: 16px;
-    background: var(--panel); border: 1px solid var(--line);
-    color: inherit; font: inherit; text-align: left; cursor: pointer;
-    transition: transform .15s, border-color .15s, background .15s;
-  }
-  .tile:hover { transform: translateY(-2px); border-color: rgba(233, 196, 106, .45); background: rgba(0, 0, 0, .32); }
-  .tile h2 { margin: 0 0 4px; font-family: var(--font-display); font-weight: normal; font-size: 23px; }
-  .tile p { margin: 0; color: var(--ink-2); font-size: 14px; }
-  .tile .go { display: inline-block; margin-top: 10px; color: var(--gold); font-weight: 700; font-size: 14px; }
-  .tile-art { position: relative; width: 92px; height: 92px; flex: none; }
-  .tile-art .card { --cw: 52px; --ch: 73px; position: absolute; }
-  .tile-art .card:nth-child(1) { left: 4px; top: 12px; transform: rotate(-10deg); }
-  .tile-art .card:nth-child(2) { left: 34px; top: 6px; transform: rotate(8deg); }
-  .vault {
-    width: 84px; height: 84px; margin: 4px; border-radius: 50%;
-    background: radial-gradient(circle, #f2d488 0 26%, #b98f3e 27% 32%, #d3a744 33% 62%, #8a6522 63% 66%, #c99a3c 67%);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 0 3px rgba(0, 0, 0, .18);
-    display: grid; place-items: center;
-    font: 700 26px/1 var(--font-display); color: var(--on-gold);
-  }
+  .chip.sel { transform: translateY(-5px); box-shadow: 0 0 0 3px var(--gold), 0 3px 0 rgba(0, 0, 0, .38), 0 8px 18px rgba(0, 0, 0, .4); }
 
   /* ---------- Bank ---------- */
-  .bankpage { width: 100%; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-  .bank-hero { text-align: center; padding-top: 14px; }
-  .bank-hero h1 { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: clamp(28px, 6vw, 40px); color: var(--gold); text-wrap: balance; }
-  .bank-hero p { margin: 6px 0 0; color: var(--ink-3); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
   .atm {
     position: relative; overflow: hidden;
     display: flex; flex-direction: column; gap: 12px;
-    padding: 18px; border-radius: 18px;
+    padding: 16px; border-radius: 22px;
     background: linear-gradient(180deg, #2b2f33, #1b1e21);
     border: 1px solid rgba(255, 255, 255, .08);
     box-shadow: 0 18px 40px rgba(0, 0, 0, .4);
   }
   .atm-screen {
-    padding: 16px; border-radius: 12px;
+    padding: 16px; border-radius: 14px;
     background: #0c2a1c; border: 1px solid rgba(134, 232, 176, .18);
     box-shadow: inset 0 0 30px rgba(0, 0, 0, .5);
     font-family: var(--font-mono); color: var(--win);
   }
   .atm-screen .lbl { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
-  .atm-screen .big { margin-top: 4px; font-size: clamp(24px, 7vw, 40px); font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-  .facts { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; opacity: .85; }
+  .atm-screen .big { margin-top: 4px; font-size: clamp(26px, 9vw, 40px); font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .facts { display: flex; gap: 6px 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; opacity: .85; }
   .facts b { color: var(--ink); }
-  .atm label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
   .amount { display: flex; gap: 8px; align-items: stretch; }
   .amount .cur {
-    display: grid; place-items: center; padding: 0 12px; border-radius: 10px;
+    display: grid; place-items: center; padding: 0 14px; border-radius: 12px;
     background: rgba(0, 0, 0, .35); border: 1px solid var(--line);
-    color: var(--gold); font-weight: 700;
+    color: var(--gold); font-weight: 700; font-size: 18px;
   }
-  .amount input { flex: 1; font-family: var(--font-mono); font-size: 18px; }
-  .quick { display: flex; gap: 8px; flex-wrap: wrap; }
+  .amount input { flex: 1; font-family: var(--font-mono); font-size: 20px; min-height: 54px; }
+  .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .quick .btn { padding: 0 6px; }
+  .atm .btn.primary.block { min-height: 54px; font-size: 17px; }
   .teller { margin: 0; min-height: 20px; color: var(--ink-2); font-size: 14px; }
   .stamp {
     position: absolute; right: 18px; top: 18px;
@@ -584,7 +721,7 @@
     100% { opacity: 0; transform: rotate(-12deg) scale(1); }
   }
   .ledger-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-  .ledger-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .ledger-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
   .ledger-list li:last-child { border-bottom: none; }
   .ledger-list .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ledger-list .when { color: var(--ink-3); font-size: 12px; }
@@ -592,52 +729,48 @@
   .amt.plus { color: var(--win); }
   .amt.minus { color: var(--lose); }
 
-  /* ---------- Roulette ---------- */
-  .roulette { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
-  .rtop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: center; }
-  .wheel-wrap { width: 300px; max-width: 74vw; aspect-ratio: 1; }
-  .wheel-wrap canvas { display: block; width: 100%; height: 100%; }
-  .rside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-  .rtitle { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: 30px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
-  .rsub { margin-top: -8px; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
-  .rresult { display: flex; align-items: center; gap: 14px; min-height: 64px; }
+  /* ---------- Roulette ----------
+     The betting board is the screen. Spinning opens the wheel full screen, then drops you back on the board. */
+  .rhead { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 14px; align-items: center; padding: 14px 0 12px; }
+  .wheel-slot { width: 108px; height: 108px; }
+  .wheel-slot canvas, .stage-wheel canvas { display: block; width: 100%; height: 100%; }
+  .rside { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .rresult { display: flex; align-items: center; gap: 12px; min-height: 48px; }
   .rnum {
-    flex: none; width: 60px; height: 60px; border-radius: 50%;
+    flex: none; width: 46px; height: 46px; border-radius: 50%;
     display: grid; place-items: center;
-    font: 700 26px/1 var(--font-display); color: #fff;
+    font: 700 21px/1 var(--font-display); color: #fff;
     background: rgba(0, 0, 0, .35); border: 2px solid rgba(255, 255, 255, .22);
   }
   .rnum.red, .rhist .red { background: #b3262f; }
   .rnum.black, .rhist .black { background: #1d1f24; }
   .rnum.green, .rhist .green { background: #127a46; }
   .rnum.pop { animation: pop .4s cubic-bezier(.2, .8, .3, 1.3); }
-  .rmsg-title { font-family: var(--font-display); font-size: 22px; line-height: 1.2; }
-  .rmsg-sub { font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .rmsg { min-width: 0; }
+  .rmsg-title { font: 400 19px/1.2 var(--font-display); }
+  .rmsg-sub { font-weight: 700; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .rresult.win .rmsg-title { color: var(--gold); }
   .rresult.win .rmsg-sub { color: var(--win); }
   .rresult.lose .rmsg-sub { color: var(--lose); }
-  .rhist { display: flex; gap: 5px; flex-wrap: wrap; min-height: 26px; }
-  .rhist span { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; }
+  .rhist { display: flex; gap: 4px; overflow: hidden; min-height: 24px; }
+  .rhist span { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; }
   .rhist span:first-child { box-shadow: 0 0 0 2px var(--gold); }
-  .rtotals { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-  .rtotals b { margin-left: 4px; color: var(--gold); font-size: 18px; }
-  .rside .row { justify-content: flex-start; }
   .rboard {
     display: grid;
-    grid-template-columns: 1.1fr repeat(12, minmax(0, 1fr)) 1.3fr;
-    grid-template-rows: repeat(3, 50px) 42px 42px;
+    grid-template-columns: 1fr 1fr repeat(3, 1.3fr);
+    grid-template-rows: 42px repeat(12, 38px) 42px;
     gap: 3px;
-    padding: 8px;
-    border-radius: 12px;
+    padding: 6px;
+    border-radius: 14px;
     background: rgba(0, 0, 0, .22);
     border: 2px solid rgba(233, 196, 106, .35);
   }
   .rcell {
-    grid-row: var(--r); grid-column: var(--c);
+    grid-row: var(--vr); grid-column: var(--vc);
     position: relative; min-width: 0; padding: 0;
     appearance: none; cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, .2); border-radius: 4px;
-    color: #fff; font: 700 15px/1 var(--font-body);
+    border: 1px solid rgba(255, 255, 255, .2); border-radius: 5px;
+    color: #fff; font: 700 16px/1 var(--font-body);
     display: grid; place-items: center;
     transition: filter .15s, box-shadow .15s;
   }
@@ -647,7 +780,7 @@
   .rcell.out { background: rgba(0, 0, 0, .18); color: var(--ink); font-size: 13px; font-weight: 600; letter-spacing: .03em; }
   .rcell.out.is-red { background: rgba(179, 38, 47, .75); }
   .rcell.out.is-black { background: rgba(29, 31, 36, .85); }
-  .rcell:hover, .rcell.cover { filter: brightness(1.28); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
+  .rcell.cover, .rcell:active { filter: brightness(1.28); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45); }
   .rcell[aria-disabled="true"] { cursor: default; }
   .rcell.win { box-shadow: 0 0 0 2px var(--gold), 0 0 16px rgba(233, 196, 106, .65); z-index: 1; }
   @keyframes hitpulse {
@@ -657,8 +790,8 @@
   .rcell.hit { animation: hitpulse 1s ease-in-out 3; z-index: 2; box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(233, 196, 106, .7); }
   .rchip {
     position: absolute; right: 2px; bottom: 2px;
-    min-width: 24px; height: 24px; padding: 0 4px;
-    border-radius: 12px;
+    min-width: 26px; height: 26px; padding: 0 4px;
+    border-radius: 13px;
     background: var(--c, #c8303c);
     border: 2px dashed rgba(255, 255, 255, .85);
     display: grid; place-items: center;
@@ -667,103 +800,92 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, .45);
     pointer-events: none;
   }
-  .rcontrols { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-  .chip.sel { transform: translateY(-4px); box-shadow: 0 0 0 3px var(--gold), 0 3px 0 rgba(0, 0, 0, .38), 0 8px 18px rgba(0, 0, 0, .4); }
-  .payouts { text-align: center; color: var(--ink-3); font-size: 12px; }
-  .mini-wheel {
-    width: 84px; height: 84px; margin: 4px; border-radius: 50%;
-    background:
-      radial-gradient(circle, #d8b25a 0 9%, #5a3015 10% 46%, transparent 47%),
-      repeating-conic-gradient(#b3262f 0deg 9.73deg, #1d1f24 9.73deg 19.46deg);
-    border: 5px solid #4a250f;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 0 2px #c99a3c;
+  .payouts { padding: 12px 8px 16px; text-align: center; color: var(--ink-3); font-size: 12px; line-height: 1.5; }
+  .rlow { text-align: center; color: var(--ink-2); font-size: 14px; }
+  .stage {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 20px);
+    background: radial-gradient(circle at 50% 40%, rgba(14, 102, 64, .94), rgba(3, 26, 16, .97) 70%);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    animation: fadein .2s ease-out;
+    cursor: pointer;
   }
+  .stage-wheel { width: min(86vw, 440px); width: min(86vw, 54dvh, 440px); aspect-ratio: 1; }
+  .stage-cap { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 128px; text-align: center; }
+  .stage-cap .rnum { width: 64px; height: 64px; font-size: 28px; }
+  .stage-title { font: 400 27px/1.2 var(--font-display); }
+  .stage-sub { font-weight: 700; font-size: 17px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .stage.win .stage-title { color: var(--gold); }
+  .stage.win .stage-sub { color: var(--win); }
+  .stage.lose .stage-sub { color: var(--lose); }
+  .stage-hint { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 
-  @media (max-width: 760px) {
-    .seats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 640px) {
-    :root { --cw: 60px; --ch: 84px; --chip: 46px; }
-    .chips { gap: 10px; }
-    .tiles { grid-template-columns: minmax(0, 1fr); }
-    .rtop { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 16px; }
-    .wheel-wrap { width: 240px; }
-    .rside { align-items: center; text-align: center; width: 100%; }
-    .rside .row, .rtotals { justify-content: center; }
-    .rhist { justify-content: center; }
-    .rboard { grid-template-columns: 1fr 1fr repeat(3, 1.3fr); grid-template-rows: 42px repeat(12, 36px) 40px; }
-    .rcell { grid-row: var(--vr); grid-column: var(--vc); }
-    .rcell.out { font-size: 12px; }
-    .lgrid { grid-template-columns: minmax(0, 1fr); }
-    .shoe { display: none; }
-    .msg .title { font-size: 21px; }
-    .seat { --cw: 46px; --ch: 64px; min-height: 170px; }
-    .seats.solo .seat { --cw: 62px; --ch: 87px; }
-    .row { width: 100%; flex-wrap: nowrap; gap: 8px; }
-    .row .btn { flex: 1; min-width: 0; padding: 12px 8px; }
-    .bet-amt { min-width: 0; flex: 1; }
-    .room-title .rname { font-size: 18px; }
-  }
-  @media (hover: none) {
-    kbd, .keys { display: none; }
+  @media (max-height: 700px) {
+    :root { --cw: 56px; --ch: 78px; }
+    .seat.big { --cw: 66px; --ch: 92px; }
+    .rules { display: none; }
+    .felt { padding: 8px 0 12px; gap: 6px; }
+    .seat:not(.big) { --cw: 30px; --ch: 42px; padding: 6px 10px 8px; }
+    .others { gap: 6px; }
+    .msg { min-height: 48px; }
+    .msg .title { font-size: 22px; }
+    .actions .btn { min-height: 52px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .card.deal-in, .msg.pop { animation-duration: 1ms; }
+    .card.deal-in, .msg.pop, .sheet, .overlay, .stage, .auth-card { animation-duration: 1ms; }
     .card .inner { transition-duration: 1ms; }
   }
 </style>
 
 <div class="wrap" id="app">
 
-  <header class="casino-bar" id="casino-bar">
-    <button class="back-home" id="home-btn">← Home</button>
-    <button class="balance" id="balance-btn" title="Open the bank">
-      <span class="balance-label">Your wallet balance</span>
-      <span class="balance-amt" id="wallet-amt">—</span>
-    </button>
+  <header class="appbar" id="casino-bar">
+    <div class="appbar-in">
+      <button class="back" id="home-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="back-label">Home</span></button>
+      <span class="brand" id="brand">Mini Casino</span>
+      <div class="bar-title" id="bar-title" hidden><span class="bt-main" id="t-name"></span><span class="bt-sub" id="t-code"></span></div>
+      <div class="bar-right">
+        <span id="table-tools" hidden>
+          <button class="barbtn" id="invite-btn" aria-expanded="false">Invite</button>
+          <button class="barbtn hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
+        </span>
+        <button class="balance" id="balance-btn" title="Open the bank">
+          <span class="balance-label">Your wallet balance</span>
+          <span class="balance-amt" id="wallet-amt">—</span>
+        </button>
+      </div>
+    </div>
   </header>
 
   <!-- ================= Home ================= -->
-  <section class="home" id="home" hidden>
-    <div class="hero">
-      <h1>Mini Casino</h1>
-      <p>Play money only · The bank never says no</p>
+  <section class="view home" id="home" hidden>
+    <div class="wallet-card">
+      <div class="wc-label">Your wallet balance</div>
+      <div class="wc-amt" id="home-wallet">—</div>
+      <div class="wc-row">
+        <span class="wc-fine">Running low? The bank never says no.</span>
+        <button class="btn primary small" id="home-bank">Get money</button>
+      </div>
     </div>
-    <p class="account" id="account" hidden></p>
+    <div class="section-label">Games</div>
     <div class="tiles" id="tiles"></div>
+    <div class="account" id="account" hidden></div>
+    <div class="home-foot">Play money only</div>
   </section>
 
-  <!-- ================= Sign in (Cloudflare site only) ================= -->
-  <div class="auth-overlay" id="auth" hidden>
-    <form class="auth-card" id="auth-form" novalidate>
-      <h2 id="auth-title">Sign in</h2>
-      <p class="fine" id="auth-sub"></p>
-      <div class="auth-field" id="auth-name-row">
-        <label for="auth-name">Name</label>
-        <input class="text" id="auth-name" autocomplete="nickname" maxlength="40">
-      </div>
-      <div class="auth-field">
-        <label for="auth-email">Email</label>
-        <input class="text" id="auth-email" type="email" autocomplete="email" required>
-      </div>
-      <div class="auth-field">
-        <label for="auth-password">Password</label>
-        <input class="text" id="auth-password" type="password" autocomplete="current-password" minlength="8" required>
-      </div>
-      <p class="auth-error" id="auth-error" role="alert"></p>
-      <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
-      <div class="auth-links">
-        <button type="button" class="linkbtn" id="auth-switch"></button>
-        <button type="button" class="linkbtn" id="auth-close">Cancel</button>
-      </div>
-    </form>
-  </div>
-
   <!-- ================= Bank ================= -->
-  <section class="bankpage" id="bank-view" hidden>
-    <div class="bank-hero">
+  <section class="view" id="bank-view" hidden>
+    <div class="page-head">
       <h1>The Bottomless Bank</h1>
-      <p>Member of nothing · Open 24/7 · Est. a moment ago</p>
+      <p>Member of nothing · Open 24/7</p>
     </div>
     <div class="atm">
       <div class="stamp" id="stamp" aria-hidden="true">APPROVED</div>
@@ -775,8 +897,7 @@
       <label for="wd-amount">How much do you want?</label>
       <div class="amount">
         <span class="cur">$</span>
-        <input class="text" id="wd-amount" inputmode="decimal" autocomplete="off" placeholder="Any amount. Try 1m or 2.5b">
-        <button class="btn primary" id="wd-btn">Withdraw</button>
+        <input class="text" id="wd-amount" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="Any amount">
       </div>
       <div class="quick" id="quick">
         <button class="btn small" data-a="1000">$1K</button>
@@ -786,6 +907,7 @@
         <button class="btn small" data-a="1000000000">$1B</button>
         <button class="btn small" data-a="999999999999">Max</button>
       </div>
+      <button class="btn primary block" id="wd-btn">Withdraw</button>
       <p class="teller" id="teller" role="status" aria-live="polite">Take as much as you like. Nobody is counting.</p>
     </div>
     <div class="lcard">
@@ -793,68 +915,69 @@
       <p class="fine" id="ledger-summary"></p>
       <ul class="ledger-list" id="ledger-list"></ul>
     </div>
-    <p class="fine" style="text-align:center">Roulette bets straight from your wallet. At blackjack, add chips with the <b>+</b> next to your chip count.</p>
+    <p class="fine center">Roulette bets come straight from your wallet. At blackjack, tap <b>+</b> next to your chips to bring more to the table.</p>
   </section>
 
   <!-- ================= Roulette ================= -->
-  <section class="roulette" id="roulette-view" hidden>
-    <div class="rtop">
-      <div class="wheel-wrap"><canvas id="r-wheel" role="img" aria-label="Roulette wheel"></canvas></div>
+  <section class="view has-dock" id="roulette-view" hidden>
+    <div class="rhead">
+      <div class="wheel-slot" id="r-slot"><canvas id="r-wheel" role="img" aria-label="Roulette wheel"></canvas></div>
       <div class="rside">
-        <h1 class="rtitle">Roulette</h1>
-        <div class="rsub">Single zero · Bets come straight from your wallet</div>
         <div class="rresult" id="r-result" role="status" aria-live="polite">
           <span class="rnum" id="r-num">–</span>
-          <div><div class="rmsg-title" id="r-title"></div><div class="rmsg-sub" id="r-sub"></div></div>
+          <div class="rmsg"><div class="rmsg-title" id="r-title"></div><div class="rmsg-sub" id="r-sub"></div></div>
         </div>
         <div class="rhist" id="r-hist" aria-label="Recent numbers"></div>
-        <div class="rtotals"><span>Bet<b id="r-total">$0</b></span><span>Wallet<b id="r-wallet">—</b></span></div>
-        <div class="row"><button class="btn primary" id="r-spin">Spin <kbd>Space</kbd></button></div>
       </div>
     </div>
     <div class="rboard" id="r-board" aria-label="Betting board"></div>
-    <div class="rcontrols">
+    <div class="payouts">Numbers pay 35 to 1 · Dozens and columns 2 to 1 · Red, Black, Odd, Even, 1–18 and 19–36 pay 1 to 1 · Zero loses outside bets</div>
+    <div class="dock">
+      <div class="dock-top">
+        <span class="dt-item">Bet<b id="r-total">$0</b></span>
+        <span class="dt-item">Wallet<b id="r-wallet">—</b></span>
+      </div>
+      <div class="rlow" id="r-low" hidden>Running low? <button class="linkbtn" id="r-bank">Get more from the Bank</button></div>
       <div class="chips" id="r-chips" aria-label="Chip value"></div>
       <div class="row">
         <button class="btn" id="r-undo">Undo <kbd>U</kbd></button>
         <button class="btn" id="r-clear">Clear <kbd>C</kbd></button>
         <button class="btn" id="r-rebet">Rebet <kbd>R</kbd></button>
         <button class="btn" id="r-double">×2 <kbd>X</kbd></button>
+        <button class="btn primary wide" id="r-spin">Spin <kbd>Space</kbd></button>
       </div>
-      <div class="row" id="r-low" hidden>
-        <span class="pnote">Your wallet is running low.</span>
-        <button class="btn small primary" id="r-bank">Go to the Bank</button>
-      </div>
-      <div class="payouts">Number 35 to 1 · Dozen or column 2 to 1 · Red/Black, Odd/Even, 1–18/19–36 1 to 1 · Zero loses outside bets</div>
-      <div class="keys">Keys: 1–6 pick a chip · Space spin · U undo · C clear · R rebet · X double · right-click a bet to remove it</div>
     </div>
   </section>
 
   <!-- ================= Blackjack lobby ================= -->
-  <section class="lobby" id="lobby" hidden>
-    <div class="hero">
+  <section class="view lobby" id="lobby" hidden>
+    <div class="page-head">
       <h1>Blackjack</h1>
-      <p>Rooms for up to four players</p>
+      <p>6 decks · Blackjack pays 3 to 2</p>
     </div>
+    <div class="lcard">
+      <h2>Solo table</h2>
+      <p class="fine">Just you and the dealer. Your chips and your hand are saved.</p>
+      <button class="btn primary block" id="solo-btn">Play solo</button>
+    </div>
+    <div class="section-label">Play with friends</div>
     <p class="note" id="lobby-note" hidden></p>
-    <div class="lgrid">
-      <div class="lcard">
-        <h2>Start a room</h2>
-        <label for="room-name">Room name</label>
-        <div class="field">
-          <input class="text" id="room-name" maxlength="28" placeholder="Friday night" autocomplete="off">
-          <button class="btn primary" id="create-btn">Create</button>
-        </div>
-        <p class="fine">You'll get an invite link to send to up to three friends.</p>
+    <div class="room-cards" id="room-cards">
+    <div class="lcard">
+      <h2>Start a room</h2>
+      <label for="room-name">Room name</label>
+      <div class="field">
+        <input class="text" id="room-name" maxlength="28" placeholder="Friday night" autocomplete="off" enterkeyhint="go">
+        <button class="btn primary" id="create-btn">Create</button>
       </div>
-      <div class="lcard">
-        <h2>Join with a code</h2>
-        <label for="join-code">Room code</label>
-        <div class="field">
-          <input class="text" id="join-code" maxlength="12" placeholder="K7M2QX" autocomplete="off" autocapitalize="characters">
-          <button class="btn" id="join-btn">Join</button>
-        </div>
-        <p class="fine">Codes are six letters and numbers, shown at the top of every room.</p>
+      <p class="fine">You’ll get an invite link for up to three friends.</p>
+    </div>
+    <div class="lcard">
+      <h2>Join with a code</h2>
+      <label for="join-code">Room code</label>
+      <div class="field">
+        <input class="text" id="join-code" maxlength="12" placeholder="K7M2QX" autocomplete="off" autocapitalize="characters" enterkeyhint="go">
+        <button class="btn" id="join-btn">Join</button>
       </div>
     </div>
     <div class="lcard">
@@ -862,126 +985,158 @@
       <ul class="room-list" id="room-list"></ul>
       <p class="fine" id="room-empty"></p>
     </div>
-    <div class="solo-row">
-      <button class="btn" id="solo-btn">Play solo</button>
-      <span>Practice against the dealer on your own.</span>
     </div>
-    <div class="lobby-rules">6 decks · Blackjack pays 3 to 2 · Dealer stands on all 17s</div>
+    <div class="lobby-rules">Dealer stands on all 17s · Insurance pays 2 to 1</div>
   </section>
 
   <!-- ================= Table ================= -->
-  <section id="table-view" hidden>
-    <header class="topbar">
-      <button class="back-home" id="back-btn">← Rooms</button>
-      <div class="room-title"><span class="rname" id="t-name"></span><span class="rcode" id="t-code"></span></div>
-      <div class="top-right">
-        <button class="toggle" id="invite-btn" aria-expanded="false">Invite</button>
-        <button class="toggle hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
-        <button class="bank" id="bank-pill" aria-expanded="false" title="Add chips from your wallet">Chips<span id="bank">—</span><b class="plus" aria-hidden="true">+</b></button>
-      </div>
-    </header>
-
-    <div class="invite" id="chips-panel" hidden>
-      <div class="row" style="justify-content:space-between">
-        <span class="pnote" style="text-align:left">Move money from your wallet to this table</span>
-        <span class="pnote">Wallet <b id="cp-wallet">—</b></span>
-      </div>
-      <div class="row" id="cp-buttons">
-        <button class="btn small" data-a="500">+$500</button>
-        <button class="btn small" data-a="1000">+$1K</button>
-        <button class="btn small" data-a="5000">+$5K</button>
-        <button class="btn small" data-a="25000">+$25K</button>
-        <button class="btn small primary" data-a="all" id="cp-all">All</button>
-      </div>
-      <div class="row" style="justify-content:space-between">
-        <p class="fine" id="cp-help"></p>
-        <button class="btn small" id="cp-bank">Go to the Bank</button>
-      </div>
-    </div>
-
-    <div class="invite" id="invite-panel" hidden>
-      <div class="row" style="justify-content:space-between">
-        <span class="pnote" style="text-align:left">Room code</span>
-        <span class="bigcode" id="invite-code"></span>
-      </div>
-      <div class="field">
-        <input class="text" id="invite-link" readonly aria-label="Invite link">
-        <button class="btn primary" id="copy-btn">Copy link</button>
-      </div>
-      <p class="fine" id="invite-help"></p>
-    </div>
-
+  <section class="view has-dock" id="table-view" hidden>
     <p class="note" id="t-note" hidden></p>
-
     <div id="game">
-      <div class="rules">
-        <div class="big">Blackjack pays 3 to 2</div>
-        <div class="small">Dealer stands on all 17s · Insurance pays 2 to 1</div>
+      <div class="felt" id="felt">
+        <section class="dealer" aria-label="Dealer">
+          <div id="shoe" hidden></div>
+          <div class="label">Dealer <span class="badge" id="dealer-total"></span></div>
+          <div class="cards" id="dealer-cards"></div>
+        </section>
+        <section class="others" id="seats" aria-label="Players"></section>
+        <div class="mid">
+          <div class="rules">
+            <div class="big">Blackjack pays 3 to 2</div>
+            <div class="small">Dealer stands on all 17s · Insurance pays 2 to 1</div>
+          </div>
+          <div class="msg" id="msg" role="status" aria-live="polite"><div class="title" id="msg-title"></div><div class="sub" id="msg-sub"></div></div>
+          <div class="status-line" id="status-line"></div>
+        </div>
+        <section class="my-seat" id="my-seat" aria-label="Your seat"></section>
       </div>
 
-      <section class="dealer" aria-label="Dealer">
-        <div class="shoe" id="shoe" aria-hidden="true"><div class="cardback"></div><div class="cardback"></div><div class="cardback"></div></div>
-        <div class="label">Dealer <span class="badge" id="dealer-total"></span></div>
-        <div class="cards" id="dealer-cards"></div>
-      </section>
-
-      <div class="msg" id="msg" role="status" aria-live="polite"><div class="title" id="msg-title"></div><div class="sub" id="msg-sub"></div></div>
-      <div class="status-line" id="status-line"></div>
-
-      <section class="seats" id="seats" aria-label="Seats"></section>
-
-      <section class="controls">
-        <div class="panel" id="bet-panel" hidden>
-          <div class="chips">
-            <button class="chip chipface" data-v="5" style="--c:#c8303c" aria-label="Add $5 chip">5</button>
-            <button class="chip chipface" data-v="25" style="--c:#2f6fd0" aria-label="Add $25 chip">25</button>
-            <button class="chip chipface" data-v="100" style="--c:#2a2c32" aria-label="Add $100 chip">100</button>
-            <button class="chip chipface" data-v="500" style="--c:#7a3fb8" aria-label="Add $500 chip">500</button>
-            <button class="chip chip-x" id="x2-btn" aria-label="Double your bet">×2</button>
-            <button class="chip chip-x" id="max-btn" aria-label="Bet all your chips">Max</button>
-          </div>
-          <div class="row">
-            <button class="btn" id="clear-btn">Clear</button>
-            <div class="bet-amt" id="bet-amt"></div>
-            <button class="btn" id="out-btn">Sit out</button>
-            <button class="btn primary" id="ready-btn">Ready <kbd>Space</kbd></button>
-            <button class="btn primary" id="rebuy-btn" hidden>Add chips</button>
-          </div>
+      <section class="dock">
+        <div class="dock-top">
+          <button class="chipcount" id="bank-pill" aria-expanded="false" title="Add chips from your wallet">Chips <b id="bank">—</b><span class="plus" aria-hidden="true">+</span></button>
+          <span class="bet-amt" id="bet-amt"></span>
         </div>
-
-        <div class="panel" id="ins-panel" hidden>
-          <div class="pnote" id="ins-text"></div>
-          <div class="row">
-            <button class="btn primary" id="ins-yes"></button>
-            <button class="btn" id="ins-no">No thanks <kbd>N</kbd></button>
+        <div class="panels">
+          <div class="panel" id="bet-panel" hidden>
+            <div class="chips">
+              <button class="chip chipface" data-v="5" style="--c:#c8303c" aria-label="Add $5 chip">5</button>
+              <button class="chip chipface" data-v="25" style="--c:#2f6fd0" aria-label="Add $25 chip">25</button>
+              <button class="chip chipface" data-v="100" style="--c:#2a2c32" aria-label="Add $100 chip">100</button>
+              <button class="chip chipface" data-v="500" style="--c:#7a3fb8" aria-label="Add $500 chip">500</button>
+              <button class="chip chip-x" id="x2-btn" aria-label="Double your bet">×2</button>
+              <button class="chip chip-x" id="max-btn" aria-label="Bet all your chips">Max</button>
+            </div>
+            <div class="row">
+              <button class="btn" id="clear-btn">Clear</button>
+              <button class="btn" id="out-btn">Sit out</button>
+              <button class="btn primary wide" id="ready-btn">Ready <kbd>Space</kbd></button>
+              <button class="btn primary wide" id="rebuy-btn" hidden>Add chips</button>
+            </div>
           </div>
-        </div>
 
-        <div class="panel" id="play-panel" hidden>
-          <div class="pnote" id="play-note"></div>
-          <div class="row">
-            <button class="btn" id="hit-btn">Hit <kbd>H</kbd></button>
-            <button class="btn" id="stand-btn">Stand <kbd>S</kbd></button>
-            <button class="btn" id="double-btn">Double <kbd>D</kbd></button>
-            <button class="btn" id="split-btn">Split <kbd>P</kbd></button>
+          <div class="panel" id="ins-panel" hidden>
+            <div class="pnote" id="ins-text"></div>
+            <div class="row actions">
+              <button class="btn primary" id="ins-yes"></button>
+              <button class="btn" id="ins-no">No thanks <kbd>N</kbd></button>
+            </div>
           </div>
-        </div>
 
-        <div class="panel" id="info-panel" hidden>
-          <div class="pnote" id="info-text"></div>
+          <div class="panel" id="play-panel" hidden>
+            <div class="pnote" id="play-note"></div>
+            <div class="row actions">
+              <button class="btn" id="hit-btn">Hit <kbd>H</kbd></button>
+              <button class="btn" id="stand-btn">Stand <kbd>S</kbd></button>
+              <button class="btn" id="double-btn">Double <kbd>D</kbd></button>
+              <button class="btn" id="split-btn">Split <kbd>P</kbd></button>
+            </div>
+          </div>
+
+          <div class="panel" id="info-panel" hidden>
+            <div class="pnote" id="info-text"></div>
+          </div>
         </div>
       </section>
-
-      <footer class="footer">
-        <span id="stats"></span>
-        <button class="linkbtn" id="leave-btn" hidden>Leave seat</button>
-      </footer>
-      <div class="keys">Keys: 1–4 add chips · 5 double bet · 6 max · Space ready · H hit · S stand · D double · P split · Y/N insurance</div>
     </div>
   </section>
 </div>
-<div class="toast" id="toast" role="status" hidden></div>
 
+<!-- ================= Sheets and overlays ================= -->
+<div class="overlay" id="chips-panel" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cp-title">
+    <h2 id="cp-title">Your chips</h2>
+    <div class="sheet-stats"><span>At this table<b id="cp-table">—</b></span><span>Wallet<b id="cp-wallet">—</b></span></div>
+    <p class="fine">Bring money from your wallet to this table.</p>
+    <div class="quick" id="cp-buttons">
+      <button class="btn small" data-a="500">+$500</button>
+      <button class="btn small" data-a="1000">+$1K</button>
+      <button class="btn small" data-a="5000">+$5K</button>
+      <button class="btn small" data-a="25000">+$25K</button>
+      <button class="btn small" data-a="100000">+$100K</button>
+      <button class="btn small primary" data-a="all" id="cp-all">All</button>
+    </div>
+    <p class="fine" id="cp-help"></p>
+    <div class="row">
+      <button class="btn" id="cp-bank">Go to the Bank</button>
+      <button class="btn" id="cp-close">Done</button>
+    </div>
+    <div class="sheet-foot">
+      <span id="stats"></span>
+      <button class="linkbtn" id="leave-btn" hidden>Leave seat</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="invite-panel" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="inv-title">
+    <h2 id="inv-title">Invite friends</h2>
+    <div class="invite-code"><span>Room code</span><span class="bigcode" id="invite-code"></span></div>
+    <div class="field">
+      <input class="text invite-link" id="invite-link" readonly aria-label="Invite link">
+      <button class="btn primary" id="copy-btn">Copy</button>
+    </div>
+    <button class="btn block" id="share-btn" hidden>Share…</button>
+    <p class="fine" id="invite-help"></p>
+    <button class="btn block" id="invite-close">Done</button>
+  </div>
+</div>
+
+<div class="overlay top" id="auth" hidden>
+  <form class="auth-card" id="auth-form" novalidate>
+    <h2 id="auth-title">Sign in</h2>
+    <p class="fine" id="auth-sub"></p>
+    <div class="auth-field" id="auth-name-row">
+      <label for="auth-name">Name</label>
+      <input class="text" id="auth-name" autocomplete="nickname" maxlength="40">
+    </div>
+    <div class="auth-field">
+      <label for="auth-email">Email</label>
+      <input class="text" id="auth-email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" required>
+    </div>
+    <div class="auth-field">
+      <label for="auth-password">Password</label>
+      <input class="text" id="auth-password" type="password" autocomplete="current-password" minlength="8" required>
+    </div>
+    <p class="auth-error" id="auth-error" role="alert"></p>
+    <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
+    <div class="auth-links">
+      <button type="button" class="linkbtn" id="auth-switch"></button>
+      <button type="button" class="linkbtn" id="auth-close">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div class="stage" id="r-stage" hidden>
+  <div class="stage-wheel" id="r-stage-wheel"></div>
+  <div class="stage-cap">
+    <span class="rnum" id="r-cap-num">…</span>
+    <div class="stage-title" id="r-cap-title"></div>
+    <div class="stage-sub" id="r-cap-sub"></div>
+  </div>
+  <div class="stage-hint" id="r-cap-hint" hidden>Tap to place your next bets</div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
 <script>
 'use strict';
 
@@ -1014,9 +1169,8 @@ const WALLET_MAX = 1e15;              // the vault's idea of infinity
 const WITHDRAW_MAX = 999999999999;
 const MAX_CHIPS = 1e15;
 const GAMES = [
-  { go: 'blackjack', name: 'Blackjack', blurb: 'Rooms for up to four players with invite links, or practice solo.', cta: 'Play', art: 'cards' },
-  { go: 'roulette', name: 'Roulette', blurb: 'Single-zero wheel. Bet on numbers, colors, dozens and more, straight from your wallet.', cta: 'Play', art: 'wheel' },
-  { go: 'bank', name: 'The Bottomless Bank', blurb: 'Withdraw as much money as you want. Nobody is counting.', cta: 'Visit', art: 'vault' },
+  { go: 'blackjack', name: 'Blackjack', blurb: 'Solo, or a room for up to four friends.', cta: 'Play', art: 'cards' },
+  { go: 'roulette', name: 'Roulette', blurb: 'Single zero. Bets straight from your wallet.', cta: 'Play', art: 'wheel' },
 ];
 const QUIPS = [
   'Approved. We didn’t check.',
@@ -1442,12 +1596,17 @@ const app = {
   lobby: [], lobbyState: 'idle',
   hints: false, inviteOpen: false,
   unsubs: [], timers: [],
-  renderedRound: -1, animTimer: 0, msgKey: '',
+  renderedRound: -1, animTimer: 0, msgKey: '', turnKey: '',
 };
 
 const $ = id => document.getElementById(id);
 const ui = {
   casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
+  backLabel: $('back-label'), brand: $('brand'), barTitle: $('bar-title'), tableTools: $('table-tools'),
+  homeWallet: $('home-wallet'), homeBank: $('home-bank'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
+  cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
+  rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
+  rCapNum: $('r-cap-num'), rCapTitle: $('r-cap-title'), rCapSub: $('r-cap-sub'), rCapHint: $('r-cap-hint'),
   account: $('account'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
   authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
   authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
@@ -1461,7 +1620,7 @@ const ui = {
   cpAll: $('cp-all'), cpHelp: $('cp-help'), cpBank: $('cp-bank'), x2: $('x2-btn'), max: $('max-btn'),
   lobby: $('lobby'), lobbyNote: $('lobby-note'), roomName: $('room-name'), createBtn: $('create-btn'),
   joinCode: $('join-code'), joinBtn: $('join-btn'), roomList: $('room-list'), roomEmpty: $('room-empty'), soloBtn: $('solo-btn'),
-  tableView: $('table-view'), backBtn: $('back-btn'), tName: $('t-name'), tCode: $('t-code'),
+  tableView: $('table-view'), tName: $('t-name'), tCode: $('t-code'),
   inviteBtn: $('invite-btn'), hintToggle: $('hint-toggle'), bankPill: $('bank-pill'), bank: $('bank'),
   invitePanel: $('invite-panel'), inviteCode: $('invite-code'), inviteLink: $('invite-link'), copyBtn: $('copy-btn'), inviteHelp: $('invite-help'),
   tNote: $('t-note'), game: $('game'), shoe: $('shoe'),
@@ -1531,6 +1690,14 @@ function toast(text) {
   ui.toast.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { ui.toast.hidden = true; }, 2200);
+}
+/* A tap of haptic feedback where the phone supports it (Android). iPhones ignore it. */
+function buzz(pattern) {
+  try { if (navigator.vibrate) navigator.vibrate(pattern || 8); } catch (e) { /* not allowed in this frame */ }
+}
+function syncLock() {
+  const open = !ui.auth.hidden || !ui.chipsPanel.hidden || !ui.invitePanel.hidden || !ui.rStage.hidden;
+  document.body.classList.toggle('locked', open);
 }
 function inviteURL(code) {
   return ARTIFACT_URL ? `${ARTIFACT_URL}#table-${code}` : '';
@@ -1641,6 +1808,7 @@ function renderLobby() {
   else if (app.canWrite === false) note = 'You can watch rooms here. To play, ask the owner of this page to share it with you with edit access.';
   ui.lobbyNote.textContent = note;
   ui.lobbyNote.hidden = !note;
+  ui.roomCards.hidden = app.capsReady && !app.db;   // no rooms here at all: just the note
   const netOK = app.capsReady && !!app.db && !!app.me && app.canWrite !== false;
   ui.createBtn.disabled = !netOK;
   ui.roomName.disabled = !netOK;
@@ -2101,11 +2269,13 @@ function walletChange(delta, what, opts = {}) {
 function withdraw(amount) {
   if (!wallet.ready) return;
   const a = amount != null ? amount : parseAmount(ui.wdAmount.value);
-  if (!Number.isFinite(a) || a < 1) { app.teller = 'Type an amount. Any amount. Try 1m or 2.5b.'; render(); return; }
+  if (!Number.isFinite(a) || a < 1) { app.teller = 'Type an amount. Any amount.'; render(); return; }
   if (a > WITHDRAW_MAX) { app.teller = `That’s more zeros than the vault can count. The limit is ${moneyFull(WITHDRAW_MAX)} per withdrawal.`; render(); return; }
   if (wallet.balance + a > WALLET_MAX) { app.teller = 'Your wallet is full. Literally. Go spend some.'; render(); return; }
   walletChange(a, 'Withdrawal', { withdraw: true });
+  buzz([12, 50, 12]);
   ui.wdAmount.value = '';
+  ui.wdAmount.blur();
   let i;
   do { i = Math.floor(Math.random() * QUIPS.length); } while (i === app.lastQuip && QUIPS.length > 1);
   app.lastQuip = i;
@@ -2168,12 +2338,11 @@ function buildTiles() {
       art.innerHTML =
         `<div class="card ace"><div class="inner"><div class="face">${faceHTML('AS')}</div></div></div>` +
         `<div class="card red"><div class="inner"><div class="face">${faceHTML('KH')}</div></div></div>`;
-    } else if (g.art === 'wheel') {
-      art.innerHTML = '<div class="mini-wheel"></div>';
     } else {
-      art.innerHTML = '<div class="vault">∞</div>';
+      art.innerHTML = '<div class="mini-wheel"></div>';
     }
     const body = document.createElement('div');
+    body.className = 'tile-body';
     const h = document.createElement('h2');
     h.textContent = g.name;
     const p = document.createElement('p');
@@ -2236,6 +2405,7 @@ const rl = {
   chip: 25, bets: {}, undo: [], last: null, history: [],
   spinning: false, live: null, result: null, net: 0, payout: 0, wins: new Set(), showResult: false, popNum: false,
   anim: null, w: 0, rel: 0, br: 0,
+  stage: null, stageTimer: 0,   // full-screen wheel: 'spin' while the ball rolls, 'result' once it lands
 };
 function rlLoad() {
   try {
@@ -2263,6 +2433,7 @@ function rlPlace(key) {
   if (rl.chip > wallet.balance - rlTotal()) { toast('Not enough in your wallet for that chip. The bank can fix that.'); render(); return; }
   rlSnapshot();
   rl.bets[key] = (rl.bets[key] || 0) + rl.chip;
+  buzz();
   render();
 }
 function rlRemove(key) {
@@ -2290,7 +2461,7 @@ function rlDouble() {
   for (const k of Object.keys(rl.bets)) rl.bets[k] *= 2;
   render();
 }
-function rlPickChip(v) { if (R_CHIPS.includes(v)) { rl.chip = v; rlSave(); render(); } }
+function rlPickChip(v) { if (R_CHIPS.includes(v)) { rl.chip = v; buzz(5); rlSave(); render(); } }
 
 function rlSpin() {
   if (rl.spinning || !wallet.ready) return;
@@ -2306,8 +2477,28 @@ function rlSpin() {
   rl.showResult = false;
   rl.wins = new Set();
   rlSave();
+  buzz(20);
+  rlStageOpen();
   rlAnimate(result);
   render();
+}
+/* The wheel lives in the header as a thumbnail. Spinning moves the same canvas into a full-screen stage. */
+function rlStageOpen() {
+  clearTimeout(rl.stageTimer);
+  rl.stage = 'spin';
+  ui.rStage.hidden = false;
+  ui.rStageWheel.appendChild(ui.rWheel);
+  syncLock();
+  rlDraw();
+}
+function rlStageClose() {
+  if (!rl.stage) return;
+  clearTimeout(rl.stageTimer);
+  rl.stage = null;
+  ui.rStage.hidden = true;
+  ui.rSlot.appendChild(ui.rWheel);
+  syncLock();
+  rlDraw();
 }
 function rlSettle() {
   const live = rl.live;
@@ -2331,6 +2522,11 @@ function rlSettle() {
   rl.history = [live.result, ...rl.history].slice(0, 14);
   rlSave();
   walletChange(payout, null, { log: { a: net, w: `Roulette · ${live.result} ${colorName(live.result)}` } });
+  if (net > 0) buzz([15, 60, 25]);
+  if (rl.stage) {
+    rl.stage = 'result';
+    rl.stageTimer = setTimeout(rlStageClose, 2600);
+  }
   render();
 }
 
@@ -2367,7 +2563,7 @@ function rlFrame(now) {
   }
 }
 
-let wheelImgs = null;
+const wheelImgs = new Map();   // pre-drawn wheel parts per canvas size (thumbnail and full screen)
 function circle(g, r) { g.beginPath(); g.arc(0, 0, r, 0, TAU); }
 function buildWheelImgs(px) {
   const R = px / 2;
@@ -2438,16 +2634,21 @@ function rlDraw() {
   if (!css) return;
   const px = Math.round(css * Math.min(2, window.devicePixelRatio || 1));
   if (cv.width !== px) { cv.width = px; cv.height = px; }
-  if (!wheelImgs || wheelImgs.px !== px) wheelImgs = buildWheelImgs(px);
+  let imgs = wheelImgs.get(px);
+  if (!imgs) {
+    imgs = buildWheelImgs(px);
+    wheelImgs.set(px, imgs);
+    if (wheelImgs.size > 3) wheelImgs.delete(wheelImgs.keys().next().value);
+  }
   const g = cv.getContext('2d');
   const R = px / 2;
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, px, px);
-  g.drawImage(wheelImgs.bowl, 0, 0);
+  g.drawImage(imgs.bowl, 0, 0);
   g.save();
   g.translate(R, R);
   g.rotate(rl.w);
-  g.drawImage(wheelImgs.rotor, -wheelImgs.rr, -wheelImgs.rr);
+  g.drawImage(imgs.rotor, -imgs.rr, -imgs.rr);
   g.restore();
   if (!rl.history.length && !rl.spinning) return;      // no ball until the first spin
   const ang = rl.w + rl.rel;
@@ -2463,10 +2664,10 @@ function rlDraw() {
 
 const rCells = new Map();
 function buildRoulette() {
-  const add = (key, label, cls, h, v) => {
+  // A tall board for phones: zero on top, numbers in three columns, dozens and even-money bets down the left.
+  const add = (key, label, cls, v) => {
     const b = document.createElement('button');
     b.className = 'rcell ' + cls;
-    b.style.setProperty('--r', h[0]); b.style.setProperty('--c', h[1]);
     b.style.setProperty('--vr', v[0]); b.style.setProperty('--vc', v[1]);
     const lab = document.createElement('span');
     lab.textContent = label;
@@ -2484,16 +2685,12 @@ function buildRoulette() {
     ui.rBoard.appendChild(b);
     rCells.set(key, b);
   };
-  // Horizontal board (desktop) and vertical board (phone) share the same cells
-  add('n0', '0', 'green', ['1 / span 3', '1'], ['1', '3 / span 3']);
-  for (let n = 1; n <= 36; n++) {
-    const k = Math.ceil(n / 3);
-    add('n' + n, String(n), colorOf(n), [String(3 - ((n - 1) % 3)), String(k + 1)], [String(k + 1), String(((n - 1) % 3) + 3)]);
-  }
-  for (let j = 1; j <= 3; j++) add('col' + j, '2 to 1', 'out', [String(4 - j), '14'], ['14', String(j + 2)]);
-  ['1st 12', '2nd 12', '3rd 12'].forEach((l, i) => add('doz' + (i + 1), l, 'out', ['4', `${2 + i * 4} / span 4`], [`${2 + i * 4} / span 4`, '1']));
+  add('n0', '0', 'green', ['1', '3 / span 3']);
+  for (let n = 1; n <= 36; n++) add('n' + n, String(n), colorOf(n), [String(Math.ceil(n / 3) + 1), String(((n - 1) % 3) + 3)]);
+  for (let j = 1; j <= 3; j++) add('col' + j, '2 to 1', 'out', ['14', String(j + 2)]);
+  ['1st 12', '2nd 12', '3rd 12'].forEach((l, i) => add('doz' + (i + 1), l, 'out', [`${2 + i * 4} / span 4`, '1']));
   [['low', '1–18'], ['even', 'Even'], ['red', 'Red'], ['black', 'Black'], ['odd', 'Odd'], ['high', '19–36']].forEach(([k, l], i) =>
-    add(k, l, 'out' + (k === 'red' ? ' is-red' : k === 'black' ? ' is-black' : ''), ['5', `${2 + i * 2} / span 2`], [`${2 + i * 2} / span 2`, '2']));
+    add(k, l, 'out' + (k === 'red' ? ' is-red' : k === 'black' ? ' is-black' : ''), [`${2 + i * 2} / span 2`, '2']));
 
   for (const v of R_CHIPS) {
     const c = document.createElement('button');
@@ -2550,6 +2747,17 @@ function renderRoulette() {
   ui.rSub.textContent = sub;
   ui.rResult.className = 'rresult' + (tone ? ' ' + tone : '');
 
+  // Full-screen wheel caption
+  if (rl.stage) {
+    const done = rl.stage === 'result';
+    ui.rStage.className = 'stage' + (done && tone ? ' ' + tone : '');
+    ui.rCapNum.className = 'rnum' + (done ? ' pop ' + colorOf(rl.result) : '');
+    ui.rCapNum.textContent = done ? String(rl.result) : '…';
+    ui.rCapTitle.textContent = done ? title : 'No more bets';
+    ui.rCapSub.textContent = done ? sub : `${money(total)} on the table`;
+    ui.rCapHint.hidden = !done;
+  }
+
   ui.rHist.textContent = '';
   for (const n of rl.history) {
     const s = document.createElement('span');
@@ -2562,11 +2770,13 @@ function renderRoulette() {
   const lastTotal = rl.last ? rlTotal(rl.last) : 0;
   const canRebet = !rl.spinning && !total && lastTotal > 0 && lastTotal <= bal;
   ui.rSpin.disabled = rl.spinning || !wallet.ready || (!total && !canRebet);
-  ui.rSpin.innerHTML = !total && canRebet ? 'Rebet &amp; spin <kbd>Space</kbd>' : 'Spin <kbd>Space</kbd>';
+  ui.rSpin.setAttribute('aria-label', !total && canRebet ? 'Rebet and spin' : 'Spin');
   ui.rUndo.disabled = rl.spinning || !rl.undo.length;
   ui.rClear.disabled = rl.spinning || !total;
   ui.rRebet.disabled = !canRebet;
   ui.rDouble.disabled = rl.spinning || !total || total * 2 > bal;
+  ui.rRebet.hidden = total > 0;      // one slot: Rebet before you bet, ×2 once chips are down
+  ui.rDouble.hidden = !total;
   for (const c of ui.rChips.children) {
     const v = Number(c.dataset.v);
     c.classList.toggle('sel', v === rl.chip);
@@ -2699,21 +2909,32 @@ function renderAccount() {
   el.hidden = !cloud.on;
   if (!cloud.on) return;
   el.textContent = '';
-  const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.textContent = '·'; el.appendChild(s); };
-  const link = (label, fn) => { const b = document.createElement('button'); b.className = 'linkbtn'; b.textContent = label; b.addEventListener('click', fn); el.appendChild(b); };
+  const text = document.createElement('div');
+  text.className = 'acct-text';
+  const head = document.createElement('b');
+  const line = document.createElement('span');
+  text.append(head, line);
+  const actions = document.createElement('div');
+  actions.className = 'acct-actions';
+  const btn = (label, fn, primary) => {
+    const b = document.createElement('button');
+    b.className = 'btn small' + (primary ? ' primary' : '');
+    b.textContent = label;
+    b.addEventListener('click', fn);
+    actions.appendChild(b);
+  };
   if (cloud.user) {
-    el.append(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
-    const words = { loading: 'Loading your save…', saving: 'Saving…', saved: 'Progress saved', error: 'Couldn’t save. Will retry on your next move.' }[cloud.state];
-    if (words) { sep(); el.append(words); }
-    sep();
-    link('Sign out', signOut);
+    head.textContent = `Signed in as ${cloud.user.name || cloud.user.email || 'you'}`;
+    line.textContent = { loading: 'Loading your save…', saving: 'Saving…', saved: 'Progress saved', error: 'Couldn’t save. Will retry on your next move.' }[cloud.state]
+      || 'Your progress saves to your account.';
+    btn('Sign out', signOut);
   } else {
-    el.append('Keep your wallet on every device');
-    sep();
-    link('Sign in', () => openAuth('in'));
-    el.append(' or ');
-    link('create an account', () => openAuth('up'));
+    head.textContent = 'Save your progress';
+    line.textContent = 'Keep your wallet on every device.';
+    btn('Sign in', () => openAuth('in'));
+    btn('Create account', () => openAuth('up'), true);
   }
+  el.append(text, actions);
 }
 
 function openAuth(mode) {
@@ -2721,12 +2942,14 @@ function openAuth(mode) {
   ui.authError.textContent = '';
   ui.auth.hidden = false;
   renderAuth();
+  syncLock();
   (mode === 'up' ? ui.authName : ui.authEmail).focus();
 }
 function closeAuth() {
   ui.auth.hidden = true;
   ui.authPassword.value = '';
   ui.authError.textContent = '';
+  syncLock();
 }
 function renderAuth() {
   const up = app.authMode === 'up';
@@ -2805,6 +3028,7 @@ function act(t) {
   if (!h || playPending()) return;
   if (t === 'double' && !canDouble(T, h)) return;
   if (t === 'split' && !canSplit(T, h)) return;
+  buzz(10);
   const k = T.turn;
   const s = send({ t, k });
   if (s && !app.solo) app.pendingPlay = { s, k, at: Date.now() };
@@ -2948,19 +3172,33 @@ function ensureNames(ids) {
 
 function render() {
   const v = app.view;
-  ui.casinoBar.hidden = v === 'table';
   ui.home.hidden = v !== 'home';
   ui.bankView.hidden = v !== 'bank';
   ui.rouletteView.hidden = v !== 'roulette';
   ui.lobby.hidden = v !== 'lobby';
   ui.tableView.hidden = v !== 'table';
+
+  // App bar: the brand on home; elsewhere a back link, plus the wallet (or the table's tools at blackjack)
+  ui.casinoBar.classList.toggle('is-home', v === 'home');
+  ui.brand.hidden = v !== 'home';
   ui.homeBtn.hidden = v === 'home';
-  ui.walletAmt.textContent = wallet.ready ? money(wallet.balance) : '—';
+  ui.backLabel.textContent = v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms') : 'Home';
+  ui.barTitle.hidden = v !== 'table';
+  ui.tableTools.hidden = v !== 'table';
+  ui.balanceBtn.hidden = v === 'table';
+  ui.balanceBtn.disabled = v === 'bank';
+  const bal = wallet.ready ? money(wallet.balance) : '—';
+  ui.walletAmt.textContent = bal;
+  ui.homeWallet.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
+
+  if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
+  if (v !== 'roulette' && rl.stage) rlStageClose();
   if (v === 'home') renderAccount();
   if (v === 'lobby') renderLobby();
   else if (v === 'bank') renderBank();
   else if (v === 'roulette') renderRoulette();
   else if (v === 'table') renderTable();
+  syncLock();
 }
 
 function renderChipsPanel() {
@@ -2970,6 +3208,7 @@ function renderChipsPanel() {
   if (!open) return;
   const bal = wallet.ready ? wallet.balance : 0;
   ui.cpWallet.textContent = wallet.ready ? money(bal) : '—';
+  ui.cpTable.textContent = ui.bank.textContent;
   ui.cpButtons.forEach(b => {
     if (b.dataset.a === 'all') { b.disabled = bal < 1; b.textContent = bal >= 1 ? `All ${money(bal)}` : 'All'; }
     else b.disabled = bal < Number(b.dataset.a);
@@ -2988,6 +3227,7 @@ function renderTable() {
   // Header
   ui.tName.textContent = app.solo ? 'Solo table' : (T && T.name) || 'Blackjack table';
   ui.tCode.textContent = app.solo ? '' : String(app.code || '').toUpperCase();
+  ui.felt.classList.toggle('multi', !app.solo);
   ui.inviteBtn.hidden = app.solo;
   ui.inviteBtn.setAttribute('aria-expanded', String(app.inviteOpen));
   ui.invitePanel.hidden = app.solo || !app.inviteOpen;
@@ -2997,6 +3237,7 @@ function renderTable() {
     ui.inviteCode.textContent = String(app.code || '').toUpperCase();
     ui.inviteLink.value = link || 'Use Share → Copy link while this room is open';
     ui.copyBtn.disabled = !link;
+    ui.shareBtn.hidden = !link || typeof navigator.share !== 'function';
     ui.inviteHelp.textContent = 'Your friend needs access to this page as well: in Claude, open Share and invite them by email with edit access. People who open it through a public link can only watch.';
   }
 
@@ -3049,6 +3290,13 @@ function renderTable() {
   renderMessage(T, R, ctx);
   renderControls(T, R, ctx);
 
+  // On a crowded table on a short phone, bring your hand into view when it's your turn
+  const turnKey = myTurnHand() ? `${R ? R.n : 0}:${T.turn}` : '';
+  if (turnKey && turnKey !== app.turnKey) {
+    requestAnimationFrame(() => ui.mySeatBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  }
+  app.turnKey = turnKey;
+
   const st = P ? P.stats : null;
   ui.stats.textContent = st ? `Won ${st.w} · Lost ${st.l} · Pushed ${st.p} · Blackjacks ${st.bj}` : '';
   ui.leave.hidden = app.solo || mySeat() < 0;
@@ -3061,11 +3309,20 @@ function renderSeats(T, R, ctx, anim) {
   ui.seats.classList.toggle('solo', app.solo);
   const playable = canPlayHere();
   const iSit = mySeat() >= 0;
+  const others = [];
   for (let s = 0; s < SEATS; s++) {
     const el = seatEls[s];
     const uid = T.seats[s];
     const P = uid ? T.players[uid] : null;
-    el.hidden = app.solo && uid !== me;
+    // Your seat sits big above the controls; everyone else is a compact row under the dealer.
+    const big = !!uid && uid === me;
+    const box = big ? ui.mySeatBox : ui.seats;
+    if (el.parentNode !== box) box.appendChild(el);
+    if (!big) others.push(el);
+    el.classList.toggle('big', big);
+    el.classList.toggle('solo-seat', big && app.solo);
+    // Empty seats only matter to someone looking for a place to sit
+    el.hidden = (app.solo && uid !== me) || (!uid && iSit);
     el.classList.toggle('empty', !uid);
     el.classList.toggle('mine', !!uid && uid === me && !app.solo);
     el.classList.toggle('turn', !!act && act.seat === s && !app.solo);
@@ -3104,6 +3361,8 @@ function renderSeats(T, R, ctx, anim) {
       he.classList.toggle('lost', h.result === 'lose' || h.result === 'bust');
     });
     while (hc.children.length > hands.length) hc.lastElementChild.remove();
+    hc.classList.toggle('multi', hands.length > 1);
+    if (big) { const b = viewBet(); hc.dataset.bet = b ? money(b) : 'BET'; }
 
     if (!uid || !P) { q('.timer').hidden = true; continue; }
 
@@ -3148,6 +3407,9 @@ function renderSeats(T, R, ctx, anim) {
       }
     } else timer.dataset.k = '';
   }
+  others.forEach((el, i) => { if (ui.seats.children[i] !== el) ui.seats.insertBefore(el, ui.seats.children[i] || null); });
+  ui.seats.hidden = others.every(el => el.hidden);
+  ui.mySeatBox.hidden = !ui.mySeatBox.children.length;
   for (const k of [...handEls.keys()]) if (!usedHands.has(k)) handEls.delete(k);
 }
 
@@ -3213,6 +3475,8 @@ function renderControls(T, R, ctx) {
   const seat = mySeat();
   const playable = canPlayHere();
   ui.betPanel.hidden = ui.insPanel.hidden = ui.playPanel.hidden = ui.infoPanel.hidden = true;
+  const inPlay = R && T.phase !== 'betting' ? R.hands.filter(h => h.uid === me).reduce((a, h) => a + h.bet, 0) : 0;
+  ui.betAmt.innerHTML = inPlay ? `In play<b>${money(inPlay)}</b>` : '';
 
   if (!app.solo && (!playable || seat < 0)) {
     let text;
@@ -3275,8 +3539,7 @@ function renderControls(T, R, ctx) {
     const hasHand = R && R.hands.some(x => x.uid === me);
     note = a ? (hasHand ? `Waiting for ${nameOf(a.uid, a.seat)}` : 'You’re sitting out this hand') : '';
   } else if (T.phase === 'insurance') note = 'Waiting for the other players';
-  ui.playNote.innerHTML = note;
-  ui.playNote.hidden = !note;
+  ui.playNote.innerHTML = note;   // stays in the layout when empty, so the buttons don't jump
 }
 
 /* ================= Input ================= */
@@ -3285,14 +3548,28 @@ ui.roomName.addEventListener('keydown', e => { if (e.key === 'Enter') createRoom
 ui.joinBtn.addEventListener('click', joinByCode);
 ui.joinCode.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
 ui.soloBtn.addEventListener('click', () => go('solo'));
-ui.backBtn.addEventListener('click', () => go('blackjack'));
-ui.homeBtn.addEventListener('click', () => go('home'));
+ui.homeBtn.addEventListener('click', () => go(app.view === 'table' ? 'blackjack' : 'home'));
 ui.balanceBtn.addEventListener('click', () => go('bank'));
+ui.homeBank.addEventListener('click', () => go('bank'));
 ui.authForm.addEventListener('submit', authSubmit);
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
 ui.authClose.addEventListener('click', closeAuth);
 ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ui.auth.hidden) closeAuth(); });
+// Sheets close from Done, a tap on the dimmed backdrop, or Escape
+const closeChips = () => { app.chipsOpen = false; render(); };
+const closeInvite = () => { app.inviteOpen = false; render(); };
+ui.cpClose.addEventListener('click', closeChips);
+ui.inviteClose.addEventListener('click', closeInvite);
+ui.chipsPanel.addEventListener('click', e => { if (e.target === ui.chipsPanel) closeChips(); });
+ui.invitePanel.addEventListener('click', e => { if (e.target === ui.invitePanel) closeInvite(); });
+ui.rStage.addEventListener('click', () => { if (rl.stage === 'result') rlStageClose(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!ui.auth.hidden) closeAuth();
+  else if (app.chipsOpen) closeChips();
+  else if (app.inviteOpen) closeInvite();
+  else if (rl.stage === 'result') rlStageClose();
+});
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && cloud.timer) cloudPush(true); });
 ui.rSpin.addEventListener('click', rlSpin);
 ui.rUndo.addEventListener('click', rlUndo);
@@ -3311,14 +3588,22 @@ ui.quick.forEach(b => b.addEventListener('click', () => withdraw(Number(b.datase
 ui.x2.addEventListener('click', doubleBet);
 ui.max.addEventListener('click', maxBet);
 ui.hintToggle.addEventListener('click', () => { app.hints = !app.hints; prefsSave(); render(); });
-ui.copyBtn.addEventListener('click', () => {
+function copyInvite() {
   const text = ui.inviteLink.value;
-  const fallback = () => { ui.inviteLink.focus(); ui.inviteLink.select(); toast('Press ⌘C or Ctrl+C to copy the link'); };
+  const fallback = () => { ui.inviteLink.focus(); ui.inviteLink.select(); toast('Select the link and copy it'); };
   try {
     navigator.clipboard.writeText(text).then(() => toast('Invite link copied'), fallback);
   } catch (e) { fallback(); }
+}
+ui.copyBtn.addEventListener('click', copyInvite);
+ui.shareBtn.addEventListener('click', async () => {
+  try {
+    await navigator.share({ title: 'Join my blackjack table', text: `Room code ${String(app.code || '').toUpperCase()}`, url: ui.inviteLink.value });
+  } catch (e) {
+    if (!e || e.name !== 'AbortError') copyInvite();
+  }
 });
-ui.chips.forEach(c => c.addEventListener('click', () => addChip(Number(c.dataset.v))));
+ui.chips.forEach(c => c.addEventListener('click', () => { buzz(); addChip(Number(c.dataset.v)); }));
 ui.clear.addEventListener('click', clearBet);
 ui.ready.addEventListener('click', toggleReady);
 ui.out.addEventListener('click', sitOut);
