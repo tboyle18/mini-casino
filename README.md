@@ -15,6 +15,18 @@ A play-money casino in a single HTML page.
 | `wrangler.jsonc` | Cloudflare Workers config. Serves the site as static assets from `dist/`. |
 | `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, PWA and iOS tags) as `index.html`, copies `blackjack.html` and `public/`, and stamps the service worker with a content hash. |
 | `public/` | PWA files: `manifest.webmanifest`, `sw.js` (offline cache), `_headers` (no-cache for the service worker) and `icons/`. |
+| `src/worker.js` | The Worker's API: a same-origin proxy to Neon Auth (`/api/auth/*`), `/api/me`, and `/api/save` for cloud saves in Neon Postgres. Everything else is served from `dist/`. |
+
+## Accounts and cloud saves (Neon)
+
+On the Cloudflare site, players can create an account (email and password) and their wallet, bank statement, roulette history and solo blackjack table save to it, so they follow them to any device. Signed out, everything still works and stays in the browser. The first time someone creates an account, this browser's progress moves into it.
+
+- **Database:** Neon project `mini-casino` (us-east-2), table `saves (user_id text primary key, data jsonb, version int, updated_at timestamptz)`. Saves use the version number so an old device can't overwrite newer progress; it gets the newer save instead.
+- **Sign-in:** Neon Auth (Managed Better Auth) on the project's `main` branch. The browser only talks to this site; the Worker proxies sign-in to Neon so the session cookie belongs to this domain.
+- **Config:** `NEON_AUTH_BASE_URL` is a plain var in `wrangler.jsonc`. `DATABASE_URL` is a secret: `npx wrangler secret put DATABASE_URL` for production, and a `DATABASE_URL=...` line in `.dev.vars` (gitignored) for `wrangler dev`.
+- **Trusted domains:** Neon Auth only accepts sign-ins from domains on its allowlist. Localhost is allowed for development; add any new domain (for example a custom domain) in the Neon Console under Auth, or with the Neon MCP `add_auth_trusted_domain` tool.
+
+The claude.ai version keeps using claude.ai's own storage and doesn't show sign-in.
 | `scripts/make-icons.mjs` | Draws the app icons into `public/icons/`. Run it after changing the icon design; the PNGs are committed. |
 
 ## Installing the app

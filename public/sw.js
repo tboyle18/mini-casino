@@ -40,7 +40,8 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname === '/sw.js') return;
+  // Never cache the service worker itself or the API (sign-in and saves must always be live).
+  if (url.origin !== self.location.origin || url.pathname === '/sw.js' || url.pathname.startsWith('/api/')) return;
 
   if (request.mode === 'navigate') {
     // Pages: network first so a new deploy shows up right away; cached copy when offline.

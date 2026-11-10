@@ -483,6 +483,32 @@
   .balance-amt { font-family: var(--font-display); font-size: 22px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
   .balance:hover .balance-label { color: var(--ink-2); }
 
+  /* ---------- Account & sign in ---------- */
+  .account { margin: -6px 0 2px; text-align: center; color: var(--ink-2); font-size: 14px; }
+  .account .linkbtn { color: var(--gold); }
+  .account .sep { margin: 0 8px; color: var(--ink-3); }
+  .auth-overlay {
+    position: fixed; inset: 0; z-index: 20;
+    display: grid; place-items: center;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    background: rgba(2, 20, 12, .72);
+    backdrop-filter: blur(4px);
+  }
+  .auth-card {
+    width: 100%; max-width: 380px;
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 22px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #0f4d31, #0a3a25);
+    border: 1px solid rgba(233, 196, 106, .35);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+  }
+  .auth-card h2 { margin: 0; font-family: var(--font-display); font-weight: normal; font-size: 24px; color: var(--gold); }
+  .auth-field { display: flex; flex-direction: column; gap: 5px; }
+  .auth-field label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .auth-error { margin: 0; min-height: 18px; color: var(--lose); font-size: 13px; }
+  .auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+
   /* ---------- Home ---------- */
   .home { display: flex; flex-direction: column; gap: 18px; }
   .home .hero h1 { font-size: clamp(36px, 8vw, 62px); }
@@ -703,8 +729,35 @@
       <h1>Mini Casino</h1>
       <p>Play money only · The bank never says no</p>
     </div>
+    <p class="account" id="account" hidden></p>
     <div class="tiles" id="tiles"></div>
   </section>
+
+  <!-- ================= Sign in (Cloudflare site only) ================= -->
+  <div class="auth-overlay" id="auth" hidden>
+    <form class="auth-card" id="auth-form" novalidate>
+      <h2 id="auth-title">Sign in</h2>
+      <p class="fine" id="auth-sub"></p>
+      <div class="auth-field" id="auth-name-row">
+        <label for="auth-name">Name</label>
+        <input class="text" id="auth-name" autocomplete="nickname" maxlength="40">
+      </div>
+      <div class="auth-field">
+        <label for="auth-email">Email</label>
+        <input class="text" id="auth-email" type="email" autocomplete="email" required>
+      </div>
+      <div class="auth-field">
+        <label for="auth-password">Password</label>
+        <input class="text" id="auth-password" type="password" autocomplete="current-password" minlength="8" required>
+      </div>
+      <p class="auth-error" id="auth-error" role="alert"></p>
+      <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
+      <div class="auth-links">
+        <button type="button" class="linkbtn" id="auth-switch"></button>
+        <button type="button" class="linkbtn" id="auth-close">Cancel</button>
+      </div>
+    </form>
+  </div>
 
   <!-- ================= Bank ================= -->
   <section class="bankpage" id="bank-view" hidden>
@@ -1395,6 +1448,9 @@ const app = {
 const $ = id => document.getElementById(id);
 const ui = {
   casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
+  account: $('account'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
+  authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
+  authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
   rHist: $('r-hist'), rTotal: $('r-total'), rWallet: $('r-wallet'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
   rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'), rBank: $('r-bank'),
@@ -1672,6 +1728,7 @@ function soloApply(m) {
   soloT = T;
   app.T = T;
   try { localStorage.setItem('bj.rooms.solo', JSON.stringify(T)); } catch (e) { /* storage unavailable */ }
+  cloudMarkDirty();
   render();
   return m.s;
 }
@@ -2012,6 +2069,7 @@ async function walletSave() {
   const body = () => ({ balance: wallet.balance, withdrawn: wallet.withdrawn, count: wallet.count, log: wallet.log });
   if (wallet.local) {
     try { localStorage.setItem('mini-casino.wallet', JSON.stringify(body())); } catch (e) { /* storage unavailable */ }
+    cloudMarkDirty();
     return;
   }
   if (!wallet.ref) return;
@@ -2194,6 +2252,7 @@ function rlLoad() {
 }
 function rlSave() {
   try { localStorage.setItem('mini-casino.roulette', JSON.stringify({ history: rl.history, last: rl.last, chip: rl.chip })); } catch (e) { /* storage unavailable */ }
+  cloudMarkDirty();
 }
 
 function rlSnapshot() { rl.undo.push({ ...rl.bets }); if (rl.undo.length > 100) rl.undo.shift(); }
@@ -2516,6 +2575,220 @@ function renderRoulette() {
   ui.rLow.hidden = rl.spinning || !wallet.ready || bal - total >= 25;
   if (!rl.anim) rlDraw();
 }
+
+/* ================= Cloud saves (Cloudflare site, Neon backend) =================
+   Only the Cloudflare deployment has /api. On claude.ai the page keeps using
+   claude.ai's own storage, and opened as a plain file it stays in this browser. */
+const cloud = { on: false, user: null, version: 0, timer: 0, saving: false, again: false, applying: false, state: '' };
+
+async function cloudInit() {
+  if (window.claude && typeof window.claude.use === 'function') return;
+  if (!/^https?:$/.test(location.protocol)) return;
+  try {
+    const res = await fetch('/api/me', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (!res.ok || !(res.headers.get('content-type') || '').includes('application/json')) return;
+    const d = await res.json();
+    cloud.on = true;
+    cloud.user = d && d.user ? d.user : null;
+  } catch (e) { return; }
+  render();
+  if (cloud.user) await cloudPull();
+}
+
+function readSoloLocal() {
+  if (soloT) return soloT;
+  try {
+    const s = JSON.parse(localStorage.getItem('bj.rooms.solo') || 'null');
+    return s && Array.isArray(s.seats) && s.players ? s : null;
+  } catch (e) { return null; }
+}
+function cloudSnapshot() {
+  return {
+    wallet: { balance: wallet.balance, withdrawn: wallet.withdrawn, count: wallet.count, log: wallet.log },
+    roulette: { history: rl.history, last: rl.last, chip: rl.chip },
+    solo: readSoloLocal(),
+  };
+}
+/* Load a save from the account into this browser, validating it like a local load. */
+function cloudApply(data) {
+  if (!data || typeof data !== 'object') return;
+  cloud.applying = true;
+  try {
+    if (data.wallet && typeof data.wallet === 'object') { walletLoad(data.wallet); walletSave(); }
+    if (data.roulette && typeof data.roulette === 'object') {
+      try { localStorage.setItem('mini-casino.roulette', JSON.stringify(data.roulette)); } catch (e) { /* storage unavailable */ }
+      rl.history = [];
+      rl.last = null;
+      rlLoad();
+    }
+    const s = data.solo;
+    const midHand = app.view === 'table' && app.solo && app.T && roundLive(app.T);
+    if (s && typeof s === 'object' && Array.isArray(s.seats) && s.players && s.players[SOLO_ID] && !midHand) {
+      soloT = s;
+      try { localStorage.setItem('bj.rooms.solo', JSON.stringify(s)); } catch (e) { /* storage unavailable */ }
+      if (app.view === 'table' && app.solo) app.T = soloT;
+    }
+  } finally {
+    cloud.applying = false;
+  }
+  render();
+}
+async function cloudPull() {
+  if (!cloud.on || !cloud.user) return;
+  cloud.state = 'loading';
+  render();
+  try {
+    const res = await fetch('/api/save', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (res.status === 401) { cloud.user = null; cloud.state = ''; render(); return; }
+    if (!res.ok) throw new Error('save ' + res.status);
+    const d = await res.json();
+    cloud.version = d.version || 0;
+    if (d.data) { cloudApply(d.data); cloud.state = 'saved'; }
+    else { cloud.state = 'saving'; await cloudPush(); }
+  } catch (e) {
+    cloud.state = 'error';
+  }
+  render();
+}
+function cloudMarkDirty() {
+  if (!cloud.on || !cloud.user || cloud.applying) return;
+  clearTimeout(cloud.timer);
+  cloud.timer = setTimeout(() => cloudPush(), 1500);
+  if (cloud.state !== 'saving') { cloud.state = 'saving'; if (app.view === 'home') render(); }
+}
+async function cloudPush(keepalive = false) {
+  clearTimeout(cloud.timer);
+  cloud.timer = 0;
+  if (!cloud.on || !cloud.user) return;
+  if (cloud.saving) { cloud.again = true; return; }
+  cloud.saving = true;
+  try {
+    const res = await fetch('/api/save', {
+      method: 'PUT',
+      keepalive,
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ data: cloudSnapshot(), base: cloud.version }),
+    });
+    if (res.status === 401) {
+      cloud.user = null;
+      cloud.state = '';
+      toast('You were signed out. Sign in again to keep saving to your account.');
+    } else if (res.status === 409) {
+      const d = await res.json();
+      cloud.version = d.version || 0;
+      if (d.data) { cloudApply(d.data); toast('Loaded your newer save from another device.'); }
+      cloud.state = 'saved';
+    } else if (res.ok) {
+      cloud.version = (await res.json()).version;
+      cloud.state = 'saved';
+    } else {
+      cloud.state = 'error';
+    }
+  } catch (e) {
+    cloud.state = 'error';
+  } finally {
+    cloud.saving = false;
+  }
+  if (cloud.again) { cloud.again = false; return cloudPush(); }
+  render();
+}
+
+function renderAccount() {
+  const el = ui.account;
+  el.hidden = !cloud.on;
+  if (!cloud.on) return;
+  el.textContent = '';
+  const sep = () => { const s = document.createElement('span'); s.className = 'sep'; s.textContent = '·'; el.appendChild(s); };
+  const link = (label, fn) => { const b = document.createElement('button'); b.className = 'linkbtn'; b.textContent = label; b.addEventListener('click', fn); el.appendChild(b); };
+  if (cloud.user) {
+    el.append(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
+    const words = { loading: 'Loading your save…', saving: 'Saving…', saved: 'Progress saved', error: 'Couldn’t save. Will retry on your next move.' }[cloud.state];
+    if (words) { sep(); el.append(words); }
+    sep();
+    link('Sign out', signOut);
+  } else {
+    el.append('Keep your wallet on every device');
+    sep();
+    link('Sign in', () => openAuth('in'));
+    el.append(' or ');
+    link('create an account', () => openAuth('up'));
+  }
+}
+
+function openAuth(mode) {
+  app.authMode = mode;
+  ui.authError.textContent = '';
+  ui.auth.hidden = false;
+  renderAuth();
+  (mode === 'up' ? ui.authName : ui.authEmail).focus();
+}
+function closeAuth() {
+  ui.auth.hidden = true;
+  ui.authPassword.value = '';
+  ui.authError.textContent = '';
+}
+function renderAuth() {
+  const up = app.authMode === 'up';
+  ui.authTitle.textContent = up ? 'Create an account' : 'Sign in';
+  ui.authSub.textContent = up
+    ? 'Your wallet and progress in this browser move to your new account.'
+    : 'Loads your saved wallet and progress. It replaces what’s in this browser.';
+  ui.authNameRow.hidden = !up;
+  ui.authPassword.setAttribute('autocomplete', up ? 'new-password' : 'current-password');
+  ui.authSubmit.textContent = up ? 'Create account' : 'Sign in';
+  ui.authSwitch.textContent = up ? 'Have an account? Sign in' : 'New here? Create an account';
+}
+function authMessage(d, up) {
+  const code = String((d && d.code) || '');
+  if (code === 'INVALID_EMAIL_OR_PASSWORD') return 'That email and password don’t match.';
+  if (code.startsWith('USER_ALREADY_EXISTS')) return 'An account with that email already exists. Sign in instead.';
+  if (code === 'PASSWORD_TOO_SHORT') return 'Passwords need at least 8 characters.';
+  if (code === 'PASSWORD_TOO_LONG') return 'That password is too long.';
+  if (code === 'INVALID_EMAIL') return 'Enter a valid email address.';
+  return (d && d.message) || (up ? 'Couldn’t create the account. Try again.' : 'Couldn’t sign in. Try again.');
+}
+async function authSubmit(e) {
+  e.preventDefault();
+  const up = app.authMode === 'up';
+  const email = ui.authEmail.value.trim();
+  const password = ui.authPassword.value;
+  if (!/^\S+@\S+\.\S+$/.test(email)) { ui.authError.textContent = 'Enter a valid email address.'; return; }
+  if (password.length < 8) { ui.authError.textContent = 'Passwords need at least 8 characters.'; return; }
+  const body = up ? { name: ui.authName.value.trim() || email.split('@')[0], email, password } : { email, password };
+  ui.authSubmit.disabled = true;
+  ui.authError.textContent = '';
+  try {
+    const res = await fetch(`/api/auth/sign-${up ? 'up' : 'in'}/email`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d || !d.user) { ui.authError.textContent = authMessage(d, up); return; }
+    cloud.user = { id: d.user.id, name: d.user.name || '', email: d.user.email || '' };
+    cloud.version = 0;
+    closeAuth();
+    toast(up ? 'Account created. Your progress now saves to it.' : `Signed in as ${cloud.user.name || cloud.user.email}`);
+    await cloudPull();
+  } catch (err) {
+    ui.authError.textContent = 'Couldn’t reach the sign-in service. Check your connection and try again.';
+  } finally {
+    ui.authSubmit.disabled = false;
+  }
+}
+async function signOut() {
+  if (cloud.timer || cloud.saving) await cloudPush();
+  try {
+    await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: '{}' });
+  } catch (e) { /* the session cookie expires on its own */ }
+  cloud.user = null;
+  cloud.version = 0;
+  cloud.state = '';
+  toast('Signed out. This browser keeps a copy of your progress.');
+  render();
+}
 function myTurnHand() {
   const T = app.T;
   if (!T) return null;
@@ -2683,6 +2956,7 @@ function render() {
   ui.tableView.hidden = v !== 'table';
   ui.homeBtn.hidden = v === 'home';
   ui.walletAmt.textContent = wallet.ready ? money(wallet.balance) : '—';
+  if (v === 'home') renderAccount();
   if (v === 'lobby') renderLobby();
   else if (v === 'bank') renderBank();
   else if (v === 'roulette') renderRoulette();
@@ -3014,6 +3288,12 @@ ui.soloBtn.addEventListener('click', () => go('solo'));
 ui.backBtn.addEventListener('click', () => go('blackjack'));
 ui.homeBtn.addEventListener('click', () => go('home'));
 ui.balanceBtn.addEventListener('click', () => go('bank'));
+ui.authForm.addEventListener('submit', authSubmit);
+ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
+ui.authClose.addEventListener('click', closeAuth);
+ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ui.auth.hidden) closeAuth(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && cloud.timer) cloudPush(true); });
 ui.rSpin.addEventListener('click', rlSpin);
 ui.rUndo.addEventListener('click', rlUndo);
 ui.rClear.addEventListener('click', rlClear);
@@ -3120,6 +3400,7 @@ async function boot() {
   app.capsReady = true;
   walletInit();
   route();
+  cloudInit();
 }
 boot();
 </script>

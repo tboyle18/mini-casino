@@ -3,10 +3,19 @@
   // Must match the Worker's name in the Cloudflare dashboard.
   "name": "mini-casino",
   "compatibility_date": "2026-11-01",
-  // Static site only: no Worker script, Cloudflare serves the files in ./dist.
+  // API routes (sign-in proxy and cloud saves). Everything else is the static site.
+  "main": "src/worker.js",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
   },
+  "vars": {
+    // Neon Auth for the mini-casino Neon project (main branch). Public, not a secret.
+    "NEON_AUTH_BASE_URL": "https://ep-long-pine-bdjdpkhe.neonauth.c-8.us-east-2.aws.neon.tech/neondb/auth"
+  },
+  // DATABASE_URL is a secret: `npx wrangler secret put DATABASE_URL` (production)
+  // or a line in .dev.vars (local, gitignored).
   // Runs before `wrangler deploy` and `wrangler dev`, locally and in Workers Builds.
   "build": {
     "command": "node scripts/build.mjs"
