@@ -468,19 +468,20 @@
   }
 
   /* ---------- Casino bar ---------- */
-  .casino-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding-bottom: 4px; }
-  .brand-btn {
-    appearance: none; background: none; border: none; padding: 4px 0; cursor: pointer;
-    font-family: var(--font-display); font-size: 20px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold);
+  .casino-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding-bottom: 4px; }
+  .back-home {
+    appearance: none; background: none; border: none; padding: 8px 0; cursor: pointer;
+    font: 600 15px/1 var(--font-body); color: var(--gold);
   }
-  .bar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .toggle.active { color: var(--gold); border-color: rgba(233, 196, 106, .45); }
-  .wallet-pill {
-    background: var(--panel); border: 1px solid var(--line);
-    padding: 6px 14px; border-radius: 999px;
-    font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums;
+  .back-home:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .balance {
+    appearance: none; background: none; border: none; padding: 4px 0; margin-left: auto; cursor: pointer;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+    font-family: inherit; color: inherit; text-align: right;
   }
-  .wallet-pill span { font-size: 16px; font-weight: 700; color: var(--gold); margin-left: 4px; }
+  .balance-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .balance-amt { font-family: var(--font-display); font-size: 22px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .balance:hover .balance-label { color: var(--ink-2); }
 
   /* ---------- Home ---------- */
   .home { display: flex; flex-direction: column; gap: 18px; }
@@ -689,13 +690,11 @@
 <div class="wrap" id="app">
 
   <header class="casino-bar" id="casino-bar">
-    <button class="brand-btn" id="home-btn">Mini Casino</button>
-    <div class="bar-right">
-      <button class="toggle" id="nav-blackjack">Blackjack</button>
-      <button class="toggle" id="nav-roulette">Roulette</button>
-      <button class="toggle" id="nav-bank">Bank</button>
-      <div class="wallet-pill">Wallet<span id="wallet-amt">—</span></div>
-    </div>
+    <button class="back-home" id="home-btn">← Home</button>
+    <button class="balance" id="balance-btn" title="Open the bank">
+      <span class="balance-label">Your wallet balance</span>
+      <span class="balance-amt" id="wallet-amt">—</span>
+    </button>
   </header>
 
   <!-- ================= Home ================= -->
@@ -820,7 +819,7 @@
   <!-- ================= Table ================= -->
   <section id="table-view" hidden>
     <header class="topbar">
-      <button class="toggle" id="back-btn">← Rooms</button>
+      <button class="back-home" id="back-btn">← Rooms</button>
       <div class="room-title"><span class="rname" id="t-name"></span><span class="rcode" id="t-code"></span></div>
       <div class="top-right">
         <button class="toggle" id="invite-btn" aria-expanded="false">Invite</button>
@@ -1395,7 +1394,7 @@ const app = {
 
 const $ = id => document.getElementById(id);
 const ui = {
-  casinoBar: $('casino-bar'), homeBtn: $('home-btn'), navBlackjack: $('nav-blackjack'), navRoulette: $('nav-roulette'), navBank: $('nav-bank'), walletAmt: $('wallet-amt'),
+  casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
   rHist: $('r-hist'), rTotal: $('r-total'), rWallet: $('r-wallet'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
   rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'), rBank: $('r-bank'),
@@ -2682,9 +2681,7 @@ function render() {
   ui.rouletteView.hidden = v !== 'roulette';
   ui.lobby.hidden = v !== 'lobby';
   ui.tableView.hidden = v !== 'table';
-  ui.navBlackjack.classList.toggle('active', v === 'lobby');
-  ui.navRoulette.classList.toggle('active', v === 'roulette');
-  ui.navBank.classList.toggle('active', v === 'bank');
+  ui.homeBtn.hidden = v === 'home';
   ui.walletAmt.textContent = wallet.ready ? money(wallet.balance) : '—';
   if (v === 'lobby') renderLobby();
   else if (v === 'bank') renderBank();
@@ -3016,9 +3013,7 @@ ui.joinCode.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode
 ui.soloBtn.addEventListener('click', () => go('solo'));
 ui.backBtn.addEventListener('click', () => go('blackjack'));
 ui.homeBtn.addEventListener('click', () => go('home'));
-ui.navBlackjack.addEventListener('click', () => go('blackjack'));
-ui.navBank.addEventListener('click', () => go('bank'));
-ui.navRoulette.addEventListener('click', () => go('roulette'));
+ui.balanceBtn.addEventListener('click', () => go('bank'));
 ui.rSpin.addEventListener('click', rlSpin);
 ui.rUndo.addEventListener('click', rlUndo);
 ui.rClear.addEventListener('click', rlClear);
