@@ -13,7 +13,18 @@ A play-money casino in a single HTML page.
 | `mini-casino.html` | The full casino. It's written as a [Claude artifact](https://claude.ai/artifact/Jr9pJxUStQxXb7Un3cHvPZ), so the page body has no `<html>`/`<head>` wrapper of its own. |
 | `blackjack.html` | The original stand-alone blackjack game. Works offline: open it in any browser. |
 | `wrangler.jsonc` | Cloudflare Workers config. Serves the site as static assets from `dist/`. |
-| `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, favicon) as `index.html`, and copies `blackjack.html`. |
+| `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, PWA and iOS tags) as `index.html`, copies `blackjack.html` and `public/`, and stamps the service worker with a content hash. |
+| `public/` | PWA files: `manifest.webmanifest`, `sw.js` (offline cache), `_headers` (no-cache for the service worker) and `icons/`. |
+| `scripts/make-icons.mjs` | Draws the app icons into `public/icons/`. Run it after changing the icon design; the PNGs are committed. |
+
+## Installing the app
+
+On the Cloudflare site, Mini Casino is a Progressive Web App:
+
+- **Android / Chrome / Edge:** use the browser's *Install app* option (or *Add to Home screen*).
+- **iPhone / iPad:** in Safari, tap Share, then *Add to Home Screen*.
+
+The installed app opens full screen, has shortcuts to Blackjack, Roulette and the Bank, and works offline. Pages load from the network when it's available, so a new deploy shows up on the next launch.
 
 ## Deploying to Cloudflare
 

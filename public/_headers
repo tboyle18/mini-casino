@@ -1,0 +1,8 @@
+# Cloudflare Workers static-assets headers.
+# Browsers must always check for a new service worker, or updates get stuck.
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Cache-Control: no-cache
