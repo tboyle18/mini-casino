@@ -1,6 +1,11 @@
-<title>Mini Casino</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <style>
+  @font-face {
+    font-family: "Manrope";
+    src: url("/fonts/manrope.woff2") format("woff2-variations"), url("/fonts/manrope.woff2") format("woff2");
+    font-weight: 200 800;
+    font-style: normal;
+    font-display: swap;
+  }
   :root {
     /* Mobile first: one column at most 520px wide. A sticky app bar on top, game controls docked
        at the bottom within thumb reach, and bottom sheets for anything extra. */
@@ -23,8 +28,9 @@
     --win: #86e8b0;
     --lose: #ff9a9a;
     --bust: #a3222e;
-    --font-display: Georgia, "Times New Roman", serif;
-    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* One family throughout: Manrope, a clean modern sans with crisp numbers */
+    --font-display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-body: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
     --gl: max(16px, env(safe-area-inset-left, 0px));
     --gr: max(16px, env(safe-area-inset-right, 0px));
@@ -162,7 +168,8 @@
   .page-head { text-align: center; padding: 18px 0 2px; }
   .page-head h1 {
     margin: 0;
-    font: 400 clamp(28px, 8.5vw, 36px)/1.1 var(--font-display);
+    font: 800 clamp(28px, 8.5vw, 34px)/1.1 var(--font-display);
+    letter-spacing: -.02em;
     color: var(--gold);
     text-wrap: balance;
   }
@@ -178,7 +185,7 @@
     gap: 10px;
     min-width: 0;
   }
-  .lcard h2 { margin: 0; font: 400 20px/1.2 var(--font-display); }
+  .lcard h2 { margin: 0; font: 700 19px/1.2 var(--font-display); letter-spacing: -.01em; }
   .lcard label, .atm label { font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
   .field { display: flex; gap: 8px; }
   .field input { flex: 1; }
@@ -214,9 +221,9 @@
     font: 600 16px/1 var(--font-body); color: var(--gold);
   }
   .back svg { width: 24px; height: 24px; }
-  .brand { margin: 0 auto; font: 400 21px/1 var(--font-display); color: var(--gold); letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; }
+  .brand { margin: 0 auto; font: 800 17px/1 var(--font-display); color: var(--gold); letter-spacing: .28em; text-transform: uppercase; white-space: nowrap; }
   .bar-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
-  .bt-main { max-width: 100%; font: 400 18px/1.15 var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bt-main { max-width: 100%; font: 700 17px/1.15 var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-sub { margin-top: 3px; font: 600 11px/1 var(--font-mono); letter-spacing: .14em; color: var(--ink-3); }
   .bt-sub:empty { display: none; }
   .bar-right { margin-left: auto; flex: none; display: flex; align-items: center; gap: 2px; }
@@ -227,7 +234,7 @@
     font-family: inherit; color: inherit; text-align: right;
   }
   .balance-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
-  .balance-amt { font: 400 21px/1 var(--font-display); color: var(--gold); font-variant-numeric: tabular-nums; }
+  .balance-amt { font: 800 20px/1 var(--font-display); letter-spacing: -.01em; color: var(--gold); font-variant-numeric: tabular-nums; }
   .barbtn {
     appearance: none; background: none; border: none; cursor: pointer;
     height: 44px; padding: 0 8px;
@@ -323,7 +330,7 @@
     animation: sheetup .28s cubic-bezier(.2, .8, .3, 1);
   }
   .sheet::before { content: ""; align-self: center; width: 40px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .25); }
-  .sheet h2, .auth-card h2 { margin: 0; font: 400 23px/1.2 var(--font-display); color: var(--gold); }
+  .sheet h2, .auth-card h2 { margin: 0; font: 800 22px/1.2 var(--font-display); letter-spacing: -.01em; color: var(--gold); }
   .sheet-stats { display: flex; justify-content: space-between; gap: 12px; color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
   .sheet-stats b { margin-left: 6px; color: var(--gold); font-size: 18px; }
   .sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--ink-3); font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -393,7 +400,7 @@
     gap: 4px;
   }
   .wc-label { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
-  .wc-amt { font: 400 clamp(38px, 12vw, 50px)/1.08 var(--font-display); color: var(--gold); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .wc-amt { font: 800 clamp(38px, 12vw, 50px)/1.08 var(--font-display); letter-spacing: -.03em; color: var(--gold); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .wc-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 10px; }
   .wc-fine { color: var(--ink-3); font-size: 13px; line-height: 1.35; }
   .wc-row .btn { flex: none; }
@@ -409,7 +416,7 @@
   }
   .tile:active { transform: scale(.97); background: rgba(0, 0, 0, .32); }
   .tile-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  .tile h2 { margin: 0; font: 400 21px/1.15 var(--font-display); }
+  .tile h2 { margin: 0; font: 800 20px/1.15 var(--font-display); letter-spacing: -.01em; }
   .tile p { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.35; }
   .tile .go { margin-top: auto; padding-top: 6px; color: var(--gold); font-weight: 700; font-size: 15px; }
   .tile-art { position: relative; width: 92px; height: 92px; flex: none; align-self: center; margin-bottom: 6px; }
@@ -544,7 +551,7 @@
   .felt .pnote:empty { display: none; }
   /* Gold lettering printed on the felt, curving like the rail */
   .felt-print { display: block; flex: none; align-self: center; width: auto; max-width: 100%; height: min(17cqh, 100px); pointer-events: none; }
-  .fp-main { font: 400 20px var(--font-display); letter-spacing: .16em; fill: #e9c46a; opacity: .92; }
+  .fp-main { font: 800 17px var(--font-display); letter-spacing: .24em; fill: #e9c46a; opacity: .92; }
   .fp-ins { font: 700 10px var(--font-body); letter-spacing: .26em; fill: #e9c46a; opacity: .7; }
   .fp-line { fill: none; stroke: #e9c46a; stroke-width: 1.3; opacity: .5; }
   .fp-small { font: 600 9.5px var(--font-body); letter-spacing: .14em; fill: #f5f0e3; opacity: .5; }
@@ -605,7 +612,7 @@
     background: color-mix(in srgb, currentColor 8%, transparent);
     line-height: 1;
   }
-  .court b { font-family: var(--font-display); font-size: calc(var(--cw) * .34); }
+  .court b { font-family: var(--font-display); font-weight: 800; font-size: calc(var(--cw) * .34); }
   .court i { font-style: normal; font-size: calc(var(--cw) * .18); margin-top: 2px; }
   @keyframes dealIn {
     0% { transform: translate(var(--dx, 160px), var(--dy, -200px)) rotate(-14deg) scale(.85); opacity: 0; }
@@ -621,7 +628,7 @@
     text-align: center;
     transition: opacity .25s;
   }
-  .msg .title { font-family: var(--font-display); font-size: 27px; line-height: 1.15; text-shadow: 0 2px 10px rgba(0, 0, 0, .45); text-wrap: balance; }
+  .msg .title { font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -.01em; line-height: 1.15; text-shadow: 0 2px 10px rgba(0, 0, 0, .45); text-wrap: balance; }
   .msg .sub { margin-top: 3px; font-weight: 800; font-size: 18px; color: var(--ink-2); font-variant-numeric: tabular-nums; text-shadow: 0 1px 6px rgba(0, 0, 0, .4); }
   .msg.win .title { color: var(--gold); }
   .msg.win .sub { color: var(--win); }
@@ -824,7 +831,7 @@
   .rnum {
     flex: none; width: 44px; height: 44px; border-radius: 50%;
     display: grid; place-items: center;
-    font: 700 21px/1 var(--font-display); color: #fff;
+    font: 800 20px/1 var(--font-display); color: #fff;
     background: rgba(0, 0, 0, .35); border: 2px solid rgba(255, 255, 255, .22);
   }
   .rnum.red, .rhist .red { background: #b3262f; }
@@ -832,7 +839,7 @@
   .rnum.green, .rhist .green { background: #127a46; }
   .rnum.pop { animation: pop .4s cubic-bezier(.2, .8, .3, 1.3); }
   .rmsg { min-width: 0; }
-  .rmsg-title { font: 400 19px/1.2 var(--font-display); }
+  .rmsg-title { font: 800 18px/1.2 var(--font-display); letter-spacing: -.01em; }
   .rmsg-sub { font-weight: 700; font-size: 14px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .rresult.win .rmsg-title { color: var(--gold); }
   .rresult.win .rmsg-sub { color: var(--win); }
@@ -908,7 +915,7 @@
   .stage-wheel { width: min(86vw, 440px); width: min(86vw, 54dvh, 440px); aspect-ratio: 1; }
   .stage-cap { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 128px; text-align: center; }
   .stage-cap .rnum { width: 64px; height: 64px; font-size: 28px; }
-  .stage-title { font: 400 27px/1.2 var(--font-display); }
+  .stage-title { font: 800 26px/1.2 var(--font-display); letter-spacing: -.01em; }
   .stage-sub { font-weight: 700; font-size: 17px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .stage.win .stage-title { color: var(--gold); }
   .stage.win .stage-sub { color: var(--win); }
@@ -2174,7 +2181,7 @@ function buildWheelImgs(px) {
   }
   for (const r of [0.83, 0.7, 0.6]) { circle(g, R * r); g.stroke(); }
   g.fillStyle = '#fff';
-  g.font = `700 ${Math.round(R * 0.072)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+  g.font = `800 ${Math.round(R * 0.072)}px Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
   g.textAlign = 'center'; g.textBaseline = 'middle';
   for (let i = 0; i < 37; i++) { g.save(); g.rotate(i * STEP); g.fillText(String(WHEEL[i]), 0, -R * 0.765); g.restore(); }
   grad = g.createRadialGradient(0, -R * 0.15, R * 0.05, 0, 0, R * 0.6);
@@ -3314,6 +3321,8 @@ async function boot() {
   walletInit();
   route();
   cloudInit();
+  // The wheel's numbers are painted once per size; repaint them in Manrope when it arrives
+  if (document.fonts) document.fonts.ready.then(() => { wheelImgs.clear(); if (!rl.anim) rlDraw(); });
 }
 boot();
 </script>

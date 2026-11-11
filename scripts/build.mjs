@@ -38,10 +38,11 @@ const head = [
   '<meta name="apple-mobile-web-app-capable" content="yes">',
   '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
   '<meta name="apple-mobile-web-app-title" content="Mini Casino">',
-  // Same small reset claude.ai applies to artifacts.
-  '<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}' +
-    'body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}' +
-    'img{max-width:100%}[hidden]{display:none!important}</style>',
+  '<title>Mini Casino</title>',
+  '<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>',
+  // No safe-area padding here: the page's own app bar and controls make room for the
+  // notch and home bar. Padding the whole page as well pushes the controls off screen.
+  '<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>',
   "<script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>",
   '</head>',
   '<body>',

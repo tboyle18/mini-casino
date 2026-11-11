@@ -5,6 +5,7 @@ const CACHE = `mini-casino-${VERSION}`;
 const PRECACHE = [
   '/',
   '/manifest.webmanifest',
+  '/fonts/manrope.woff2',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-512.png',
