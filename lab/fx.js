@@ -109,6 +109,54 @@ export function makeSound() {
       o.start(t);
       o.stop(t + 0.21);
     },
+    // A rocket engine: a low sawtooth plus rumble. set(m) raises the pitch as the multiplier climbs.
+    engine() {
+      const a = ctx();
+      if (!a) return { set() {}, stop() {} };
+      const t = a.currentTime;
+      const o = a.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = 70;
+      const lp = a.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 500;
+      const src = a.createBufferSource();
+      src.buffer = noise;
+      src.loop = true;
+      const bp = a.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 350;
+      bp.Q.value = 0.7;
+      const gn = a.createGain();
+      gn.gain.setValueAtTime(0.0001, t);
+      gn.gain.exponentialRampToValueAtTime(0.1, t + 0.4);
+      o.connect(lp).connect(gn);
+      src.connect(bp).connect(gn);
+      gn.connect(out);
+      o.start(t);
+      src.start(t);
+      let stopped = false;
+      return {
+        set(m) {
+          if (stopped) return;
+          const k = Math.log2(Math.max(1, m));
+          o.frequency.setTargetAtTime(70 + k * 45, a.currentTime, 0.1);
+          bp.frequency.setTargetAtTime(350 + k * 160, a.currentTime, 0.1);
+        },
+        stop() {
+          if (stopped) return;
+          stopped = true;
+          const n = a.currentTime;
+          gn.gain.setTargetAtTime(0.0001, n, 0.06);
+          o.stop(n + 0.4);
+          src.stop(n + 0.4);
+        },
+      };
+    },
+    boom() {
+      hiss(1.4, { vol: 0.7, freq: 140, q: 0.35 });
+      tone(70, 0.9, { type: 'sine', vol: 0.55, to: 28 });
+    },
     close() { if (ac) ac.close(); },
   };
 }

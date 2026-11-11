@@ -1,4 +1,4 @@
-// Graphics lab: five experiments, each loaded only when its tab is opened.
+// Graphics lab: six experiments, each loaded only when its tab is opened.
 // Every demo module exports mount({ stage, controls, info }) and returns { dispose() }.
 
 const stage = document.getElementById('stage');
@@ -6,11 +6,12 @@ const controls = document.getElementById('controls');
 const info = document.getElementById('info');
 const fps = document.getElementById('fps');
 const help = document.getElementById('lab-help');
-const HELP = { slots: '/#learn-slots', plinko: '/#learn-plinko' };
+const HELP = { slots: '/#learn-slots', plinko: '/#learn-plinko', crash: '/#learn-crash' };
 
 const demos = {
   slots: () => import('./slots.js'),
   plinko: () => import('./plinko.js'),
+  crash: () => import('./crash.js'),
   roulette: () => import('./roulette.js'),
   win: () => import('./celebrate.js'),
   table: () => import('./table.js'),
@@ -37,7 +38,10 @@ async function show(name) {
   for (const el of [...stage.children]) if (!el.classList.contains('hud')) el.remove();
   controls.textContent = '';
   info.textContent = 'Loading…';
-  for (const b of document.querySelectorAll('[data-demo]')) b.setAttribute('aria-selected', String(b.dataset.demo === name));
+  for (const b of document.querySelectorAll('[data-demo]')) {
+    b.setAttribute('aria-selected', String(b.dataset.demo === name));
+    if (b.dataset.demo === name) b.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
   try { history.replaceState(null, '', '#' + name); } catch (e) { /* not allowed here */ }
   help.href = HELP[name] || '/#learn';
   try {

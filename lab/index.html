@@ -32,6 +32,7 @@
   body {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);   /* the tab strip and controls scroll inside the screen, never widen it */
     height: 100vh;
     height: 100dvh;
     color: var(--ink);
@@ -50,9 +51,10 @@
   .back { color: var(--gold); text-decoration: none; font-weight: 700; white-space: nowrap; }
   .lab-help { margin-left: auto; color: var(--gold); text-decoration: none; font-weight: 700; font-size: 14px; white-space: nowrap; }
   .lab-name { margin-left: 14px; font-weight: 800; letter-spacing: .24em; font-size: 12px; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
-  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 14px; background: rgba(255, 255, 255, .06); }
+  .tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 14px; background: rgba(255, 255, 255, .06); overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
   .tabs button {
-    appearance: none; border: 0; border-radius: 10px; padding: 9px 2px;
+    flex: 1 0 auto; appearance: none; border: 0; border-radius: 10px; padding: 9px 12px;
     background: transparent; color: var(--ink-2); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap;
   }
   .tabs button[aria-selected="true"] { background: var(--gold); color: var(--on-gold); }
@@ -93,6 +95,7 @@
     <div class="tabs" role="tablist">
       <button role="tab" data-demo="slots" aria-selected="true">Slots</button>
       <button role="tab" data-demo="plinko" aria-selected="false">Plinko</button>
+      <button role="tab" data-demo="crash" aria-selected="false">Crash</button>
       <button role="tab" data-demo="roulette" aria-selected="false">Roulette</button>
       <button role="tab" data-demo="table" aria-selected="false">Table</button>
       <button role="tab" data-demo="win" aria-selected="false">Big Win</button>

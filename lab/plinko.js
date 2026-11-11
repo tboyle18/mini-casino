@@ -9,11 +9,10 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { gsap } from 'gsap';
 import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, loadCredits, saveCredits, LAB_START } from './shared.js';
 import { makeSound, createWinFx } from './fx.js';
-import { canvas, tex, rrect, signCanvas, casinoScene, bloomComposer } from './arcade.js';
+import { canvas, tex, rrect, signCanvas, casinoScene, bloomComposer, glow, duckGeometry } from './arcade.js';
 import { ROWS, BUCKETS, SPACING, ROW_H, PEG_R, BALL_R, BOTTOM_Y, STEP, RISKS, pegLayout, makeBall, stepBall } from './plinko-physics.js';
 
 const TAU = Math.PI * 2;
@@ -51,33 +50,6 @@ function rand() {
 function heat(i) {
   const d = Math.abs(i - (BUCKETS - 1) / 2) / ((BUCKETS - 1) / 2);
   return new THREE.Color().setHSL((48 - 48 * d) / 360, 0.9, 0.46);
-}
-
-// One rubber duck as a single mesh with vertex colors, so every duck on the board can be
-// drawn in one go. It's sized to its collision circle and turned to face the camera.
-function duckGeometry() {
-  const part = (geo, hex) => {
-    const color = new THREE.Color(hex);
-    const n = geo.attributes.position.count;
-    const c = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) color.toArray(c, i * 3);
-    geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
-    return geo;
-  };
-  const parts = [
-    part(new THREE.SphereGeometry(1, 20, 14).scale(1.25, 0.85, 1), 0xffcf1a),
-    part(new THREE.SphereGeometry(0.68, 18, 12).translate(0.72, 0.95, 0), 0xffcf1a),
-    part(new THREE.SphereGeometry(0.4, 14, 8).scale(1.35, 0.42, 1).translate(1.35, 0.85, 0), 0xff7a12),
-    part(new THREE.SphereGeometry(0.13, 8, 6).translate(1.06, 1.2, 0.42), 0x111111),
-    part(new THREE.SphereGeometry(0.13, 8, 6).translate(1.06, 1.2, -0.42), 0x111111),
-    part(new THREE.ConeGeometry(0.4, 0.8, 12).rotateZ(0.95).translate(-1.2, 0.45, 0), 0xffcf1a),
-  ];
-  const g = mergeGeometries(parts);
-  for (const p of parts) p.dispose();
-  g.translate(-0.15, -0.25, 0);
-  g.rotateY(-0.8);
-  g.scale(BALL_R * 1.1, BALL_R * 1.1, BALL_R * 1.1);
-  return g;
 }
 
 function boardCanvas() {
@@ -176,7 +148,8 @@ export async function mount({ stage, controls, info }) {
   const frameShape = rrect(new THREE.Shape(), 0, (BOARD_TOP + BOARD_BOTTOM) / 2, BOARD_W + 0.03, boardH + 0.03, 0.035);
   frameShape.holes.push(rrect(new THREE.Path(), 0, (BOARD_TOP + BOARD_BOTTOM) / 2, BOARD_W - 0.012, boardH - 0.012, 0.025));
   const neon = new THREE.Mesh(new THREE.ExtrudeGeometry(frameShape, { depth: 0.012, bevelEnabled: false, curveSegments: 10 }),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(0.25, 1.1, 1.4) }));
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 0.85, 1.1) }));
+  glow(neon);
   board.add(neon);
 
   // ---- Pegs, each with a cap that lights up when a duck hits it ----
@@ -191,8 +164,9 @@ export async function mount({ stage, controls, info }) {
     caps.setColorAt(p.i, new THREE.Color(1, 1, 1));
   });
   pegs.castShadow = true;
+  glow(caps);
   board.add(pegs, caps);
-  const glow = new Float32Array(pegList.length);
+  const pegGlow = new Float32Array(pegList.length);
 
   // ---- Buckets, dividers and their multiplier labels ----
   const buckets = [];
@@ -241,10 +215,11 @@ export async function mount({ stage, controls, info }) {
   for (let k = 0; k < 6; k++) bulbPos.push([-(BOARD_W / 2 + 0.005), BASE_H - 0.06 - (5 - k) * 0.085, 0.095]);
   const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.014, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }), bulbPos.length);
   bulbPos.forEach((p, k) => { bulbs.setMatrixAt(k, m4.makeTranslation(p[0], p[1], p[2])); bulbs.setColorAt(k, new THREE.Color(1, 1, 1)); });
+  glow(bulbs);
   scene.add(bulbs);
 
   // ---- Ducks ----
-  const duckMesh = new THREE.InstancedMesh(duckGeometry(), new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.15 }), MAX_DUCKS);
+  const duckMesh = new THREE.InstancedMesh(duckGeometry(BALL_R * 1.1), new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.15 }), MAX_DUCKS);
   duckMesh.castShadow = true;
   duckMesh.frustumCulled = false;
   duckMesh.count = 0;
@@ -438,7 +413,7 @@ export async function mount({ stage, controls, info }) {
   let last = performance.now();
   let acc = 0;
   function onHit(p, speed) {
-    glow[p.i] = Math.min(1, glow[p.i] + speed * 1.6);
+    pegGlow[p.i] = Math.min(1, pegGlow[p.i] + speed * 1.6);
     const now = performance.now();
     if (speed > 0.06 && now - lastPing > 30) {
       lastPing = now;
@@ -495,9 +470,9 @@ export async function mount({ stage, controls, info }) {
     // Peg caps: a slow wave of light down the rows, plus a flash on every hit
     const decay = Math.pow(0.02, dt);
     pegList.forEach(p => {
-      glow[p.i] *= decay;
+      pegGlow[p.i] *= decay;
       const wave = 0.45 + 0.25 * Math.sin(now * 3 - p.r * 0.7);
-      const g = glow[p.i];
+      const g = pegGlow[p.i];
       col.setRGB(1.1 * wave + 3.2 * g, 0.7 * wave + 2.6 * g, 1.3 * wave + 1.3 * g);
       caps.setColorAt(p.i, col);
     });

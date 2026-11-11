@@ -11,7 +11,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { gsap } from 'gsap';
 import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, loadCredits, saveCredits, LAB_START } from './shared.js';
 import { makeSound, createWinFx } from './fx.js';
-import { EMOJI, canvas, tex, rrect, signCanvas, casinoScene, bloomComposer } from './arcade.js';
+import { EMOJI, canvas, tex, rrect, signCanvas, casinoScene, bloomComposer, glow } from './arcade.js';
 import { GLYPH, NAME, PAYS, TWO_CHERRIES, STRIPS, evaluate, bestPossible, randomSymbol, stopFor } from './slots-math.js';
 
 const TAU = Math.PI * 2;
@@ -323,19 +323,17 @@ export async function mount({ stage, controls, info }) {
     const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.04, 3), payMat);
     arrow.rotation.z = side * Math.PI / 2;
     arrow.position.set(side * (WIN_W / 2 + 0.045), WIN_Y, FACE_Z + 0.012);
+    glow(arrow);
     machine.add(arrow);
   }
-  const glass = new THREE.Mesh(new THREE.PlaneGeometry(WIN_W, WIN_H), new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, transparent: true, opacity: 0.04, roughness: 0.05, envMapIntensity: 0.5, depthWrite: false,
-  }));
-  glass.position.set(0, WIN_Y, FACE_Z - 0.003);
-  machine.add(glass);
+  glow(payline);
 
   // ---- LED ticker, coin chute and tray ----
   const led = makeTicker(renderer);
   keep(led.texture);
   add(new THREE.Mesh(new RoundedBoxGeometry(0.585, 0.095, 0.02, 2, 0.008), black)).position.set(0, 0.355, FACE_Z);
   led.mesh.position.set(0, 0.355, FACE_Z + 0.0105);
+  glow(led.mesh);
   machine.add(led.mesh);
   add(new THREE.Mesh(new RoundedBoxGeometry(0.2, 0.055, 0.02, 2, 0.01), black)).position.set(0, 0.245, FACE_Z);
   add(new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.035, 0.16, 3, 0.012), chrome)).position.set(0, 0.15, FACE_Z + 0.06);
@@ -364,11 +362,12 @@ export async function mount({ stage, controls, info }) {
   const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.014, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }), bulbPos.length);
   const m4 = new THREE.Matrix4();
   bulbPos.forEach((p, k) => { bulbs.setMatrixAt(k, m4.makeTranslation(p[0], p[1], p[2])); bulbs.setColorAt(k, new THREE.Color(1, 1, 1)); });
+  glow(bulbs);
   machine.add(bulbs);
 
   // ---- Googly eyes: the pupils roll around under gravity and rattle when the machine moves ----
   const eyeWhite = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05 });
-  const pupilMat = new THREE.MeshPhysicalMaterial({ color: 0x050505, roughness: 0.2, clearcoat: 1 });
+  const pupilMat = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.4, clearcoat: 0.4, envMapIntensity: 0.3 });
   const eyes = [-1, 1].map(side => {
     const white = add(new THREE.Mesh(new THREE.SphereGeometry(EYE_R, 40, 20), eyeWhite));
     white.scale.z = 0.42;
@@ -882,8 +881,8 @@ export async function mount({ stage, controls, info }) {
       bulbs.setColorAt(k, col);
     }
     bulbs.instanceColor.needsUpdate = true;
-    const glow = mode === 'win' || mode === 'party' || mode === 'jackpot' ? 1.5 + Math.sin(now * 18) * 1.5 : 1;
-    payMat.color.setRGB(3 * glow, 0.25 * glow, 0.3 * glow);
+    const pulse = mode === 'win' || mode === 'party' || mode === 'jackpot' ? 1.5 + Math.sin(now * 18) * 1.5 : 1;
+    payMat.color.setRGB(3 * pulse, 0.25 * pulse, 0.3 * pulse);
 
     stepCoins(dt);
     led.draw(now);

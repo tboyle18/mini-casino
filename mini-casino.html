@@ -1179,7 +1179,7 @@
     </button>
     <a class="stats-link" id="home-lab" href="/lab/">
       <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span>
-      <span class="sl-text"><b>3D preview<i class="sl-tag">Experimental</i></b><span>Slots, plinko, roulette and more</span></span>
+      <span class="sl-text"><b>3D preview<i class="sl-tag">Experimental</i></b><span>Slots, plinko, crash and more</span></span>
       <span class="sl-go" aria-hidden="true">›</span>
     </a>
     <div class="home-foot">Play money only</div>
@@ -1297,6 +1297,11 @@
       <button class="stats-link" data-learn="plinko">
         <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.6"/><circle cx="8.5" cy="10" r="1.6"/><circle cx="15.5" cy="10" r="1.6"/><circle cx="5" cy="14.5" r="1.6"/><circle cx="12" cy="14.5" r="1.6"/><circle cx="19" cy="14.5" r="1.6"/><circle cx="8.5" cy="19" r="1.6"/><circle cx="15.5" cy="19" r="1.6"/></svg></span>
         <span class="sl-text"><b>Duck Drop plinko</b><span>Drop ducks, hit the edges</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <button class="stats-link" data-learn="crash">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 2.5 4.2 6 3.6 10.5H8.4C7.8 9 9 5.5 12 3z"/><path d="M8.6 13.5 6 16.5l2.8.4M15.4 13.5l2.6 3-2.8.4M10.5 17.5 12 21l1.5-3.5"/></svg></span>
+        <span class="sl-text"><b>Duck Rocket crash</b><span>Cash out before it blows</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
       <div class="section-label">Your money</div>
@@ -1532,6 +1537,27 @@
         <li>Every peg plays a note when a duck hits it, so turn the sound up.</li>
       </ul>
       <a class="btn primary block kb-cta" href="/lab/#plinko">Open Duck Drop</a>
+    </article>
+
+    <article class="kb" data-kb="crash" hidden>
+      <h1>Duck Rocket crash</h1>
+      <p class="kb-lead">A rubber duck rides a rocket, and the multiplier climbs as it goes up. Cash out before it blows up to win your bet times the multiplier. Wait too long and you lose the bet. It's in the 3D lab, so it plays with lab credits.</p>
+      <h2>How to play</h2>
+      <ol>
+        <li>Tap <b>Bet</b> to choose your bet, and <b>Auto</b> to pick an automatic cash-out (1.5× to 10×, or off).</li>
+        <li>Tap <b>Launch</b>. After a countdown the rocket lifts off and the multiplier starts at 1.00×.</li>
+        <li>Tap <b>Cash out</b> whenever you like. Your duck ejects on a parachute, and you win your bet times the multiplier at that moment.</li>
+        <li>If the rocket explodes before you cash out, you lose the bet.</li>
+      </ol>
+      <h2>Good to know</h2>
+      <ul>
+        <li>Where the rocket explodes is decided the moment it launches. Nothing you do changes it, so there's no pattern to find.</li>
+        <li>The chance it's still flying at any multiplier is about 0.97 divided by that multiplier: about 48% at 2×, 10% at 10×, 1% at 100×. So whatever you aim for, you get back about 97% over time.</li>
+        <li>Now and then it blows up right on the pad, at 1.00×.</li>
+        <li>After you cash out, the flight speeds up so you can see how far it would have gone.</li>
+        <li>The row of numbers at the top shows where the last rockets exploded.</li>
+      </ul>
+      <a class="btn primary block kb-cta" href="/lab/#crash">Open Duck Rocket</a>
     </article>
 
     <article class="kb" data-kb="wallet" hidden>
@@ -3597,7 +3623,7 @@ function renderBaccarat() {
 }
 
 /* ================= How to play ================= */
-const LEARN = ['blackjack', 'roulette', 'poker', 'baccarat', 'slots', 'plinko', 'wallet'];
+const LEARN = ['blackjack', 'roulette', 'poker', 'baccarat', 'slots', 'plinko', 'crash', 'wallet'];
 // Game screens with a ? button: the article it opens, and what its back button says
 const HELP_FOR = { lobby: ['blackjack', 'Blackjack'], table: ['blackjack', 'Table'], roulette: ['roulette', 'Roulette'], poker: ['poker', 'Video poker'], baccarat: ['baccarat', 'Baccarat'] };
 function buildLearn() {

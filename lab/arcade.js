@@ -1,11 +1,13 @@
-// Shared pieces for the arcade-style lab games (slots and plinko): canvas helpers, the
-// marquee sign, and the casino room they stand in (carpet, neon, lights and bloom).
+// Shared pieces for the arcade-style lab games: canvas helpers, the marquee sign, the
+// casino room (carpet, neon, lights), selective glow, and the rubber duck.
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const TAU = Math.PI * 2;
 export const EMOJI = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
@@ -147,7 +149,9 @@ export function carpetCanvas() {
    key light that casts shadows, and magenta and cyan rim lights. keep() collects textures
    to dispose of later. */
 export function casinoScene(renderer, envTex, keep) {
-  renderer.toneMappingExposure = 0.92;
+  // Neutral tone mapping keeps colors true (the filmic default turns reds pink and washes whites)
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 0.85;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x12071c);
   scene.environment = envTex;
@@ -178,30 +182,103 @@ export function casinoScene(renderer, envTex, keep) {
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
-  for (const [x, color] of [[-1.5, new THREE.Color(1.6, 0.2, 1.2)], [1.6, new THREE.Color(0.2, 1.2, 1.6)], [-0.9, new THREE.Color(1.5, 1.1, 0.25)], [1.0, new THREE.Color(1.6, 0.2, 1.2)]]) {
+  for (const [x, color] of [[-1.5, new THREE.Color(1.1, 0.15, 0.85)], [1.6, new THREE.Color(0.15, 0.85, 1.1)], [-0.9, new THREE.Color(1.05, 0.8, 0.2)], [1.0, new THREE.Color(1.1, 0.15, 0.85)]]) {
     const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.8, 12), new THREE.MeshBasicMaterial({ color }));
     tube.position.set(x, 1.1, -2.2 - Math.abs(x) * 0.2);
+    glow(tube);
     scene.add(tube);
   }
   return scene;
 }
 
-/* Rendering through bloom, so anything brighter than white (bulbs, neon, signs) glows. */
+/* Glow (bloom) only for the things that light up: bulbs, neon, signs and the like. Mark them
+   with glow(); everything else renders black in the glow pass, so chrome, white plastic and
+   lit paint never get a halo, and lit objects still hide glow behind them. */
+const GLOW_LAYER = 1;
+export function glow(...objects) {
+  for (const o of objects) o.layers.enable(GLOW_LAYER);
+}
+
 export function bloomComposer(renderer, scene, camera) {
+  const glowing = new THREE.Layers();
+  glowing.set(GLOW_LAYER);
+  const black = new THREE.MeshBasicMaterial({ color: 0x000000 });
+  const saved = new Map();
+
+  const glowComposer = new EffectComposer(renderer);
+  glowComposer.renderToScreen = false;
+  glowComposer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.3, 0.3);
+  glowComposer.addPass(bloom);
+
+  const mix = new ShaderPass(new THREE.ShaderMaterial({
+    uniforms: { baseTexture: { value: null }, bloomTexture: { value: glowComposer.renderTarget2.texture } },
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main() { gl_FragColor = texture2D(baseTexture, vUv) + texture2D(bloomTexture, vUv); }',
+  }), 'baseTexture');
+  mix.needsSwap = true;
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.35, 1.0);
-  composer.addPass(bloom);
+  composer.addPass(mix);
   composer.addPass(new OutputPass());
+
+  const darken = o => {
+    if (o.isMesh && !glowing.test(o.layers)) { saved.set(o, o.material); o.material = black; }
+  };
   return {
-    render: dt => composer.render(dt),
+    render(dt) {
+      // The glow pass: only glowing things keep their colors
+      const bg = scene.background;
+      scene.background = null;
+      scene.traverse(darken);
+      renderer.shadowMap.autoUpdate = false;
+      glowComposer.render(dt);
+      renderer.shadowMap.autoUpdate = true;
+      for (const [o, m] of saved) o.material = m;
+      saved.clear();
+      scene.background = bg;
+      // The picture itself, with the glow added on top
+      composer.render(dt);
+    },
     setSize(w, h) {
-      composer.setPixelRatio(renderer.getPixelRatio());
-      composer.setSize(w, h);
+      for (const c of [glowComposer, composer]) {
+        c.setPixelRatio(renderer.getPixelRatio());
+        c.setSize(w, h);
+      }
     },
     dispose() {
       bloom.dispose();
+      mix.material.dispose();
+      black.dispose();
+      glowComposer.dispose();
       composer.dispose();
     },
   };
+}
+
+// One rubber duck as a single mesh with vertex colors (so many can be drawn as one
+// instanced mesh), turned three-quarters toward the camera. size is its body radius.
+export function duckGeometry(size) {
+  const part = (geo, hex) => {
+    const color = new THREE.Color(hex);
+    const n = geo.attributes.position.count;
+    const c = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) color.toArray(c, i * 3);
+    geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    return geo;
+  };
+  const parts = [
+    part(new THREE.SphereGeometry(1, 20, 14).scale(1.25, 0.85, 1), 0xffcf1a),
+    part(new THREE.SphereGeometry(0.68, 18, 12).translate(0.72, 0.95, 0), 0xffcf1a),
+    part(new THREE.SphereGeometry(0.4, 14, 8).scale(1.35, 0.42, 1).translate(1.35, 0.85, 0), 0xff7a12),
+    part(new THREE.SphereGeometry(0.13, 8, 6).translate(1.06, 1.2, 0.42), 0x111111),
+    part(new THREE.SphereGeometry(0.13, 8, 6).translate(1.06, 1.2, -0.42), 0x111111),
+    part(new THREE.ConeGeometry(0.4, 0.8, 12).rotateZ(0.95).translate(-1.2, 0.45, 0), 0xffcf1a),
+  ];
+  const g = mergeGeometries(parts);
+  for (const p of parts) p.dispose();
+  g.translate(-0.15, -0.25, 0);
+  g.rotateY(-0.8);
+  g.scale(size, size, size);
+  return g;
 }

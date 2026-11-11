@@ -53,8 +53,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Icons, manifest and other files: cache first.
+  // Files whose name changes whenever their content does (the lab's code chunks), plus fonts
+  // and icons: cache first. Everything else (the lab's entry script, the manifest) is network
+  // first, so an update can never leave an old file asking for pieces that no longer exist.
+  const immutable = url.pathname.startsWith('/lab/chunks/') || url.pathname.startsWith('/fonts/') || url.pathname.startsWith('/icons/');
+  if (immutable) {
+    event.respondWith(
+      caches.match(request).then(hit => hit || fetch(request).then(response => store(request, response)))
+    );
+    return;
+  }
   event.respondWith(
-    caches.match(request).then(hit => hit || fetch(request).then(response => store(request, response)))
+    fetch(request)
+      .then(response => store(request, response))
+      .catch(() => caches.match(request).then(hit => hit || Response.error()))
   );
 });
