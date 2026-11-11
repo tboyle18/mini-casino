@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0907">
+<title>Graphics Lab · Mini Casino</title>
+<link rel="preload" href="/fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<style>
+  @font-face {
+    font-family: "Manrope";
+    src: url("/fonts/manrope.woff2") format("woff2-variations"), url("/fonts/manrope.woff2") format("woff2");
+    font-weight: 200 800;
+    font-display: swap;
+  }
+  :root {
+    --bg: #0b0907;
+    --bar: rgba(16, 12, 9, .9);
+    --gold: #e9c46a;
+    --on-gold: #2a1d05;
+    --ink: #f5f0e3;
+    --ink-2: rgba(245, 240, 227, .7);
+    --ink-3: rgba(245, 240, 227, .45);
+    --line: rgba(255, 255, 255, .1);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; background: var(--bg); }
+  body {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100vh;
+    height: 100dvh;
+    color: var(--ink);
+    font: 16px/1.4 "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button { font: inherit; -webkit-user-select: none; user-select: none; }
+  .lab-bar {
+    padding: var(--safe-top) 14px 0;
+    background: var(--bar);
+    border-bottom: 1px solid var(--line);
+    z-index: 2;
+  }
+  .lab-row { height: 52px; display: flex; align-items: center; gap: 10px; }
+  .back { color: var(--gold); text-decoration: none; font-weight: 700; white-space: nowrap; }
+  .lab-name { margin-left: auto; font-weight: 800; letter-spacing: .24em; font-size: 12px; text-transform: uppercase; color: var(--ink-3); }
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 14px; background: rgba(255, 255, 255, .06); }
+  .tabs button {
+    appearance: none; border: 0; border-radius: 10px; padding: 9px 4px;
+    background: transparent; color: var(--ink-2); font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: var(--gold); color: var(--on-gold); }
+  #stage { position: relative; overflow: hidden; touch-action: none; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; top: 10px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; z-index: 3; }
+  #info { font-weight: 700; font-size: 15px; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+  #fps { flex: none; font: 700 12px/1 ui-monospace, Menlo, monospace; padding: 5px 7px; border-radius: 8px; background: rgba(0, 0, 0, .5); color: #9fe6b8; }
+  .controls {
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+    padding: 12px 14px max(14px, var(--safe-bottom));
+    background: var(--bar);
+    border-top: 1px solid var(--line);
+    z-index: 2;
+  }
+  .controls::-webkit-scrollbar { display: none; }
+  .lab-btn {
+    flex: 1 0 auto; min-width: 64px; min-height: 52px; padding: 0 12px;
+    appearance: none; border: 0; border-radius: 14px; cursor: pointer;
+    background: rgba(255, 255, 255, .1); color: var(--ink);
+    font-weight: 800; font-size: 16px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+    transition: transform .08s, opacity .15s;
+  }
+  .lab-btn:active { transform: scale(.96); }
+  .lab-btn.primary { background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); box-shadow: 0 2px 0 #8a6522; }
+  .lab-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
+  .lab-btn:disabled { opacity: .35; }
+</style>
+</head>
+<body>
+  <header class="lab-bar">
+    <div class="lab-row">
+      <a class="back" href="/">‹ Casino</a>
+      <span class="lab-name">Graphics lab</span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-demo="roulette" aria-selected="true">3D Roulette</button>
+      <button role="tab" data-demo="win" aria-selected="false">Big Win</button>
+      <button role="tab" data-demo="table" aria-selected="false">3D Table</button>
+    </div>
+  </header>
+  <main id="stage">
+    <div class="hud"><span id="info"></span><span id="fps">– fps</span></div>
+  </main>
+  <nav class="controls" id="controls"></nav>
+  <script type="module" src="/lab/main.js"></script>
+</body>
+</html>

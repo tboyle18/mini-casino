@@ -4,9 +4,11 @@
 // document skeleton. This script adds the skeleton plus everything that makes
 // the site an installable PWA (manifest, icons, iOS home screen tags, service
 // worker), and inlines the blackjack rules from src/rules.js, which the room
-// server (src/worker.js) imports too.
+// server (src/worker.js) imports too. It also bundles the graphics lab (lab/,
+// served at /lab/) with its packages (Three.js, cannon-es, GSAP, canvas-confetti).
 
-import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { build as esbuild } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
@@ -63,6 +65,21 @@ await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 await cp(join(root, 'public'), out, { recursive: true });
 await writeFile(join(out, 'index.html'), `${head}\n${body}\n</body>\n</html>\n`);
+
+// Graphics lab: each demo is its own chunk, loaded when its tab opens
+await esbuild({
+  entryPoints: [join(root, 'lab', 'main.js')],
+  bundle: true,
+  splitting: true,
+  format: 'esm',
+  minify: true,
+  target: ['es2020', 'safari15'],
+  outdir: join(out, 'lab'),
+  chunkNames: 'chunks/[name]-[hash]',
+  legalComments: 'none',
+  logLevel: 'warning',
+});
+await copyFile(join(root, 'lab', 'index.html'), join(out, 'lab', 'index.html'));
 
 // Version the service worker by the content of every file, its own code included
 // (hashed before the version is filled in).

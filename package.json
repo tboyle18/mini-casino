@@ -11,6 +11,11 @@
     "@neondatabase/serverless": "^1.2.0"
   },
   "devDependencies": {
+    "cannon-es": "^0.20.0",
+    "canvas-confetti": "^1.9.4",
+    "esbuild": "^0.28.2",
+    "gsap": "^3.15.1",
+    "three": "^0.187.0",
     "wrangler": "^4.160.0"
   }
 }

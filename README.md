@@ -15,8 +15,9 @@ A play-money casino for phones, running on Cloudflare at https://mini-casino.boy
 | `src/worker.js` | The Worker: a same-origin proxy to Neon Auth (`/api/auth/*`), `/api/me`, `/api/save` for cloud saves, and `/api/rooms` for multiplayer. Everything else is served from `dist/`. |
 | `src/room.js` | One multiplayer room, as a Durable Object. |
 | `wrangler.jsonc` | Cloudflare config: the Worker, the static assets in `dist/`, and the `ROOMS` Durable Object. |
-| `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, PWA and iOS tags) as `index.html`, inlines `src/rules.js`, copies `public/`, and stamps the service worker with a content hash. |
+| `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, PWA and iOS tags) as `index.html`, inlines `src/rules.js`, bundles the graphics lab with esbuild, copies `public/`, and stamps the service worker with a content hash. |
 | `public/` | PWA files: `manifest.webmanifest`, `sw.js` (offline cache), `_headers` (no-cache for the service worker) and `icons/`. |
+| `lab/` | The graphics lab, served at `/lab/`: test demos built with real graphics packages (see below). Not linked from the casino. |
 | `scripts/make-icons.mjs` | Draws the app icons into `public/icons/`. Run it after changing the icon design; the PNGs are committed. |
 
 ## Accounts and cloud saves (Neon)
@@ -39,6 +40,16 @@ Durable Objects with SQLite storage are included in Cloudflare's free plan.
 ### Testing rooms locally
 
 `wrangler dev` runs rooms locally. To play as test players without real accounts, add `DEV_AUTH=1` to `.dev.vars`; then a `dev_user=alice` cookie on `localhost` signs you in as "Alice Tester" (set it in the browser console with `document.cookie = 'dev_user=alice; path=/'`). Test players can't use cloud saves, and this switch is ignored anywhere but localhost.
+
+## Graphics lab
+
+`/lab/` (https://mini-casino.boyletb8.workers.dev/lab/) is a playground for trying real graphics packages before any of them go into the casino. Each tab loads only its own code, and a frame-rate meter shows how hard the phone is working.
+
+- **3D Roulette** (Three.js + cannon-es): a real-scale wheel with lacquered wood, brass and chrome under studio lighting. While the ball is fast it circles the outer wall on a calculated path, then the physics engine takes over: it drops, hits the deflectors, bounces between the frets and settles in a pocket. Drag to orbit; **Ball cam** chases the ball.
+- **Big Win** (GSAP + canvas-confetti): a light-ray sunburst, a gold title that bounces in letter by letter, the amount counting up, and confetti, coins, sparkles or card suits. Three flavours: big win, blackjack, jackpot.
+- **3D Table** (Three.js + GSAP): a blackjack table from the player's seat with printed felt, a padded rail, the chip tray and a shoe. Cards fly out of the shoe and flip; chips drop onto the betting spot and stack.
+
+The packages are dev dependencies; the build bundles and serves them from this site, so nothing loads from a CDN.
 
 ## Installing the app
 
