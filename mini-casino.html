@@ -530,6 +530,8 @@
   .lb-list .vl.down { color: var(--lose); }
   .lb-list li.me { background: rgba(233, 196, 106, .12); border-radius: 10px; }
   .lb-list .empty { display: block; color: var(--ink-3); text-align: center; padding: 16px 0; border: 0; }
+  .lb-invite { gap: 8px; }
+  .lb-invite svg { width: 20px; height: 20px; }
   .lb-podium { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
   .lb-podium .fine b { color: var(--ink); }
   /* ---------- Sign in to play ---------- */
@@ -1417,6 +1419,10 @@
       <ol class="lb-list" id="lb-list"></ol>
       <p class="fine" id="lb-me"></p>
       <div class="lb-podium" id="lb-podium" hidden></div>
+      <button class="btn block lb-invite" id="lb-invite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19.5c.9-3.4 3.4-5.2 6.5-5.2s5.6 1.8 6.5 5.2M18.5 8v6M15.5 11h6"/></svg>
+        Invite friends
+      </button>
     </div>
     <div class="stat-hero">
       <div class="sh-label">Net winnings</div>
@@ -2506,7 +2512,7 @@ const ui = {
   learnView: $('learn-view'), learnIndex: $('learn-index'), kbArticles: [...document.querySelectorAll('.kb')], kbPokerPays: $('kb-poker-pays'),
   helpBtn: $('help-btn'),
   rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
-  lbWhen: $('lb-when'), lbList: $('lb-list'), lbMe: $('lb-me'), lbPodium: $('lb-podium'), lbTabs: [...document.querySelectorAll('.lb .seg button')],
+  lbWhen: $('lb-when'), lbInvite: $('lb-invite'), lbList: $('lb-list'), lbMe: $('lb-me'), lbPodium: $('lb-podium'), lbTabs: [...document.querySelectorAll('.lb .seg button')],
   ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
   rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
@@ -3252,8 +3258,12 @@ function buildTiles() {
    counted once (by table and round number), so reloading or reconnecting never counts
    it twice. */
 const STATS_KEY = 'mini-casino.stats';
+// Stats from before the server held the wallets (no v: 2) counted the old bottomless bank's
+// money, so everyone's stats start over
+const STATS_VERSION = 2;
 function freshStats() {
   return {
+    v: STATS_VERSION,
     since: Date.now(),
     bj: { hands: 0, won: 0, lost: 0, pushed: 0, blackjacks: 0, wagered: 0, net: 0, biggest: 0 },
     rl: { spins: 0, hits: 0, wagered: 0, net: 0, biggest: 0, landed: {}, paid: {} },
@@ -3271,7 +3281,7 @@ function freshStats() {
 const stats = freshStats();
 const finite = v => (Number.isFinite(v) ? v : 0);
 function statsLoad(d) {
-  if (!d || typeof d !== 'object') return;
+  if (!d || typeof d !== 'object' || d.v !== STATS_VERSION) return;
   const f = freshStats();
   if (Number.isFinite(d.since)) f.since = d.since;
   for (const k of Object.keys(f.bj)) f.bj[k] = finite(d.bj && d.bj[k]);
@@ -5150,6 +5160,18 @@ async function lbLoad(force) {
     if (app.view === 'stats') renderBoard();
   }
 }
+// Share a link to the casino (the phone's share sheet, or copy it)
+async function inviteFriends() {
+  const url = location.origin + '/';
+  const text = 'Come play at Mini Casino with me. Play money, a free $1,000 every day, and a weekly leaderboard.';
+  buzz(6);
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Mini Casino', text, url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(`${text} ${url}`); toast('Invite link copied. Paste it to your friends.'); }
+  catch (e) { toast(`Send your friends this link: ${url}`); }
+}
 function renderBoard() {
   for (const b of ui.lbTabs) b.setAttribute('aria-selected', String(b.dataset.board === lb.board));
   const d = lb.data[lb.board];
@@ -5162,7 +5184,7 @@ function renderBoard() {
   if (!d.rows.length) {
     const li = document.createElement('li');
     li.className = 'empty';
-    li.textContent = week ? 'Nobody has played this week yet. Be the first.' : 'Nobody here yet.';
+    li.textContent = week ? 'Nobody has played this week yet. Be the first, then invite some rivals.' : 'Nobody here yet.';
     ui.lbList.appendChild(li);
   }
   for (const r of d.rows) {
@@ -5175,6 +5197,7 @@ function renderBoard() {
     ui.lbList.appendChild(li);
   }
   const mine = d.rows.some(r => r.me);
+  ui.lbInvite.classList.toggle('primary', d.rows.length < 3);   // a short board: make inviting the obvious next step
   ui.lbMe.textContent = !signedIn() ? 'Sign in to get on the board.'
     : mine ? ''
     : d.me && d.me.rank ? `You’re #${d.me.rank} with ${fmt(d.me.value)}.`
@@ -5329,6 +5352,7 @@ function cloudApply(data) {
     if (data.stats && typeof data.stats === 'object') {
       statsLoad(data.stats);
       try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* storage unavailable */ }
+      if (data.stats.v !== STATS_VERSION) setTimeout(cloudMarkDirty, 0);   // old stats: save the fresh start to the account
     }
   } finally {
     cloud.applying = false;
@@ -6281,6 +6305,7 @@ ui.bcClear.addEventListener('click', bcClear);
 ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
 ui.dailyBtn.addEventListener('click', () => openAuth('in'));
 ui.stReset.addEventListener('click', resetStats);
+ui.lbInvite.addEventListener('click', inviteFriends);
 ui.lbTabs.forEach(b => b.addEventListener('click', () => { lb.board = b.dataset.board; buzz(4); renderBoard(); lbLoad(); }));
 ui.authForm.addEventListener('submit', authSubmit);
 googleButton(ui.authGoogle);
@@ -6477,6 +6502,7 @@ async function boot() {
   buildLearn();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
   try { statsLoad(JSON.parse(localStorage.getItem(STATS_KEY) || 'null')); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* storage unavailable */ }   // old stats start over here too
   bcRecover();
   wrRecover();
   tcRecover();
