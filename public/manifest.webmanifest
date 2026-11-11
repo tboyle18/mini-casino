@@ -75,8 +75,28 @@
       ]
     },
     {
+      "name": "Three Card Poker",
+      "url": "/#threecard",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Casino War",
       "url": "/#war",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Red Dog",
+      "url": "/#reddog",
       "icons": [
         {
           "src": "/icons/icon-192.png",

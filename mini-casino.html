@@ -433,6 +433,9 @@
   .tile-art .card { --cw: 52px; --ch: 73px; position: absolute; }
   .tile-art .card:nth-child(1) { left: 4px; top: 12px; transform: rotate(-10deg); }
   .tile-art .card:nth-child(2) { left: 34px; top: 6px; transform: rotate(8deg); }
+  .tile-art.three .card:nth-child(1) { left: 0; top: 14px; transform: rotate(-14deg); }
+  .tile-art.three .card:nth-child(2) { left: 20px; top: 6px; transform: rotate(0); }
+  .tile-art.three .card:nth-child(3) { left: 40px; top: 14px; transform: rotate(14deg); }
   .mini-wheel {
     width: 84px; height: 84px; margin: 4px; border-radius: 50%;
     background:
@@ -1028,6 +1031,21 @@
   .vp-card.dim .card { opacity: .45; }
   .vp-held { font: 800 11px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; padding: 6px 8px; border-radius: 7px; background: var(--gold); color: var(--on-gold); visibility: hidden; }
   .vp-card.held .vp-held { visibility: visible; }
+  .vp-card.wild .card .face { box-shadow: inset 0 0 0 2px var(--gold), 0 6px 14px rgba(0, 0, 0, .34); }
+  .vp-card.wild.held .card .face { box-shadow: 0 0 0 3px var(--gold), 0 10px 18px rgba(0, 0, 0, .4); }
+  .vp-card.wild.win .card .face { box-shadow: 0 0 0 3px var(--gold), 0 0 22px rgba(233, 196, 106, .75); }
+  .vp-card.wild .card .face::after {
+    content: "WILD"; position: absolute; left: 50%; bottom: -1px; transform: translate(-50%, 50%);
+    padding: 2px 5px; border-radius: 5px; background: var(--gold); color: var(--on-gold);
+    font: 800 9px/1 var(--font-body); letter-spacing: .1em;
+  }
+  .vp-game {
+    appearance: none; display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 10px; cursor: pointer;
+    border-radius: 10px; border: 1.5px solid rgba(233, 196, 106, .45); background: rgba(0, 0, 0, .25);
+    color: var(--gold); font: 700 14px/1 var(--font-body);
+  }
+  .vp-game svg { width: 16px; height: 16px; }
+  .vp-game:disabled { opacity: .45; cursor: default; }
 
   /* ---------- Baccarat ----------
      Recent results on top, the Player and Banker hands side by side, the three betting spots,
@@ -1120,6 +1138,70 @@
   .bc-spot.war { border-color: rgba(190, 170, 255, .6); }
   #wr-decide .btn { flex: 1; }
 
+  /* ---------- Three Card Poker ----------
+     The pay table on top (hands across, Pair Plus and Ante bonus down), the dealer's three
+     cards over yours, the Ante, Play and Pair Plus spots, and the chip dock. */
+  html.tcp body::before { background: radial-gradient(ellipse 130% 85% at 50% 40%, #0f5560 0%, #08303a 55%, #04161c 100%); }
+  html.tcp .dock { background: rgba(4, 22, 28, .92); }
+  .tc-pays {
+    flex: none; display: grid; grid-template-columns: 62px repeat(5, minmax(0, 1fr)); margin-top: 10px; padding: 6px 4px;
+    border-radius: 14px; background: rgba(0, 0, 0, .3); border: 1px solid rgba(233, 196, 106, .3);
+    font-size: 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .tc-pays > * { padding: 3px 2px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .tc-pays .h { color: var(--ink-3); font-size: 10px; line-height: 1.1; letter-spacing: .04em; text-transform: uppercase; align-items: flex-end; }
+  .tc-pays .l { justify-content: flex-start; text-align: left; color: var(--ink-2); padding-left: 6px; line-height: 1.1; }
+  .tc-pays .v { color: var(--gold); font-weight: 800; }
+  .tc-pays .hit { background: var(--gold); color: var(--on-gold); }
+  .tc-felt { flex: 1; min-height: 0; container-type: size; display: flex; flex-direction: column; gap: 10px; padding: 10px 0 12px; }
+  .tc-hands { flex: 1; min-height: 0; display: grid; grid-template-rows: 1fr 1fr; gap: 8px; }
+  .tc-side {
+    display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 4px; min-height: 0;
+    padding: 6px 10px 6px 4px; border-radius: 16px; background: rgba(0, 0, 0, .2); border: 1.5px solid rgba(255, 255, 255, .08);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .tc-side.win { border-color: var(--gold); box-shadow: 0 0 20px rgba(233, 196, 106, .4); }
+  .tc-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+  .tc-head span { font-weight: 800; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #9fe3e8; }
+  .tc-side.win .tc-head span { color: var(--gold); }
+  .tc-hand { font-size: 12px; line-height: 1.2; font-weight: 700; color: var(--ink); }
+  .tc-cards {
+    --ch: min(calc((100cqh - 190px) / 2 - 12px), calc((100cqw - 116px) / 3.2 / .714)); --cw: calc(var(--ch) * .714);
+    display: flex; justify-content: center; gap: calc(var(--cw) * .08); min-height: var(--ch);
+  }
+  .tc-cards .card.lit .face { box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(233, 196, 106, .6); }
+  .tc-spots { flex: none; display: grid; grid-template-columns: 1fr .9fr 1.15fr; gap: 8px; }
+  .bc-spot.ante { border-color: rgba(120, 220, 230, .6); }
+  .bc-spot.pair { border-color: rgba(233, 196, 106, .55); }
+  .bc-spot.play { border-style: dashed; border-color: rgba(255, 255, 255, .25); cursor: default; }
+  #tc-decide .btn, #rd-decide .btn { flex: 1; }
+
+  /* ---------- Red Dog ----------
+     What each spread pays on top, the two cards with a slot between them for the third,
+     the spread, and the chip dock. */
+  html.rd body::before { background: radial-gradient(ellipse 130% 85% at 50% 40%, #6a2a12 0%, #3a1608 55%, #1a0a04 100%); }
+  html.rd .dock { background: rgba(26, 10, 4, .92); }
+  .rd-pays {
+    flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 10px; padding: 6px;
+    border-radius: 14px; background: rgba(0, 0, 0, .3); border: 1px solid rgba(233, 196, 106, .3); text-align: center;
+  }
+  .rd-pays div { display: flex; flex-direction: column; gap: 2px; padding: 5px 2px; border-radius: 8px; transition: background .2s; }
+  .rd-pays span { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+  .rd-pays b { font-size: 14px; font-weight: 800; color: var(--gold); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rd-pays .hit { background: var(--gold); }
+  .rd-pays .hit span, .rd-pays .hit b { color: var(--on-gold); }
+  .rd-felt { flex: 1; min-height: 0; container-type: size; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 10px 0 12px; }
+  .rd-board {
+    --ch: min(calc(100cqh - 150px), calc((100cqw - 24px) / 3 / .714), 210px); --cw: calc(var(--ch) * .714);
+    display: flex; justify-content: center; align-items: center; gap: 12px;
+  }
+  .rd-slot { width: var(--cw); height: var(--ch); flex: none; display: grid; }
+  .rd-slot > .card { grid-area: 1 / 1; }
+  .rd-slot.mid { border-radius: calc(var(--cw) * .09); border: 2px dashed rgba(255, 255, 255, .2); }
+  .rd-slot.mid:has(.card) { border-color: transparent; }
+  .rd-slot.win .card .face { box-shadow: 0 0 0 3px var(--gold), 0 0 22px rgba(233, 196, 106, .7); }
+  .rd-spread { min-height: 22px; text-align: center; font-weight: 800; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: #ffb48a; }
+
   /* ---------- How to play ---------- */
   .learn-index { display: flex; flex-direction: column; gap: 12px; }
   .kb { display: flex; flex-direction: column; gap: 12px; }
@@ -1155,6 +1237,7 @@
     .bc-title { font-size: 21px; }
     .bc-spot { min-height: 70px; }
     .wr-cards { --ch: min(calc((100cqh - 202px) / 2 - 12px), calc((100cqw - 140px) / 2.15 / .714)); }
+    .tc-pays { display: none; }
     .vp-title { font-size: 21px; }
     .vp-msg { min-height: 44px; }
     .msg { min-height: 50px; }
@@ -1285,6 +1368,16 @@
       <p class="fine" id="bc-results">No rounds yet</p>
     </div>
     <div class="lcard stat-card">
+      <div class="sc-head"><h2>Three Card Poker</h2><span class="sc-net" id="tc-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Hands</dt><dd id="tc-hands">0</dd></div>
+        <div><dt>Winning hands</dt><dd id="tc-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="tc-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="tc-biggest">$0</dd></div>
+      </dl>
+      <p class="fine" id="tc-line">No hands yet</p>
+    </div>
+    <div class="lcard stat-card">
       <div class="sc-head"><h2>Casino War</h2><span class="sc-net" id="wr-net"></span></div>
       <dl class="sc-grid">
         <div><dt>Rounds</dt><dd id="wr-rounds">0</dd></div>
@@ -1293,6 +1386,16 @@
         <div><dt>Biggest win</dt><dd id="wr-biggest">$0</dd></div>
       </dl>
       <p class="fine" id="wr-wars">No rounds yet</p>
+    </div>
+    <div class="lcard stat-card">
+      <div class="sc-head"><h2>Red Dog</h2><span class="sc-net" id="rd-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Hands</dt><dd id="rd-hands">0</dd></div>
+        <div><dt>Winning hands</dt><dd id="rd-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="rd-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="rd-biggest">$0</dd></div>
+      </dl>
+      <p class="fine" id="rd-line">No hands yet</p>
     </div>
     <div class="lcard stat-card">
       <div class="sc-head"><h2>The Bottomless Bank</h2></div>
@@ -1334,9 +1437,19 @@
         <span class="sl-text"><b>Baccarat</b><span>Player or Banker, closest to 9</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
+      <button class="stats-link" data-learn="threecard">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="7" height="11" rx="1.5" transform="rotate(-10 6 12)"/><rect x="8.5" y="5.5" width="7" height="11" rx="1.5"/><rect x="14.5" y="6.5" width="7" height="11" rx="1.5" transform="rotate(10 18 12)"/></svg></span>
+        <span class="sl-text"><b>Three Card Poker</b><span>Play or fold against the dealer</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
       <button class="stats-link" data-learn="war">
         <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l10 10M4 4h4M4 4v4M20 4L10 14M20 4h-4M20 4v4M7 15l2 2M17 15l-2 2M6 18l2-2M18 18l-2-2"/></svg></span>
         <span class="sl-text"><b>Casino War</b><span>High card wins, ties go to war</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <button class="stats-link" data-learn="reddog">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="6" height="12" rx="1.4"/><rect x="16" y="6" width="6" height="12" rx="1.4"/><path d="M10.5 12h3M12 10.5v3"/></svg></span>
+        <span class="sl-text"><b>Red Dog</b><span>Will the third card land in between?</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
       <div class="section-label">3D lab · experimental</div>
@@ -1443,7 +1556,7 @@
 
     <article class="kb" data-kb="poker" hidden>
       <h1>Video poker</h1>
-      <p class="kb-lead">Jacks or Better: you get five cards and one chance to swap any of them. Your final hand pays from the table.</p>
+      <p class="kb-lead">You get five cards and one chance to swap any of them. Your final hand pays from the table. There are two machines: <b>Jacks or Better</b> and <b>Deuces Wild</b>. Tap the machine's name above the chips to switch between hands.</p>
       <h2>How a hand goes</h2>
       <ol>
         <li>Tap chips to choose your bet, then tap <b>Deal</b>.</li>
@@ -1488,6 +1601,25 @@
         <li>Nothing: draw five new cards</li>
       </ol>
       <div class="kb-tip">Played this way, this pay table gives back about 99.5% of what you bet over time, the best odds in the casino.</div>
+      <h2>Deuces Wild</h2>
+      <p>Every 2 is wild: it counts as whatever card makes your hand best, and it's marked <b>Wild</b> on the screen. With four wild cards in the deck, hands come easier, so the lowest paying hand is three of a kind.</p>
+      <table class="kb-table">
+        <thead><tr><th>Hand</th><th>Pays</th></tr></thead>
+        <tbody id="kb-deuces-pays"></tbody>
+      </table>
+      <ul>
+        <li>A <b>royal flush</b> here means one with no 2s in it. A <b>wild royal</b> uses at least one 2.</li>
+        <li><b>Five of a kind</b> is only possible with wild cards, like three 9s and two 2s.</li>
+      </ul>
+      <h2>What to hold in Deuces Wild</h2>
+      <p>A simple guide. Always hold every 2, then:</p>
+      <ul>
+        <li><b>Three 2s</b>: hold just the 2s, unless you have a wild royal or five of a kind.</li>
+        <li><b>Two 2s</b>: hold just the 2s, unless you have four of a kind or better, or four cards to a royal.</li>
+        <li><b>One 2</b>: keep three of a kind or better. Otherwise hold the 2 with three suited cards toward a royal or straight flush, or just the 2.</li>
+        <li><b>No 2s</b>: keep any paying hand, but break a straight or flush for four cards to a royal. Otherwise keep a pair (just one, if you have two), then three cards to a royal, four to a flush or four in a row. With nothing, draw five new cards.</li>
+      </ul>
+      <div class="kb-tip">With perfect play this Deuces Wild table gives back about 99.7%, a hair better than Jacks or Better, but it swings more: a lot of the return is in the rare big hands.</div>
       <button class="btn primary block kb-cta" data-go="poker">Play video poker</button>
     </article>
 
@@ -1542,6 +1674,49 @@
       <button class="btn primary block kb-cta" data-go="baccarat">Play baccarat</button>
     </article>
 
+    <article class="kb" data-kb="threecard" hidden>
+      <h1>Three Card Poker</h1>
+      <p class="kb-lead">Your three cards against the dealer's three. Look at your hand, then decide whether it's worth playing.</p>
+      <h2>How a hand goes</h2>
+      <ol>
+        <li>Tap chips to choose an amount, then tap <b>Place</b>. It goes on the <b>Ante</b>.</li>
+        <li>For the <b>Pair Plus</b> side bet, tap Pair Plus before Place. You can play Pair Plus on its own.</li>
+        <li>Tap <b>Deal</b>. You get three cards face up, the dealer three face down.</li>
+        <li>Tap <b>Fold</b> to give up your Ante, or <b>Play</b> to add a Play bet the same size as your Ante.</li>
+        <li>The dealer's cards turn over and every bet is paid.</li>
+      </ol>
+      <h2>Who wins</h2>
+      <ul>
+        <li>The dealer needs <b>queen high or better</b> to qualify. If not, your Ante wins 1 to 1 and your Play bet comes back.</li>
+        <li>If the dealer qualifies, the better hand wins. You win: Ante and Play both pay 1 to 1. Dealer wins: you lose both. A tie gives both back.</li>
+      </ul>
+      <h2>Hands, best first</h2>
+      <p>With three cards, a straight beats a flush, because it's harder to get.</p>
+      <ul>
+        <li><b>Straight flush</b>: three in a row, all the same suit.</li>
+        <li><b>Three of a kind</b>: three cards of the same rank.</li>
+        <li><b>Straight</b>: three in a row. A-K-Q is the highest; A-2-3 is the lowest.</li>
+        <li><b>Flush</b>: three of the same suit.</li>
+        <li><b>Pair</b>, then <b>high card</b>.</li>
+      </ul>
+      <h2>Bonus payouts</h2>
+      <table class="kb-table">
+        <thead><tr><th>Your hand</th><th>Pair Plus</th><th>Ante bonus</th></tr></thead>
+        <tbody>
+          <tr><td>Straight flush</td><td class="pay">40 to 1</td><td class="pay">5 to 1</td></tr>
+          <tr><td>Three of a kind</td><td class="pay">30 to 1</td><td class="pay">4 to 1</td></tr>
+          <tr><td>Straight</td><td class="pay">6 to 1</td><td class="pay">1 to 1</td></tr>
+          <tr><td>Flush</td><td class="pay">4 to 1</td><td>–</td></tr>
+          <tr><td>Pair</td><td class="pay">1 to 1</td><td>–</td></tr>
+        </tbody>
+      </table>
+      <p>Pair Plus pays on your hand alone, whatever the dealer has, even if you fold. The Ante bonus is paid whenever you play, even if the dealer beats you.</p>
+      <h2>When to play</h2>
+      <p>Play any hand that's <b>Q-6-4 or better</b>: a pair or better, or queen high with a 6 or better second card and a 4 or better third. Fold anything worse.</p>
+      <div class="kb-tip">Played that way, the house keeps about 3.4% of the Ante over time. It keeps about 2.3% of Pair Plus bets.</div>
+      <button class="btn primary block kb-cta" data-go="threecard">Play Three Card Poker</button>
+    </article>
+
     <article class="kb" data-kb="war" hidden>
       <h1>Casino War</h1>
       <p class="kb-lead">You and the dealer each get one card, and the higher card wins. If they match, you choose: go to war, or surrender.</p>
@@ -1579,6 +1754,39 @@
         <li>The Tie bet pays big, but it's one of the worst bets in the casino.</li>
       </ul>
       <button class="btn primary block kb-cta" data-go="war">Play Casino War</button>
+    </article>
+
+    <article class="kb" data-kb="reddog" hidden>
+      <h1>Red Dog</h1>
+      <p class="kb-lead">Two cards go face up. You're betting that the third lands strictly between them. The closer together they are, the more it pays.</p>
+      <h2>How a hand goes</h2>
+      <ol>
+        <li>Tap chips to set your bet, then tap <b>Deal</b>. Your bet stays for the next hand.</li>
+        <li>Two cards come out, lower on the left. Aces are high and suits don't matter.</li>
+        <li>The <b>spread</b> is how many ranks fit between them. A 4 and a 9 have a spread of 4: 5, 6, 7 and 8.</li>
+        <li>Tap <b>Raise</b> to add a bet the same size as yours, or <b>No raise</b>. Then the third card comes out.</li>
+        <li>If it lands in between, your bet and raise win at the spread's odds. If not, you lose them.</li>
+      </ol>
+      <h2>Special hands</h2>
+      <ul>
+        <li><b>Back to back</b>, like a 7 and an 8: nothing fits between, so your bet comes back.</li>
+        <li><b>A pair</b>: a third card comes out right away. If it makes three of a kind, you win 11 to 1. If not, your bet comes back.</li>
+      </ul>
+      <h2>Payouts</h2>
+      <table class="kb-table">
+        <thead><tr><th>Spread</th><th>Pays</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="pay">5 to 1</td></tr>
+          <tr><td>2</td><td class="pay">4 to 1</td></tr>
+          <tr><td>3</td><td class="pay">2 to 1</td></tr>
+          <tr><td>4 to 11</td><td class="pay">1 to 1</td></tr>
+          <tr><td>Pair, then three of a kind</td><td class="pay">11 to 1</td></tr>
+        </tbody>
+      </table>
+      <h2>When to raise</h2>
+      <p>Raise when the spread is <b>7 or more</b>. Below that the third card misses more often than it lands, even with the bigger payouts on small spreads.</p>
+      <div class="kb-tip">Every hand is dealt from a freshly shuffled 8-deck shoe. Raising only on 7 or more, the house keeps about 2.8% of your bets over time. Never raising, it keeps about 7.9%.</div>
+      <button class="btn primary block kb-cta" data-go="reddog">Play Red Dog</button>
     </article>
 
     <article class="kb" data-kb="slots" hidden>
@@ -1654,7 +1862,7 @@
       <h1>Wallet and bank</h1>
       <p class="kb-lead">Everything here is play money. Nothing costs anything, and nothing can be cashed out.</p>
       <h2>Your wallet</h2>
-      <p>One wallet pays for every casino game. Roulette, video poker, baccarat and Casino War bets come straight out of it, and at blackjack you bring chips from it to the table.</p>
+      <p>One wallet pays for every casino game. Roulette, video poker, baccarat, Three Card Poker, Casino War and Red Dog bets come straight out of it, and at blackjack you bring chips from it to the table.</p>
       <h2>The Bottomless Bank</h2>
       <p>Out of money? Tap your balance at the top of a game, or <b>Get money</b> on the home screen, and withdraw any amount, as often as you like. No interest, no credit check.</p>
       <h2>Saving your progress</h2>
@@ -1744,7 +1952,7 @@
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="vp-bet">$0</b></span>
-        <span class="dt-item">Jacks or Better</span>
+        <button class="vp-game" id="vp-game" aria-label="Switch machine"><span id="vp-game-name">Jacks or Better</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg></button>
       </div>
       <div class="rlow" id="vp-low" hidden>Running low? <button class="linkbtn" id="vp-bank">Get more from the Bank</button></div>
       <div class="chips" id="vp-chips" aria-label="Chip value"></div>
@@ -1830,6 +2038,78 @@
       <div class="row actions" id="wr-decide" hidden>
         <button class="btn wide" id="wr-surrender">Surrender</button>
         <button class="btn primary wide" id="wr-war">Go to war</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Three Card Poker ================= -->
+  <section class="view has-dock" id="tcp-view" hidden>
+    <div class="tc-pays" id="tc-pays" aria-label="Pay table"></div>
+    <div class="tc-felt">
+      <div class="tc-hands">
+        <div class="tc-side" id="tc-dealer-side">
+          <div class="tc-head"><span>Dealer</span><b class="tc-hand" id="tc-dname"></b></div>
+          <div class="tc-cards" id="tc-dcards" aria-label="Dealer's cards"></div>
+        </div>
+        <div class="tc-side" id="tc-player-side">
+          <div class="tc-head"><span>You</span><b class="tc-hand" id="tc-pname"></b></div>
+          <div class="tc-cards" id="tc-pcards" aria-label="Your cards"></div>
+        </div>
+      </div>
+      <div class="bc-msg" id="tc-msg" role="status" aria-live="polite"><div class="bc-title" id="tc-title"></div><div class="bc-sub" id="tc-sub"></div></div>
+      <div class="tc-spots" id="tc-spots">
+        <button class="bc-spot ante" data-k="ante"><span class="bc-name">Ante</span><span class="bc-odds">1 to 1</span><span class="bc-amt"></span></button>
+        <div class="bc-spot play" id="tc-play-spot"><span class="bc-name">Play</span><span class="bc-odds">1 to 1</span><span class="bc-amt"></span></div>
+        <button class="bc-spot pair" data-k="pair"><span class="bc-name">Pair Plus</span><span class="bc-odds">Up to 40 to 1</span><span class="bc-amt"></span></button>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="dock-top">
+        <span class="dt-item">Bet<b id="tc-bet">$0</b></span>
+        <span class="dt-item">In hand<b id="tc-amount">$0</b></span>
+      </div>
+      <div class="rlow" id="tc-low" hidden>Running low? <button class="linkbtn" id="tc-bank">Get more from the Bank</button></div>
+      <div class="chips" id="tc-chips" aria-label="Chip value"></div>
+      <div class="row actions" id="tc-actions">
+        <button class="btn" id="tc-clear">Clear</button>
+        <button class="btn" id="tc-rebet">Rebet</button>
+        <button class="btn" id="tc-double" hidden>×2</button>
+        <button class="btn primary wide" id="tc-go">Deal</button>
+      </div>
+      <div class="row actions" id="tc-decide" hidden>
+        <button class="btn wide" id="tc-fold">Fold</button>
+        <button class="btn primary wide" id="tc-play">Play</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Red Dog ================= -->
+  <section class="view has-dock" id="reddog-view" hidden>
+    <div class="rd-pays" id="rd-pays" aria-label="Pay table"></div>
+    <div class="rd-felt">
+      <div class="rd-board">
+        <div class="rd-slot" id="rd-lo"></div>
+        <div class="rd-slot mid" id="rd-mid"></div>
+        <div class="rd-slot" id="rd-hi"></div>
+      </div>
+      <div class="rd-spread" id="rd-spread"></div>
+      <div class="bc-msg" id="rd-msg" role="status" aria-live="polite"><div class="bc-title" id="rd-title"></div><div class="bc-sub" id="rd-sub"></div></div>
+    </div>
+    <div class="dock">
+      <div class="dock-top">
+        <span class="dt-item">Bet<b id="rd-bet">$0</b></span>
+        <span class="dt-item" id="rd-raise-wrap" hidden>Raise<b id="rd-raise">$0</b></span>
+      </div>
+      <div class="rlow" id="rd-low" hidden>Running low? <button class="linkbtn" id="rd-bank">Get more from the Bank</button></div>
+      <div class="chips" id="rd-chips" aria-label="Chip value"></div>
+      <div class="row actions" id="rd-actions">
+        <button class="btn" id="rd-clear">Clear</button>
+        <button class="btn" id="rd-double">×2</button>
+        <button class="btn primary wide" id="rd-deal">Deal</button>
+      </div>
+      <div class="row actions" id="rd-decide" hidden>
+        <button class="btn wide" id="rd-call">No raise</button>
+        <button class="btn primary wide" id="rd-raise-btn">Raise</button>
       </div>
     </div>
   </section>
@@ -2069,7 +2349,9 @@ const GAMES = [
   { go: 'roulette', name: 'Roulette', blurb: 'Single zero. Bets straight from your wallet.', cta: 'Play', art: 'wheel' },
   { go: 'poker', name: 'Video Poker', blurb: 'Jacks or Better. Hold your keepers, draw the rest.', cta: 'Play', art: 'fan' },
   { go: 'baccarat', name: 'Baccarat', blurb: 'Player or Banker. Closest to 9 wins.', cta: 'Play', art: 'cards', cards: ['9D', 'KC'] },
+  { go: 'threecard', name: 'Three Card Poker', blurb: 'Your three cards against the dealer’s. Play or fold.', cta: 'Play', art: 'three', cards: ['QS', 'KS', 'AS'] },
   { go: 'war', name: 'Casino War', blurb: 'One card each. High card wins. Tie? Go to war.', cta: 'Play', art: 'cards', cards: ['QH', 'QS'] },
+  { go: 'reddog', name: 'Red Dog', blurb: 'Two cards up. Will the third land in between?', cta: 'Play', art: 'three', cards: ['4D', '9C', 'JH'] },
 ];
 const QUIPS = [
   'Approved. We didn’t check.',
@@ -2088,6 +2370,8 @@ const QUIPS = [
 /* @@POKER@@ */
 /* @@BACCARAT@@ */
 /* @@WAR@@ */
+/* @@THREECARD@@ */
+/* @@REDDOG@@ */
 
 /* ================= App state ================= */
 const app = {
@@ -2114,7 +2398,7 @@ const ui = {
   rlNet: $('rl-net'), rlSpins: $('rl-spins'), rlRate: $('rl-rate'), rlWagered: $('rl-wagered'), rlBiggest: $('rl-biggest'),
   vpNet: $('vp-net'), vpHands: $('vp-hands'), vpRate: $('vp-rate'), vpWagered: $('vp-wagered'), vpBiggest: $('vp-biggest'), vpBest: $('vp-best'),
   pokerView: $('poker-view'), vpPays: $('vp-pays'), vpMsg: $('vp-msg'), vpTitle: $('vp-title'), vpSub: $('vp-sub'), vpHand: $('vp-hand'),
-  vpBet: $('vp-bet'), vpLow: $('vp-low'), vpBank: $('vp-bank'), vpChips: $('vp-chips'), vpClear: $('vp-clear'), vpDouble: $('vp-double'), vpDeal: $('vp-deal'),
+  vpBet: $('vp-bet'), vpLow: $('vp-low'), vpBank: $('vp-bank'), vpChips: $('vp-chips'), vpClear: $('vp-clear'), vpDouble: $('vp-double'), vpDeal: $('vp-deal'), vpGame: $('vp-game'), vpGameName: $('vp-game-name'), kbDeucesPays: $('kb-deuces-pays'),
   baccaratView: $('baccarat-view'), bcRoad: $('bc-road'), bcPlayerSide: $('bc-player-side'), bcBankerSide: $('bc-banker-side'), bcPt: $('bc-pt'), bcBt: $('bc-bt'),
   bcPcards: $('bc-pcards'), bcBcards: $('bc-bcards'), bcMsg: $('bc-msg'), bcTitle: $('bc-title'), bcSub: $('bc-sub'), bcSpots: [...document.querySelectorAll('#bc-spots .bc-spot')],
   bcBet: $('bc-bet'), bcAmount: $('bc-amount'), bcLow: $('bc-low'), bcBank: $('bc-bank'), bcChips: $('bc-chips'), bcClear: $('bc-clear'), bcRebet: $('bc-rebet'), bcDouble: $('bc-double'), bcGo: $('bc-go'),
@@ -2122,6 +2406,15 @@ const ui = {
   wrMsg: $('wr-msg'), wrTitle: $('wr-title'), wrSub: $('wr-sub'), wrSpots: [...document.querySelectorAll('#wr-spots .bc-spot')],
   wrBet: $('wr-bet'), wrAmount: $('wr-amount'), wrLow: $('wr-low'), wrBank: $('wr-bank'), wrChips: $('wr-chips'), wrActions: $('wr-actions'), wrDecide: $('wr-decide'),
   wrClear: $('wr-clear'), wrRebet: $('wr-rebet'), wrDouble: $('wr-double'), wrGo: $('wr-go'), wrWar: $('wr-war'), wrSurrender: $('wr-surrender'),
+  tcpView: $('tcp-view'), tcPays: $('tc-pays'), tcDealerSide: $('tc-dealer-side'), tcPlayerSide: $('tc-player-side'), tcDname: $('tc-dname'), tcPname: $('tc-pname'),
+  tcDcards: $('tc-dcards'), tcPcards: $('tc-pcards'), tcMsg: $('tc-msg'), tcTitle: $('tc-title'), tcSub: $('tc-sub'), tcSpots: [...document.querySelectorAll('#tc-spots button.bc-spot')], tcPlaySpot: $('tc-play-spot'),
+  tcBet: $('tc-bet'), tcAmount: $('tc-amount'), tcLow: $('tc-low'), tcBank: $('tc-bank'), tcChips: $('tc-chips'), tcActions: $('tc-actions'), tcDecide: $('tc-decide'),
+  tcClear: $('tc-clear'), tcRebet: $('tc-rebet'), tcDouble: $('tc-double'), tcGo: $('tc-go'), tcFold: $('tc-fold'), tcPlay: $('tc-play'),
+  reddogView: $('reddog-view'), rdPays: $('rd-pays'), rdLo: $('rd-lo'), rdMid: $('rd-mid'), rdHi: $('rd-hi'), rdSpread: $('rd-spread'), rdMsg: $('rd-msg'), rdTitle: $('rd-title'), rdSub: $('rd-sub'),
+  rdBet: $('rd-bet'), rdRaiseWrap: $('rd-raise-wrap'), rdRaise: $('rd-raise'), rdLow: $('rd-low'), rdBank: $('rd-bank'), rdChips: $('rd-chips'), rdActions: $('rd-actions'), rdDecide: $('rd-decide'),
+  rdClear: $('rd-clear'), rdDouble: $('rd-double'), rdDeal: $('rd-deal'), rdCall: $('rd-call'), rdRaiseBtn: $('rd-raise-btn'),
+  tcNet: $('tc-net'), tcHands: $('tc-hands'), tcRate: $('tc-rate'), tcWagered: $('tc-wagered'), tcBiggest: $('tc-biggest'), tcLine: $('tc-line'),
+  rdNet: $('rd-net'), rdHands: $('rd-hands'), rdRate: $('rd-rate'), rdWagered: $('rd-wagered'), rdBiggest: $('rd-biggest'), rdLine: $('rd-line'),
   wrNet: $('wr-net'), wrRounds: $('wr-rounds'), wrRate: $('wr-rate'), wrWagered: $('wr-wagered'), wrBiggest: $('wr-biggest'), wrWars: $('wr-wars'),
   bcNet: $('bc-net'), bcRounds: $('bc-rounds'), bcRate: $('bc-rate'), bcWagered: $('bc-wagered'), bcBiggest: $('bc-biggest'), bcResults: $('bc-results'),
   learnView: $('learn-view'), learnIndex: $('learn-index'), kbArticles: [...document.querySelectorAll('.kb')], kbPokerPays: $('kb-poker-pays'),
@@ -2246,6 +2539,8 @@ function route() {
   else if (h === 'poker') target = { view: 'poker', code: '' };
   else if (h === 'baccarat') target = { view: 'baccarat', code: '' };
   else if (h === 'war') target = { view: 'war', code: '' };
+  else if (h === 'threecard') target = { view: 'threecard', code: '' };
+  else if (h === 'reddog') target = { view: 'reddog', code: '' };
   else if (h === 'learn') target = { view: 'learn', code: '' };
   else if (/^learn-[a-z]+$/.test(h)) target = { view: 'learn', code: h.slice(6) };
   else if (/^table-[a-z0-9]{4,12}$/.test(h)) target = { view: 'table', code: h.slice(6) };
@@ -2719,7 +3014,8 @@ function buildTiles() {
       art.classList.add('fan');
       art.innerHTML = ['10S', 'JS', 'QS', 'KS', 'AS'].map(c =>
         `<div class="card${c === 'AS' ? ' ace' : ''}"><div class="inner"><div class="face">${faceHTML(c)}</div></div></div>`).join('');
-    } else if (g.art === 'cards') {
+    } else if (g.art === 'cards' || g.art === 'three') {
+      if (g.art === 'three') art.classList.add('three');
       art.innerHTML = g.cards.map(c =>
         `<div class="card${rankOf(c) === 'A' ? ' ace' : ''}${/[HD]$/.test(c) ? ' red' : ''}"><div class="inner"><div class="face">${faceHTML(c)}</div></div></div>`).join('');
     } else {
@@ -2742,7 +3038,7 @@ function buildTiles() {
 }
 
 /* ================= Stats =================
-   A running record of every blackjack hand, roulette spin, video poker hand, baccarat round and war you play, kept in this
+   A running record of every hand, spin and round you play at every casino game, kept in this
    browser and synced with your account alongside the wallet. Each blackjack round is
    counted once (by table and round number), so reloading or reconnecting never counts
    it twice. */
@@ -2755,6 +3051,8 @@ function freshStats() {
     vp: { hands: 0, wins: 0, wagered: 0, net: 0, biggest: 0, made: {} },
     bc: { rounds: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, P: 0, B: 0, T: 0 },
     wr: { rounds: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, wars: 0, warsWon: 0, surrenders: 0 },
+    tc: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, folds: 0, pairPlus: 0 },
+    rd: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, raises: 0, trips: 0 },
     streak: 0, best: 0,
     seen: [],
   };
@@ -2775,9 +3073,11 @@ function statsLoad(d) {
   }
   for (const k of ['hands', 'wins', 'wagered', 'net', 'biggest']) f.vp[k] = finite(d.vp && d.vp[k]);
   const made = d.vp && d.vp.made;
-  if (made && typeof made === 'object') for (const p of POKER_PAYS) if (Number.isFinite(made[p.key]) && made[p.key] > 0) f.vp.made[p.key] = made[p.key];
+  if (made && typeof made === 'object') for (const p of POKER_PAYS.concat(DEUCES_PAYS)) if (Number.isFinite(made[p.key]) && made[p.key] > 0) f.vp.made[p.key] = made[p.key];
   for (const k of Object.keys(f.bc)) f.bc[k] = finite(d.bc && d.bc[k]);
   for (const k of Object.keys(f.wr)) f.wr[k] = finite(d.wr && d.wr[k]);
+  for (const k of Object.keys(f.tc)) f.tc[k] = finite(d.tc && d.tc[k]);
+  for (const k of Object.keys(f.rd)) f.rd[k] = finite(d.rd && d.rd[k]);
   f.streak = finite(d.streak);
   f.best = finite(d.best);
   if (Array.isArray(d.seen)) f.seen = d.seen.filter(x => typeof x === 'string').slice(-200);
@@ -2841,6 +3141,30 @@ function recordWar(live, o) {
   if (live.choice === 'war') { w.wars++; if (o.won) w.warsWon++; }
   if (live.choice === 'surrender') w.surrenders++;
   statsStreak(o.net);
+  statsSave();
+}
+// The shared part of recording a hand at a table game
+function recordTable(t, wagered, net) {
+  t.hands++;
+  t.wagered += wagered;
+  t.net = Math.round((t.net + net) * 100) / 100;
+  if (net > 0) t.won++;
+  else if (net < 0) t.lost++;
+  t.biggest = Math.max(t.biggest, net);
+  statsStreak(net);
+}
+function recordThreeCard(h, o) {
+  const t = stats.tc;
+  recordTable(t, h.total, o.net);
+  if (h.choice === 'fold') t.folds++;
+  if (h.pair && TC_PAIR_PLUS[o.me.key]) t.pairPlus++;
+  statsSave();
+}
+function recordRedDog(h, o) {
+  const t = stats.rd;
+  recordTable(t, h.total, o.net);
+  if (h.raise) t.raises++;
+  if (o.s.kind === 'pair' && o.won) t.trips++;
   statsSave();
 }
 function recordBlackjackRound(T) {
@@ -3342,23 +3666,30 @@ function renderRoulette() {
   if (!rl.anim) rlDraw();
 }
 
-/* ================= Video poker (Jacks or Better, solo, plays from the wallet) =================
-   Chips set the bet, Deal takes it from the wallet and deals five cards, you tap the cards to
+/* ================= Video poker (Jacks or Better or Deuces Wild, solo, plays from the wallet) =================
+   The machine switch in the dock picks the game between hands. Chips set the bet, Deal takes it from the wallet and deals five cards, you tap the cards to
    hold, and Draw replaces the rest. The hand in progress is kept in this browser. Replacement
    cards are picked when you draw, so nothing saved here gives away what's coming. */
 const VP_KEY = 'mini-casino.poker';
-const vp = { bet: 25, hand: [], held: [false, false, false, false, false], phase: 'bet', stake: 0, result: null, busy: false };
+const vp = { game: 'jacks', bet: 25, hand: [], held: [false, false, false, false, false], phase: 'bet', stake: 0, result: null, busy: false };
+// The two machines: their names, pay tables and hand ranking
+const VP_GAMES = {
+  jacks: { name: 'Jacks or Better', pays: POKER_PAYS, rank: pokerRank },
+  deuces: { name: 'Deuces Wild', pays: DEUCES_PAYS, rank: deucesRank },
+};
+const vpGame = () => VP_GAMES[vp.game];
 const vpCards = [];
 const vpRows = [];
 const cardLabel = c => `${RANK_NAMES[rankOf(c)] || rankOf(c)} of ${SUIT_NAMES[suitOf(c)]}`;
 function vpSave() {
-  try { localStorage.setItem(VP_KEY, JSON.stringify({ bet: vp.bet, hand: vp.hand, held: vp.held, phase: vp.phase, stake: vp.stake })); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem(VP_KEY, JSON.stringify({ game: vp.game, bet: vp.bet, hand: vp.hand, held: vp.held, phase: vp.phase, stake: vp.stake })); } catch (e) { /* storage unavailable */ }
 }
 function vpLoad() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(VP_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
   if (!d) return;
   if (Number.isFinite(d.bet) && d.bet >= 0) vp.bet = Math.floor(d.bet);
+  if (d.game in VP_GAMES) vp.game = d.game;
   const deck = new Set(pokerDeck());
   const hand = Array.isArray(d.hand) ? d.hand.filter(c => deck.has(c)) : [];
   const stake = Number.isFinite(d.stake) && d.stake > 0 ? d.stake : 0;
@@ -3367,7 +3698,7 @@ function vpLoad() {
   vp.held = [0, 1, 2, 3, 4].map(i => !!(Array.isArray(d.held) && d.held[i]));
   vp.phase = d.phase;
   vp.stake = stake;
-  if (vp.phase === 'done') vp.result = pokerRank(vp.hand);
+  if (vp.phase === 'done') vp.result = vpGame().rank(vp.hand);
 }
 function vpPaintCard(i, code) {
   const card = vpCards[i].card;
@@ -3385,16 +3716,8 @@ function buildPoker() {
     ui.vpHand.appendChild(b);
     vpCards.push({ btn: b, card: b.querySelector('.card') });
   }
-  for (const p of POKER_PAYS) {
-    const row = document.createElement('div');
-    row.className = 'vp-row';
-    const name = document.createElement('span');
-    name.textContent = p.name;
-    const amt = document.createElement('b');
-    row.append(name, amt);
-    ui.vpPays.appendChild(row);
-    vpRows.push({ row, amt, p });
-  }
+  vpBuildRows();
+  ui.vpGame.addEventListener('click', vpSwitch);
   for (const v of R_CHIPS) {
     const c = document.createElement('button');
     c.className = 'chip chipface';
@@ -3408,7 +3731,32 @@ function buildPoker() {
   // A hand that was in progress comes back face up
   vp.hand.forEach((c, i) => { vpPaintCard(i, c); vpCards[i].card.classList.remove('down'); });
 }
+// The pay table on screen, for the machine that's chosen
+function vpBuildRows() {
+  ui.vpPays.textContent = '';
+  vpRows.length = 0;
+  for (const p of vpGame().pays) {
+    const row = document.createElement('div');
+    row.className = 'vp-row';
+    const name = document.createElement('span');
+    name.textContent = p.name;
+    const amt = document.createElement('b');
+    row.append(name, amt);
+    ui.vpPays.appendChild(row);
+    vpRows.push({ row, amt, p });
+  }
+}
 const vpCanBet = () => !vp.busy && vp.phase !== 'hold';
+function vpSwitch() {
+  if (!vpCanBet()) return;
+  vp.game = vp.game === 'jacks' ? 'deuces' : 'jacks';
+  vpFresh();
+  vpBuildRows();
+  vpSave();
+  buzz(8);
+  toast(vp.game === 'deuces' ? 'Deuces Wild: every 2 is wild' : 'Jacks or Better');
+  render();
+}
 // Changing the bet after a hand clears its result, but leaves the cards on show
 function vpFresh() {
   if (vp.phase === 'done') { vp.phase = 'bet'; vp.result = null; }
@@ -3479,7 +3827,7 @@ function vpDraw() {
   if (vp.busy || vp.phase !== 'hold') return;
   const swap = vp.held.map(h => !h);
   vp.hand = pokerDraw(vp.hand, vp.held, randInt);
-  const r = pokerRank(vp.hand);
+  const r = vpGame().rank(vp.hand);
   const payout = r ? vp.stake * r.pays : 0;
   const net = payout - vp.stake;
   vp.result = r;
@@ -3505,6 +3853,7 @@ function renderPoker() {
     row.classList.toggle('hit', done && !!r && r.key === p.key);
   }
   vpCards.forEach(({ btn }, i) => {
+    btn.classList.toggle('wild', vp.game === 'deuces' && (hold || vp.phase === 'done') && !vp.busy && rankOf(vp.hand[i] || '') === '2');
     btn.classList.toggle('held', hold && vp.held[i]);
     btn.classList.toggle('win', done && !!r && r.cards.includes(i));
     btn.classList.toggle('dim', done && !!r && !r.cards.includes(i));
@@ -3514,7 +3863,7 @@ function renderPoker() {
   let title, sub = '', cls = '';
   if (vp.busy) title = hold ? 'Dealing…' : 'Drawing…';
   else if (hold) {
-    const now = pokerRank(vp.hand);
+    const now = vpGame().rank(vp.hand);
     title = now ? `You have ${now.name.toLowerCase()}` : 'Pick your keepers';
     sub = 'Tap cards to hold, then Draw';
   } else if (vp.phase === 'done') {
@@ -3522,13 +3871,15 @@ function renderPoker() {
     else if (r.pays === 1) { title = r.name; sub = 'Your bet back'; }
     else { title = `${r.name}!`; sub = `+${money(vp.stake * r.pays - vp.stake)}`; cls = 'win'; }
   } else {
-    title = 'Jacks or Better';
+    title = vpGame().name;
     sub = vp.bet ? 'Tap Deal when you’re ready' : 'Tap chips to choose your bet';
   }
   ui.vpTitle.textContent = title;
   ui.vpSub.textContent = sub;
   ui.vpMsg.className = 'vp-msg' + (cls ? ' ' + cls : '');
   ui.vpDeal.textContent = hold ? 'Draw' : 'Deal';
+  ui.vpGameName.textContent = vpGame().name;
+  ui.vpGame.disabled = !vpCanBet();
   ui.vpDeal.disabled = vp.busy;
   ui.vpClear.disabled = !vpCanBet() || !vp.bet;
   ui.vpDouble.disabled = !vpCanBet() || !vp.bet || vp.bet * 2 > bal;
@@ -4111,20 +4462,585 @@ function renderWar() {
   }
 }
 
+/* A card for the felt, face up or face down. Face-down cards are turned over by removing
+   'down'. */
+function feltCard(code, down) {
+  const e = document.createElement('div');
+  e.className = 'card deal-in' + (down ? ' down' : '') + (/[HD]$/.test(code) ? ' red' : '') + (rankOf(code) === 'A' ? ' ace' : '');
+  e.setAttribute('role', 'img');
+  e.setAttribute('aria-label', down ? 'Face-down card' : cardLabel(code));
+  e.dataset.c = code;
+  e.innerHTML = `<div class="inner"><div class="face">${faceHTML(code)}</div><div class="back cardback"></div></div>`;
+  e.addEventListener('animationend', ev => { if (ev.animationName === 'dealIn') e.classList.remove('deal-in'); });
+  return e;
+}
+const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CARD_OK = /^(10|[2-9JQKA])[SHDC]$/;
+const cardsOk = (a, n) => Array.isArray(a) && a.length === n && a.every(c => typeof c === 'string' && CARD_OK.test(c));
+
+/* ================= Three Card Poker (solo, plays from the wallet) =================
+   Chips build an amount, Place puts it on the Ante (or on Pair Plus, if you tapped it), and
+   Deal gives you three cards and the dealer three face down. With an Ante down you then
+   Fold or Play; the dealer's cards turn over and everything is paid. A hand waiting on
+   Fold or Play is kept if you leave, and one the app closed mid-reveal is paid next time. */
+const TC_KEY = 'mini-casino.threecard';
+const TC_SIDES = ['ante', 'pair'];
+const tc = {
+  amount: 0, picks: new Set(), bets: { ante: 0, pair: 0 }, last: null, live: null, result: null, busy: false,
+  table: { p: [], d: [], up: false },
+};
+const tcTotal = (bets = tc.bets) => TC_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
+const tcPending = () => tc.amount > 0 || tc.picks.size > 0;
+const tcRoom = () => Math.max(0, (wallet.ready ? wallet.balance : 0) - tcTotal());
+const tcDeciding = () => !!tc.live && tc.live.phase === 'decide' && !tc.busy;
+const tcLocked = () => tc.busy || !!tc.live || !wallet.ready;
+function tcSave() {
+  try { localStorage.setItem(TC_KEY, JSON.stringify({ last: tc.last, live: tc.live })); } catch (e) { /* storage unavailable */ }
+}
+function tcCleanBets(o) {
+  const out = { ante: 0, pair: 0 };
+  if (o && typeof o === 'object') for (const k of TC_SIDES) if (Number.isFinite(o[k]) && o[k] > 0) out[k] = o[k];
+  return out;
+}
+function tcLoad() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(TC_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
+  if (!d) return;
+  if (d.last) { const l = tcCleanBets(d.last); if (tcTotal(l)) tc.last = l; }
+  const l = d.live;
+  if (!l || !Number.isFinite(l.total) || l.total <= 0 || !cardsOk(l.player, 3) || !cardsOk(l.dealer, 3)) return;
+  const b = tcCleanBets({ ante: l.ante, pair: l.pair });
+  const live = { ante: b.ante, pair: b.pair, total: l.total, player: l.player, dealer: l.dealer, choice: null, phase: 'decide' };
+  if (l.phase === 'settle' && Number.isFinite(l.payout)) {
+    live.phase = 'settle';
+    live.payout = l.payout;
+    live.choice = l.choice === 'play' || l.choice === 'fold' ? l.choice : null;
+  } else if (!live.ante) return;
+  tc.live = live;
+  if (live.phase === 'decide') tc.table = { p: live.player.slice(), d: live.dealer.slice(), up: false };
+}
+function tcRecover() {
+  if (tc.live && tc.live.phase === 'settle') tcSettle();
+}
+// What happened, in words, for the message and the wallet's log
+function tcOutcome(h) {
+  const net = Math.round((h.payout - h.total) * 100) / 100;
+  const me = tcRank(h.player), dl = tcRank(h.dealer);
+  let words, winner = '';
+  if (!h.ante) words = TC_PAIR_PLUS[me.key] ? 'Pair Plus wins' : 'No Pair Plus';
+  else if (h.choice === 'fold') words = 'Folded';
+  else if (!tcQualifies(dl)) { words = 'Dealer doesn’t qualify'; winner = 'player'; }
+  else if (me.score > dl.score) { words = 'You win'; winner = 'player'; }
+  else if (me.score < dl.score) { words = 'Dealer wins'; winner = 'dealer'; }
+  else words = 'Push';
+  return { net, words, winner, me, dl };
+}
+function tcSettle() {
+  const live = tc.live;
+  if (!live) return;
+  tc.live = null;
+  tcSave();
+  const o = tcOutcome(live);
+  recordThreeCard(live, o);
+  walletChange(live.payout, null, { log: { a: o.net, w: `Three Card Poker · ${o.words}` } });
+}
+function tcHandName(cards) {
+  const r = tcRank(cards);
+  return r.key === 'high' ? `${rankOf(cards.slice().sort((a, b) => tcVal(b) - tcVal(a))[0])} high` : r.name;
+}
+const TC_PAY_ROWS = [['sflush', 'Straight flush'], ['trips', 'Trips'], ['straight', 'Straight'], ['flush', 'Flush'], ['pair', 'Pair']];
+function buildThreeCard() {
+  const cell = (cls, text, key) => {
+    const e = document.createElement('div');
+    e.className = cls;
+    e.textContent = text;
+    if (key) e.dataset.k = key;
+    ui.tcPays.appendChild(e);
+  };
+  cell('h', '');
+  for (const [, label] of TC_PAY_ROWS) cell('h', label);
+  cell('l', 'Pair Plus');
+  for (const [k] of TC_PAY_ROWS) cell('v pp', String(TC_PAIR_PLUS[k]), k);
+  cell('l', 'Ante bonus');
+  for (const [k] of TC_PAY_ROWS) cell('v ab', TC_ANTE_BONUS[k] ? String(TC_ANTE_BONUS[k]) : '–', k);
+  for (const v of R_CHIPS) {
+    const c = document.createElement('button');
+    c.className = 'chip chipface';
+    c.style.setProperty('--c', R_CHIP_COLORS[v]);
+    c.dataset.v = String(v);
+    c.textContent = chipLabel(v);
+    c.setAttribute('aria-label', `Add ${moneyFull(v)}`);
+    c.addEventListener('click', () => tcAddAmount(v));
+    ui.tcChips.appendChild(c);
+  }
+  for (const spot of ui.tcSpots) spot.addEventListener('click', () => tcPick(spot.dataset.k));
+  ui.tcClear.addEventListener('click', tcClear);
+  ui.tcRebet.addEventListener('click', tcRebet);
+  ui.tcDouble.addEventListener('click', tcDouble);
+  ui.tcGo.addEventListener('click', tcGo);
+  ui.tcPlay.addEventListener('click', tcPlay);
+  ui.tcFold.addEventListener('click', tcFold);
+  ui.tcBank.addEventListener('click', () => go('bank'));
+}
+function tcFresh() {
+  if (!tc.result) return;
+  tc.result = null;
+  tc.table = { p: [], d: [], up: false };
+}
+function tcAddAmount(v) {
+  if (tcLocked()) return;
+  if (tc.amount + v > tcRoom()) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
+  tcFresh();
+  tc.amount += v;
+  buzz(5);
+  render();
+}
+function tcPick(k) {
+  if (tcLocked()) return;
+  tcFresh();
+  if (tc.picks.has(k)) tc.picks.delete(k); else tc.picks.add(k);
+  buzz();
+  render();
+}
+function tcPlace() {
+  if (tcLocked()) return;
+  if (!tc.amount) { toast('Tap chips to choose how much to bet.'); return; }
+  const picks = tc.picks.size ? [...tc.picks] : ['ante'];   // nothing tapped: it goes on the Ante
+  if (tc.amount * picks.length > tcRoom()) { toast('Your wallet can’t cover that many. The bank can.'); return; }
+  for (const k of picks) tc.bets[k] += tc.amount;
+  tc.picks.clear();
+  tc.amount = 0;
+  buzz(15);
+  render();
+}
+function tcClear() {
+  if (tcLocked()) return;
+  if (tcPending()) { tc.amount = 0; tc.picks.clear(); render(); return; }
+  if (!tcTotal()) return;
+  tc.bets = { ante: 0, pair: 0 };
+  tcFresh();
+  render();
+}
+function tcRebet() {
+  if (tcLocked() || !tc.last || tcTotal()) return false;
+  if (tcTotal(tc.last) > wallet.balance) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
+  tc.bets = { ...tc.last };
+  tcFresh();
+  render();
+  return true;
+}
+function tcDouble() {
+  const t = tcTotal();
+  if (tcLocked() || !t) return;
+  if (t * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
+  for (const k of TC_SIDES) tc.bets[k] *= 2;
+  tcFresh();
+  render();
+}
+function tcGo() {
+  if (tcDeciding()) tcPlay();
+  else if (tcPending()) tcPlace();
+  else tcDeal();
+}
+function tcDeal() {
+  if (tcLocked()) return;
+  if (!tcTotal() && tc.last && !tcRebet()) return;
+  const total = tcTotal();
+  if (!total) { toast('Tap chips, then Place to put them on the Ante.'); return; }
+  if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
+  if (tc.bets.ante && tc.bets.ante * 2 + tc.bets.pair > wallet.balance) toast(`Heads up: playing the hand takes another ${money(tc.bets.ante)}.`);
+  tc.busy = true;
+  if (!walletChange(-total, null)) { tc.busy = false; return; }
+  const { player, dealer } = tcDealCards(randInt);
+  const live = { ante: tc.bets.ante, pair: tc.bets.pair, total, player, dealer, choice: null, phase: tc.bets.ante ? 'decide' : 'settle' };
+  if (live.phase === 'settle') live.payout = tcPayout(live);
+  tc.live = live;
+  tc.last = { ...tc.bets };
+  tc.bets = { ante: 0, pair: 0 };
+  tc.result = null;
+  tc.table = { p: [], d: [], up: false };
+  tcSave();
+  buzz(10);
+  const reduce = reduceMotion(), step = reduce ? 40 : 230;
+  let t = 0;
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => { tc.table.p = player.slice(0, i + 1); buzz(3); render(); }, t);
+    t += step;
+    setTimeout(() => { tc.table.d = dealer.slice(0, i + 1); render(); }, t);
+    t += step;
+  }
+  setTimeout(() => {
+    if (live.phase === 'decide') { tc.busy = false; render(); }
+    else tcReveal();
+  }, t + (reduce ? 0 : 250));
+  render();
+}
+// Turn the dealer's cards over, then pay
+function tcReveal() {
+  tc.busy = true;
+  tc.table.up = true;
+  render();
+  setTimeout(() => {
+    const live = tc.live;
+    tc.busy = false;
+    tc.result = live;
+    tcSettle();
+    if (live.payout > live.total) buzz([15, 50, 25]);
+    render();
+  }, reduceMotion() ? 0 : 800);
+}
+function tcPlay() {
+  if (!tcDeciding()) return;
+  const live = tc.live;
+  if (live.ante > wallet.balance) { toast(`Playing takes another ${money(live.ante)}. The bank can cover it.`); return; }
+  if (!walletChange(-live.ante, null)) return;
+  live.choice = 'play';
+  live.total += live.ante;
+  live.phase = 'settle';
+  live.payout = tcPayout(live);
+  tcSave();
+  buzz(10);
+  tcReveal();
+}
+function tcFold() {
+  if (!tcDeciding()) return;
+  const live = tc.live;
+  live.choice = 'fold';
+  live.phase = 'settle';
+  live.payout = tcPayout(live);
+  tcSave();
+  tcReveal();
+}
+function tcSyncCards(el, cards, down) {
+  const have = [...el.children].map(c => c.dataset.c);
+  if (have.length > cards.length || have.join() !== cards.slice(0, have.length).join()) { el.textContent = ''; have.length = 0; }
+  for (let i = have.length; i < cards.length; i++) el.appendChild(feltCard(cards[i], down));
+  [...el.children].forEach((c, i) => {
+    if (c.classList.contains('down') !== down) {
+      if (down) c.classList.add('down');
+      else setTimeout(() => { c.classList.remove('down'); c.setAttribute('aria-label', cardLabel(c.dataset.c)); }, reduceMotion() ? 0 : i * 160);
+    }
+  });
+}
+function renderThreeCard() {
+  const bal = wallet.ready ? wallet.balance : 0;
+  const total = tcTotal();
+  const live = tc.live, r = tc.result;
+  const deciding = tcDeciding();
+  ui.tcBet.textContent = money(live ? live.total : total);
+  ui.tcAmount.textContent = money(tc.amount);
+  tcSyncCards(ui.tcPcards, tc.table.p, false);
+  tcSyncCards(ui.tcDcards, tc.table.d, !tc.table.up);
+
+  const shown = live || r;
+  const full = shown && tc.table.p.length === 3;
+  ui.tcPname.textContent = full ? tcHandName(shown.player) : '';
+  ui.tcDname.textContent = r ? tcHandName(r.dealer) : '';
+  const o = r ? tcOutcome(r) : null;
+  ui.tcPlayerSide.classList.toggle('win', !!o && o.winner === 'player');
+  ui.tcDealerSide.classList.toggle('win', !!o && o.winner === 'dealer');
+  const myKey = full ? tcRank(shown.player).key : '';
+  for (const c of ui.tcPays.children) {
+    if (!c.dataset.k) continue;
+    const hit = c.dataset.k === myKey && !tc.busy && ((c.classList.contains('pp') && shown.pair) || (c.classList.contains('ab') && shown.ante && TC_ANTE_BONUS[myKey] && (!r || r.choice === 'play')));
+    c.classList.toggle('hit', !!hit);
+  }
+
+  for (const spot of ui.tcSpots) {
+    const k = spot.dataset.k;
+    const amt = live ? live[k] : tc.bets[k];
+    spot.querySelector('.bc-amt').textContent = amt ? money(amt) : '';
+    spot.classList.toggle('pick', tc.picks.has(k));
+    spot.classList.toggle('win', !!o && (k === 'pair' ? !!r.pair && !!TC_PAIR_PLUS[o.me.key] : !!r.ante && o.winner === 'player'));
+    spot.disabled = tcLocked();
+  }
+  ui.tcPlaySpot.querySelector('.bc-amt').textContent = live && live.choice === 'play' ? money(live.ante) : '';
+  ui.tcPlaySpot.classList.toggle('win', !!o && o.winner === 'player' && o.words !== 'Dealer doesn’t qualify');
+
+  let title, sub = '', cls = '';
+  if (tc.busy) title = tc.table.up ? 'Dealer shows…' : 'Dealing…';
+  else if (deciding) {
+    title = tcHandName(live.player);
+    sub = `Play for ${money(live.ante)} more, or fold`;
+  } else if (r) {
+    title = o.words;
+    const vs = r.ante && r.choice === 'play' ? `${tcHandName(r.player)} vs ${tcHandName(r.dealer)}` : tcHandName(r.player);
+    sub = vs + (o.net > 0 ? ` · +${money(o.net)}` : o.net < 0 ? ` · −${money(-o.net)}` : ' · Even');
+    cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
+  } else if (tcPending()) {
+    title = 'Now tap Place';
+    sub = tc.picks.size ? `${money(tc.amount)} on each spot you picked` : `${money(tc.amount)} goes on the Ante`;
+  } else if (total) {
+    title = 'Bets are down';
+    sub = 'Tap Deal';
+  } else {
+    title = 'Three Card Poker';
+    sub = 'Tap chips, then Place';
+  }
+  ui.tcTitle.textContent = title;
+  ui.tcSub.textContent = sub;
+  ui.tcMsg.className = 'bc-msg' + (cls ? ' ' + cls : '');
+
+  ui.tcActions.hidden = deciding;
+  ui.tcDecide.hidden = !deciding;
+  if (deciding) ui.tcPlay.textContent = `Play · ${money(live.ante)}`;
+  const pending = tcPending();
+  const lastTotal = tc.last ? tcTotal(tc.last) : 0;
+  const canRebet = !tcLocked() && !total && lastTotal > 0 && lastTotal <= bal;
+  ui.tcGo.textContent = pending ? 'Place' : 'Deal';
+  ui.tcGo.disabled = tcLocked() || (!pending && !total && !canRebet);
+  ui.tcClear.disabled = tcLocked() || (!pending && !total);
+  ui.tcRebet.hidden = total > 0;
+  ui.tcDouble.hidden = !total;
+  ui.tcRebet.disabled = !canRebet;
+  ui.tcDouble.disabled = tcLocked() || !total || total * 2 > bal;
+  for (const c of ui.tcChips.children) c.disabled = tcLocked() || tc.amount + Number(c.dataset.v) > bal - total;
+  ui.tcLow.hidden = tc.busy || !wallet.ready || (deciding ? bal >= live.ante : !!live || bal - total >= 5);
+}
+
+/* ================= Red Dog (solo, plays from the wallet) =================
+   Chips set the bet (it stays for the next hand), and Deal shows two cards. Next to each
+   other is a push; a pair gets a third card for a shot at three of a kind. Otherwise you may
+   raise by your bet before the third card. A hand waiting on that choice is kept if you
+   leave, and one the app closed mid-reveal is paid next time. */
+const RD_KEY = 'mini-casino.reddog';
+const rd = { bet: 25, live: null, result: null, busy: false, table: [] };
+const rdDeciding = () => !!rd.live && rd.live.phase === 'decide' && !rd.busy;
+const rdLocked = () => rd.busy || !!rd.live || !wallet.ready;
+function rdSave() {
+  try { localStorage.setItem(RD_KEY, JSON.stringify({ bet: rd.bet, live: rd.live })); } catch (e) { /* storage unavailable */ }
+}
+function rdLoad() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(RD_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
+  if (!d) return;
+  if (Number.isFinite(d.bet) && d.bet >= 0) rd.bet = Math.floor(d.bet);
+  const l = d.live;
+  if (!l || !Number.isFinite(l.bet) || l.bet <= 0 || !Number.isFinite(l.total)) return;
+  if (l.phase === 'settle' && (cardsOk(l.cards, 3) || cardsOk(l.cards, 2)) && Number.isFinite(l.payout)) {
+    rd.live = { bet: l.bet, raise: Number.isFinite(l.raise) && l.raise > 0 ? l.raise : 0, total: l.total, cards: l.cards, payout: l.payout, phase: 'settle' };
+  } else if (l.phase === 'decide' && cardsOk(l.cards, 2) && rdSpread(l.cards[0], l.cards[1]).kind === 'spread') {
+    rd.live = { bet: l.bet, raise: 0, total: l.total, cards: l.cards, phase: 'decide' };
+    rd.table = l.cards.slice();
+  }
+}
+function rdRecover() {
+  if (rd.live && rd.live.phase === 'settle') rdSettle();
+}
+function rdOutcome(h) {
+  const net = Math.round((h.payout - h.total) * 100) / 100;
+  const s = rdSpread(h.cards[0], h.cards[1]);
+  let words;
+  if (s.kind === 'next') words = 'Back to back: push';
+  else if (s.kind === 'pair') words = rdVal(h.cards[2]) === rdVal(h.cards[0]) ? 'Three of a kind!' : 'Pair: push';
+  else words = net > 0 ? 'In between!' : 'Missed';
+  return { net, words, s, won: net > 0 };
+}
+function rdSettle() {
+  const live = rd.live;
+  if (!live) return;
+  rd.live = null;
+  rdSave();
+  const o = rdOutcome(live);
+  recordRedDog(live, o);
+  walletChange(live.payout, null, { log: { a: o.net, w: `Red Dog · ${o.words}` } });
+}
+function buildRedDog() {
+  const cells = [['Spread 1', '5 to 1', 1], ['Spread 2', '4 to 1', 2], ['Spread 3', '2 to 1', 3], ['4 or more', '1 to 1', 4], ['Pair', 'Trips 11:1', 'pair']];
+  for (const [label, pays, k] of cells) {
+    const e = document.createElement('div');
+    e.dataset.k = String(k);
+    e.innerHTML = `<span>${label}</span><b>${pays}</b>`;
+    ui.rdPays.appendChild(e);
+  }
+  for (const v of R_CHIPS) {
+    const c = document.createElement('button');
+    c.className = 'chip chipface';
+    c.style.setProperty('--c', R_CHIP_COLORS[v]);
+    c.dataset.v = String(v);
+    c.textContent = chipLabel(v);
+    c.setAttribute('aria-label', `Add ${moneyFull(v)} to your bet`);
+    c.addEventListener('click', () => rdAddChip(v));
+    ui.rdChips.appendChild(c);
+  }
+  ui.rdClear.addEventListener('click', rdClear);
+  ui.rdDouble.addEventListener('click', rdDouble);
+  ui.rdDeal.addEventListener('click', rdGo);
+  ui.rdCall.addEventListener('click', () => rdThirdCard(false));
+  ui.rdRaiseBtn.addEventListener('click', () => rdThirdCard(true));
+  ui.rdBank.addEventListener('click', () => go('bank'));
+}
+function rdFresh() {
+  if (!rd.result) return;
+  rd.result = null;
+  rd.table = [];
+}
+function rdAddChip(v) {
+  if (rdLocked()) return;
+  if (rd.bet + v > wallet.balance) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
+  rd.bet += v;
+  rdFresh();
+  rdSave();
+  buzz(5);
+  render();
+}
+function rdClear() {
+  if (rdLocked() || !rd.bet) return;
+  rd.bet = 0;
+  rdFresh();
+  rdSave();
+  render();
+}
+function rdDouble() {
+  if (rdLocked() || !rd.bet) return;
+  if (rd.bet * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
+  rd.bet *= 2;
+  rdFresh();
+  rdSave();
+  buzz(5);
+  render();
+}
+function rdGo() {
+  if (rdDeciding()) rdThirdCard(true);
+  else rdDealHand();
+}
+function rdDealHand() {
+  if (rdLocked()) return;
+  if (!rd.bet) { toast('Tap chips to choose your bet.'); return; }
+  if (rd.bet > wallet.balance) { toast('Your wallet can’t cover that bet. The bank can.'); return; }
+  if (!walletChange(-rd.bet, null)) return;
+  rd.busy = true;
+  const [a, b] = rdDeal(randInt);
+  const s = rdSpread(a, b);
+  const live = { bet: rd.bet, raise: 0, total: rd.bet, cards: [a, b], phase: 'decide' };
+  if (s.kind !== 'spread') {
+    if (s.kind === 'pair') live.cards.push(rdThird(a, b, randInt));   // back to back needs no third card
+    live.phase = 'settle';
+    live.payout = rdPayout({ bet: live.bet, cards: s.kind === 'pair' ? live.cards : [a, b, a] });
+  }
+  rd.live = live;
+  rd.result = null;
+  rd.table = [];
+  rdSave();
+  buzz(10);
+  const reduce = reduceMotion(), step = reduce ? 40 : 420;
+  setTimeout(() => { rd.table = [a]; buzz(3); render(); }, 0);
+  setTimeout(() => { rd.table = [a, b]; buzz(3); render(); }, step);
+  let t = step * 2;
+  if (s.kind === 'pair') {
+    t += reduce ? 0 : 500;
+    setTimeout(() => { rd.table = live.cards.slice(); buzz(4); render(); }, t);
+    t += reduce ? 0 : 450;
+  }
+  setTimeout(() => {
+    rd.busy = false;
+    if (live.phase === 'settle') rdFinish();
+    render();
+  }, t + (reduce ? 0 : 200));
+  render();
+}
+function rdFinish() {
+  const live = rd.live;
+  rd.result = live;
+  rdSettle();
+  if (live.payout > live.total) buzz(rdVal(live.cards[2] || '2S') === rdVal(live.cards[0]) ? [30, 40, 60] : [15, 50, 25]);
+}
+function rdThirdCard(raise) {
+  if (!rdDeciding()) return;
+  const live = rd.live;
+  if (raise) {
+    if (live.bet > wallet.balance) { toast(`Raising takes another ${money(live.bet)}. The bank can cover it.`); return; }
+    if (!walletChange(-live.bet, null)) return;
+    live.raise = live.bet;
+    live.total += live.bet;
+  }
+  live.cards = [live.cards[0], live.cards[1], rdThird(live.cards[0], live.cards[1], randInt)];
+  live.phase = 'settle';
+  live.payout = rdPayout(live);
+  rdSave();
+  rd.busy = true;
+  buzz(10);
+  render();
+  const reduce = reduceMotion();
+  setTimeout(() => { rd.table = live.cards.slice(); buzz(4); render(); }, reduce ? 0 : 350);
+  setTimeout(() => { rd.busy = false; rdFinish(); render(); }, reduce ? 0 : 900);
+}
+function rdPlace(el, code) {
+  const have = el.firstElementChild;
+  if (!code) { if (have) el.textContent = ''; return; }
+  if (have && have.dataset.c === code) return;
+  el.textContent = '';
+  el.appendChild(feltCard(code, false));
+}
+function renderRedDog() {
+  const bal = wallet.ready ? wallet.balance : 0;
+  const live = rd.live, r = rd.result;
+  const deciding = rdDeciding();
+  const shown = live || r;
+  // The lower card on the left, the higher on the right, the third card between
+  const [a, b, c] = rd.table;
+  const swap = a && b && rdVal(a) > rdVal(b);
+  rdPlace(ui.rdLo, swap ? b : a);
+  rdPlace(ui.rdHi, swap ? a : b);
+  rdPlace(ui.rdMid, c || null);
+  const o = r ? rdOutcome(r) : null;
+  ui.rdMid.classList.toggle('win', !!o && o.won);
+
+  const s = a && b ? rdSpread(a, b) : null;
+  for (const e of ui.rdPays.children) {
+    const k = e.dataset.k;
+    const hit = s && (s.kind === 'pair' ? k === 'pair' : s.kind === 'spread' && (k === String(Math.min(s.spread, 4))));
+    e.classList.toggle('hit', !!hit);
+  }
+  ui.rdSpread.textContent = !s ? '' : s.kind === 'pair' ? 'Pair' : s.kind === 'next' ? 'Back to back' : `Spread ${s.spread} · pays ${rdPays(s.spread)} to 1`;
+
+  let title, sub = '', cls = '';
+  if (rd.busy) title = 'Dealing…';
+  else if (deciding) {
+    const inside = s.spread;
+    title = `${inside} rank${inside === 1 ? '' : 's'} in between`;
+    sub = `Raise ${money(live.bet)}, or take the card as is`;
+  } else if (r) {
+    title = o.words;
+    sub = o.net > 0 ? `+${money(o.net)}` : o.net < 0 ? `−${money(-o.net)}` : 'Your bet back';
+    cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
+  } else {
+    title = 'Red Dog';
+    sub = rd.bet ? 'Will the third card land in between?' : 'Tap chips to choose your bet';
+  }
+  ui.rdTitle.textContent = title;
+  ui.rdSub.textContent = sub;
+  ui.rdMsg.className = 'bc-msg' + (cls ? ' ' + cls : '');
+
+  ui.rdBet.textContent = money(shown && (live || rd.busy) ? shown.bet : rd.bet);
+  ui.rdRaiseWrap.hidden = !(live && live.raise);
+  ui.rdRaise.textContent = money(live ? live.raise : 0);
+  ui.rdActions.hidden = deciding;
+  ui.rdDecide.hidden = !deciding;
+  if (deciding) ui.rdRaiseBtn.textContent = `Raise · ${money(live.bet)}`;
+  ui.rdDeal.disabled = rdLocked() || !rd.bet;
+  ui.rdClear.disabled = rdLocked() || !rd.bet;
+  ui.rdDouble.disabled = rdLocked() || !rd.bet || rd.bet * 2 > bal;
+  for (const ch of ui.rdChips.children) ch.disabled = rdLocked() || rd.bet + Number(ch.dataset.v) > bal;
+  ui.rdLow.hidden = rd.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal >= Math.max(5, rd.bet));
+}
+
 /* ================= How to play ================= */
-const LEARN = ['blackjack', 'roulette', 'poker', 'baccarat', 'war', 'slots', 'plinko', 'crash', 'wallet'];
+const LEARN = ['blackjack', 'roulette', 'poker', 'baccarat', 'threecard', 'war', 'reddog', 'slots', 'plinko', 'crash', 'wallet'];
 // Game screens with a ? button: the article it opens, and what its back button says
-const HELP_FOR = { lobby: ['blackjack', 'Blackjack'], table: ['blackjack', 'Table'], roulette: ['roulette', 'Roulette'], poker: ['poker', 'Video poker'], baccarat: ['baccarat', 'Baccarat'], war: ['war', 'Casino War'] };
+const HELP_FOR = { lobby: ['blackjack', 'Blackjack'], table: ['blackjack', 'Table'], roulette: ['roulette', 'Roulette'], poker: ['poker', 'Video poker'], baccarat: ['baccarat', 'Baccarat'], war: ['war', 'Casino War'], threecard: ['threecard', 'Three Card Poker'], reddog: ['reddog', 'Red Dog'] };
 function buildLearn() {
-  for (const p of POKER_PAYS) {
-    const tr = document.createElement('tr');
-    const name = document.createElement('td');
-    name.textContent = p.name;
-    const pays = document.createElement('td');
-    pays.className = 'pay';
-    pays.textContent = `${p.pays}×`;
-    tr.append(name, pays);
-    ui.kbPokerPays.appendChild(tr);
+  for (const [table, body] of [[POKER_PAYS, ui.kbPokerPays], [DEUCES_PAYS, ui.kbDeucesPays]]) {
+    for (const p of table) {
+      const tr = document.createElement('tr');
+      const name = document.createElement('td');
+      name.textContent = p.name;
+      const pays = document.createElement('td');
+      pays.className = 'pay';
+      pays.textContent = `${p.pays}×`;
+      tr.append(name, pays);
+      body.appendChild(tr);
+    }
   }
   ui.learnView.addEventListener('click', e => {
     const t = e.target.closest('[data-learn], [data-go]');
@@ -4617,11 +5533,15 @@ function render() {
   ui.pokerView.hidden = v !== 'poker';
   ui.baccaratView.hidden = v !== 'baccarat';
   ui.warView.hidden = v !== 'war';
+  ui.tcpView.hidden = v !== 'threecard';
+  ui.reddogView.hidden = v !== 'reddog';
   ui.learnView.hidden = v !== 'learn';
   // Game screens fill the screen exactly and never scroll
-  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war');
+  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog');
   document.documentElement.classList.toggle('bac', v === 'baccarat');
   document.documentElement.classList.toggle('war', v === 'war');
+  document.documentElement.classList.toggle('tcp', v === 'threecard');
+  document.documentElement.classList.toggle('rd', v === 'reddog');
   document.documentElement.classList.toggle('bj', v === 'table');
   document.documentElement.classList.toggle('vp', v === 'poker');
 
@@ -4653,6 +5573,8 @@ function render() {
   else if (v === 'poker') renderPoker();
   else if (v === 'baccarat') renderBaccarat();
   else if (v === 'war') renderWar();
+  else if (v === 'threecard') renderThreeCard();
+  else if (v === 'reddog') renderRedDog();
   else if (v === 'learn') renderLearn();
   syncLock();
 }
@@ -4662,11 +5584,11 @@ const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n));
 const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');
 const tone = (el, n) => { el.classList.toggle('up', n > 0); el.classList.toggle('down', n < 0); };
 function statsTotals() {
-  const b = stats.bj, r = stats.rl, p = stats.vp, c = stats.bc, w = stats.wr;
+  const b = stats.bj, r = stats.rl, p = stats.vp, c = stats.bc, w = stats.wr, t = stats.tc, d = stats.rd;
   return {
-    net: b.net + r.net + p.net + c.net + w.net,
-    rounds: b.hands + r.spins + p.hands + c.rounds + w.rounds,
-    biggest: Math.max(b.biggest, r.biggest, p.biggest, c.biggest, w.biggest, 0),
+    net: b.net + r.net + p.net + c.net + w.net + t.net + d.net,
+    rounds: b.hands + r.spins + p.hands + c.rounds + w.rounds + t.hands + d.hands,
+    biggest: Math.max(b.biggest, r.biggest, p.biggest, c.biggest, w.biggest, t.biggest, d.biggest, 0),
   };
 }
 function renderHomeStats() {
@@ -4726,7 +5648,7 @@ function renderStats() {
   ui.vpRate.textContent = pct(vs.wins, vs.hands);
   ui.vpWagered.textContent = money(vs.wagered);
   ui.vpBiggest.textContent = money(vs.biggest);
-  const best = POKER_PAYS.find(x => vs.made[x.key]);
+  const best = POKER_PAYS.concat(DEUCES_PAYS).filter(x => vs.made[x.key]).sort((a, b) => b.pays - a.pays)[0];
   ui.vpBest.textContent = best ? `Best hand: ${best.name}${vs.made[best.key] > 1 ? `, made ${vs.made[best.key]} times` : ''}` : 'Best hand: none yet';
 
   const cs = stats.bc;
@@ -4748,6 +5670,24 @@ function renderStats() {
   ui.wrWars.textContent = !ws.rounds ? 'No rounds yet'
     : ws.wars || ws.surrenders ? `Went to war ${ws.wars} time${ws.wars === 1 ? '' : 's'} and won ${ws.warsWon}${ws.surrenders ? `, surrendered ${ws.surrenders}` : ''}`
     : 'No wars yet';
+
+  const ts = stats.tc;
+  ui.tcNet.textContent = ts.hands ? signed(ts.net) : '';
+  tone(ui.tcNet, ts.net);
+  ui.tcHands.textContent = ts.hands.toLocaleString('en-US');
+  ui.tcRate.textContent = pct(ts.won, ts.hands);
+  ui.tcWagered.textContent = money(ts.wagered);
+  ui.tcBiggest.textContent = money(ts.biggest);
+  ui.tcLine.textContent = !ts.hands ? 'No hands yet' : `Folded ${ts.folds} time${ts.folds === 1 ? '' : 's'} · Pair Plus hit ${ts.pairPlus} time${ts.pairPlus === 1 ? '' : 's'}`;
+
+  const ds = stats.rd;
+  ui.rdNet.textContent = ds.hands ? signed(ds.net) : '';
+  tone(ui.rdNet, ds.net);
+  ui.rdHands.textContent = ds.hands.toLocaleString('en-US');
+  ui.rdRate.textContent = pct(ds.won, ds.hands);
+  ui.rdWagered.textContent = money(ds.wagered);
+  ui.rdBiggest.textContent = money(ds.biggest);
+  ui.rdLine.textContent = !ds.hands ? 'No hands yet' : `Raised ${ds.raises} time${ds.raises === 1 ? '' : 's'} · Three of a kind ${ds.trips} time${ds.trips === 1 ? '' : 's'}`;
 
   ui.bkWithdrawn.textContent = money(wallet.withdrawn);
   ui.bkCount.textContent = wallet.count.toLocaleString('en-US');
@@ -5230,7 +6170,7 @@ ui.insNo.addEventListener('click', () => insure(false));
 ui.leave.addEventListener('click', leaveSeat);
 
 document.addEventListener('keydown', e => {
-  if (app.view !== 'roulette' && app.view !== 'poker' && app.view !== 'baccarat' && app.view !== 'war' && (app.view !== 'table' || !app.T)) return;
+  if (app.view !== 'roulette' && app.view !== 'poker' && app.view !== 'baccarat' && app.view !== 'war' && app.view !== 'threecard' && app.view !== 'reddog' && (app.view !== 'table' || !app.T)) return;
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   const t = e.target;
   if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
@@ -5266,6 +6206,31 @@ document.addEventListener('keydown', e => {
     if (used) e.preventDefault();
     return;
   }
+  if (app.view === 'threecard') {
+    let used = true;
+    if (k === ' ' || k === 'enter') tcGo();
+    else if (k >= '1' && k <= '6') tcAddAmount(R_CHIPS[Number(k) - 1]);
+    else if (k === 'a') tcPick('ante');
+    else if (k === 'p') tcPick('pair');
+    else if (k === 'f') tcFold();
+    else if (k === 'c' || k === 'backspace') tcClear();
+    else if (k === 'r') tcRebet();
+    else if (k === 'x') tcDouble();
+    else used = false;
+    if (used) e.preventDefault();
+    return;
+  }
+  if (app.view === 'reddog') {
+    let used = true;
+    if (k === ' ' || k === 'enter') rdGo();
+    else if (k >= '1' && k <= '6') rdAddChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'n') rdThirdCard(false);
+    else if (k === 'c' || k === 'backspace') rdClear();
+    else if (k === 'x') rdDouble();
+    else used = false;
+    if (used) e.preventDefault();
+    return;
+  }
   if (app.view === 'war') {
     let used = true;
     if (k === ' ' || k === 'enter') wrGo();
@@ -5284,6 +6249,7 @@ document.addEventListener('keydown', e => {
     let used = true;
     if (k === ' ' || k === 'enter') vpDeal();
     else if (k >= '1' && k <= '5') vpToggle(Number(k) - 1);
+    else if (k === 'g') vpSwitch();
     else if (k === 'c' || k === 'backspace') vpClear();
     else if (k === 'x') vpDouble();
     else used = false;
@@ -5325,12 +6291,18 @@ async function boot() {
   buildBaccarat();
   wrLoad();
   buildWar();
+  tcLoad();
+  buildThreeCard();
+  rdLoad();
+  buildRedDog();
   buildLearn();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
   walletInit();
   try { statsLoad(JSON.parse(localStorage.getItem(STATS_KEY) || 'null')); } catch (e) { /* storage unavailable */ }
   bcRecover();
   wrRecover();
+  tcRecover();
+  rdRecover();
   route();
   cloudInit();
   // The wheel's numbers are painted once per size; repaint them in Manrope when it arrives

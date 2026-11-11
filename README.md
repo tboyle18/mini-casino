@@ -4,12 +4,14 @@ A play-money casino for phones, running on Cloudflare at https://mini-casino.boy
 
 - **Blackjack**: rooms for up to 4 players with invite links, or a solo table. 6 decks, blackjack pays 3 to 2, dealer stands on all 17s, with splits, doubles and insurance. An optional hints toggle highlights the basic-strategy move. Tap chips to build an amount, then **Place bet** puts it on the table; your bet carries over to the next hand.
 - **Roulette**: a single-zero wheel with straight-up and all outside bets, paid from your casino wallet. Tap chips for the amount, tap the spots you want, then **Place** puts that amount on each spot.
-- **Video poker**: Jacks or Better with the full-pay 9/6 table (9 for a full house, 6 for a flush, 800× for a royal). Tap chips to set your bet, **Deal**, tap the cards to hold, **Draw**. Paid from your wallet; the hand in progress is kept in the browser.
+- **Video poker**: two machines, switched from the dock between hands. Jacks or Better with the full-pay 9/6 table (9 for a full house, 6 for a flush, 800× for a royal), and Deuces Wild, where every 2 is wild, with the "Not So Ugly Ducks" table (about 99.7% with perfect play). Tap chips to set your bet, **Deal**, tap the cards to hold, **Draw**. Paid from your wallet; the hand in progress is kept in the browser.
 - **Baccarat**: punto banco from a freshly shuffled 8-deck shoe each coup. Player pays 1 to 1, Banker 0.95 to 1 (5% commission), Tie 8 to 1, with the standard third-card rules. Same betting as roulette: chips, pick spots, **Place**, then **Deal**. A row of recent results runs along the top.
+- **Three Card Poker**: Ante and Play against the dealer's three cards from a fresh single deck; the dealer qualifies with queen high. The Ante bonus pays 5/4/1 for a straight flush, trips or a straight, and the Pair Plus side bet pays 40/30/6/4/1. Same betting as baccarat; with no spot picked, **Place** puts the amount on the Ante. Then **Fold** or **Play**.
 - **Casino War**: one card each from a freshly shuffled 6-deck shoe, aces high, higher card wins 1 to 1. On a tie you surrender (half your bet back) or go to war: add a raise equal to your bet, three cards are burned, and if your next card ties or beats the dealer's, the raise wins 1 to 1 and the bet comes back. An optional Tie bet pays 10 to 1. Same betting as baccarat; with no spot picked, **Place** puts the amount on War. A round waiting on war or surrender is kept if you leave.
+- **Red Dog**: two cards from a fresh 8-deck shoe; bet that the third lands between them. Spreads of 1, 2 and 3 pay 5, 4 and 2 to 1, wider ones 1 to 1, a pair that becomes three of a kind 11 to 1, and back-to-back cards push. You can raise by your bet before the third card. Your bet stays from hand to hand, like video poker.
 - **The Bottomless Bank**: withdraw as much (fake) money as you want. Interest rate 0%, credit check skipped.
 - **How to play**: rules, payouts and tips for every game, including the 3D lab's, from the home screen or the **?** button at the top of a game.
-- **Your stats**: net winnings, rounds played, biggest win and best winning streak, plus blackjack (won, lost, pushed, blackjacks, win rate), roulette (spins, winning spins, luckiest and most common number), video poker (hands, winning hands, best hand), baccarat (rounds, winning rounds, who won) and Casino War (rounds, winning rounds, wars won, surrenders). Every hand and spin is recorded as it finishes, each blackjack round once even across reloads, and the stats sync with your account.
+- **Your stats**: net winnings, rounds played, biggest win and best winning streak, plus blackjack (won, lost, pushed, blackjacks, win rate), roulette (spins, winning spins, luckiest and most common number), video poker (hands, winning hands, best hand), baccarat (rounds, winning rounds, who won), Three Card Poker (hands, folds, Pair Plus hits), Casino War (rounds, wars won, surrenders) and Red Dog (hands, raises, three of a kinds). Every hand and spin is recorded as it finishes, each blackjack round once even across reloads, and the stats sync with your account.
 
 ## Files
 
@@ -17,13 +19,15 @@ A play-money casino for phones, running on Cloudflare at https://mini-casino.boy
 | --- | --- |
 | `mini-casino.html` | The page: styles, markup and script, without a `<html>`/`<head>` wrapper (the build adds it). |
 | `src/baccarat.js` | Baccarat: the shoe, the third-card rules and the payouts. The build inlines it into the page. |
+| `src/threecard.js` | Three Card Poker: the deal, hand ranking, the dealer's qualifier and the payouts. The build inlines it into the page. |
+| `src/reddog.js` | Red Dog: the shoe, the spread and the payouts. The build inlines it into the page. |
 | `src/war.js` | Casino War: the shoe, the deal, going to war and the payouts. The build inlines it into the page. |
-| `src/poker.js` | Video poker: the pay table, the deal and draw, and hand ranking. The build inlines it into the page. |
+| `src/poker.js` | Video poker: the Jacks or Better and Deuces Wild pay tables, the deal and draw, and hand ranking. The build inlines it into the page. |
 | `src/rules.js` | The blackjack rules engine. The room server imports it, and the build inlines it into the page for the solo table, so both always play by the same rules. |
 | `src/worker.js` | The Worker: a same-origin proxy to Neon Auth (`/api/auth/*`), `/api/me`, `/api/save` for cloud saves, and `/api/rooms` for multiplayer. Everything else is served from `dist/`. |
 | `src/room.js` | One multiplayer room, as a Durable Object. |
 | `wrangler.jsonc` | Cloudflare config: the Worker, the static assets in `dist/`, and the `ROOMS` Durable Object. |
-| `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, PWA and iOS tags) as `index.html`, inlines `src/rules.js`, `src/poker.js`, `src/baccarat.js` and `src/war.js`, bundles the graphics lab with esbuild, copies `public/`, and stamps the service worker with a content hash. |
+| `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, PWA and iOS tags) as `index.html`, inlines `src/rules.js` and the game files (`src/poker.js`, `src/baccarat.js`, `src/war.js`, `src/threecard.js`, `src/reddog.js`), bundles the graphics lab with esbuild, copies `public/`, and stamps the service worker with a content hash. |
 | `public/` | PWA files: `manifest.webmanifest`, `sw.js` (offline cache), `_headers` (no-cache for the service worker) and `icons/`. |
 | `lab/` | The graphics lab, served at `/lab/`: test demos built with real graphics packages (see below). The **3D preview** card on the home screen opens it. `arcade.js` (the casino room, marquee sign, the duck, and a glow that only lights up bulbs, neon and flames) and `fx.js` (sounds and win effects) are shared by the arcade games. |
 | `scripts/make-icons.mjs` | Draws the app icons into `public/icons/`. Run it after changing the icon design; the PNGs are committed. |
@@ -72,7 +76,7 @@ Mini Casino is a Progressive Web App:
 - **Android / Chrome / Edge:** use the browser's *Install app* option (or *Add to Home screen*).
 - **iPhone / iPad:** in Safari, tap Share, then *Add to Home Screen*.
 
-The installed app opens full screen, has shortcuts to Blackjack, Roulette, Video Poker, Baccarat, Casino War, the Bank and your stats, and solo games work offline. Pages load from the network when it's available, so a new deploy shows up on the next launch.
+The installed app opens full screen, has shortcuts to Blackjack, Roulette, Video Poker, Baccarat, Three Card Poker, Casino War, Red Dog, the Bank and your stats, and solo games work offline. Pages load from the network when it's available, so a new deploy shows up on the next launch.
 
 ## Deploying to Cloudflare
 
