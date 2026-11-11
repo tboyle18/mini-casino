@@ -1,4 +1,5 @@
-// Graphics lab: six experiments, each loaded only when its tab is opened.
+// Graphics lab: the experiments still in testing, each loaded only when its tab is opened.
+// (Duck Drop and Duck Rocket graduated to the casino app's Arcade; see embed.js.)
 // Every demo module exports mount({ stage, controls, info }) and returns { dispose() }.
 
 const stage = document.getElementById('stage');
@@ -6,12 +7,10 @@ const controls = document.getElementById('controls');
 const info = document.getElementById('info');
 const fps = document.getElementById('fps');
 const help = document.getElementById('lab-help');
-const HELP = { slots: '/#learn-slots', plinko: '/#learn-plinko', crash: '/#learn-crash' };
+const HELP = { slots: '/#learn-slots' };
 
 const demos = {
   slots: () => import('./slots.js'),
-  plinko: () => import('./plinko.js'),
-  crash: () => import('./crash.js'),
   roulette: () => import('./roulette.js'),
   win: () => import('./celebrate.js'),
   table: () => import('./table.js'),
@@ -57,4 +56,6 @@ async function show(name) {
 
 for (const b of document.querySelectorAll('[data-demo]')) b.addEventListener('click', () => show(b.dataset.demo));
 const first = location.hash.slice(1);
-show(demos[first] ? first : 'slots');
+// Old links to the graduated games go to the casino's Arcade
+if (first === 'plinko' || first === 'crash') location.replace('/#arcade-' + first);
+else show(demos[first] ? first : 'slots');

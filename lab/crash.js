@@ -5,11 +5,12 @@
 // the sky turns from day to sunset to space. Cash out before it blows up and the duck ejects
 // on a parachute; wait too long and it's feathers everywhere. The crash point is decided at
 // launch (crash-math.js); cashing out at any multiplier returns about 97% over time.
-// It plays with the shared lab credits.
+// It plays with the casino wallet when the app passes a `bank`, and with the shared lab
+// credits otherwise.
 
 import * as THREE from 'three';
 import { gsap } from 'gsap';
-import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, loadCredits, saveCredits, LAB_START } from './shared.js';
+import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, labBank } from './shared.js';
 import { makeSound, createWinFx } from './fx.js';
 import { bloomComposer, glow, duckGeometry, canvas, tex } from './arcade.js';
 import { crashPoint, multAt } from './crash-math.js';
@@ -81,7 +82,8 @@ function stripeCanvas(a, b, n) {
   return c;
 }
 
-export async function mount({ stage, controls, info }) {
+export async function mount({ stage, controls, info, bank }) {
+  const wallet = bank || labBank();
   await fontReady();
   const calm = reducedMotion();
   const style = document.createElement('style');
@@ -402,25 +404,24 @@ export async function mount({ stage, controls, info }) {
   // ---- State ----
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; } catch (e) { /* storage unavailable */ }
-  let credits = Math.round(loadCredits());
   let bet = BETS.includes(saved.bet) ? saved.bet : 25;
+  const betSize = () => wallet.chip() || bet;
   let auto = AUTOS.includes(saved.auto) ? saved.auto : 2;
   let history = Array.isArray(saved.history) ? saved.history.filter(Number.isFinite).slice(0, 12) : [];
   const sound = makeSound();
   sound.on = saved.sound !== false;
   const persist = () => {
-    saveCredits(credits);
     try { localStorage.setItem(STORE, JSON.stringify({ bet, auto, history, sound: sound.on })); } catch (e) { /* storage unavailable */ }
   };
   // idle: on the pad · countdown · flying · over: blown up
-  const st = { state: 'idle', crashAt: 1, stake: 0, cashed: 0, t0: 0, flightT: 0, count: 0, milestone: 0, engine: null, overAt: 0 };
+  const st = { state: 'idle', id: null, crashAt: 1, stake: 0, cashed: 0, t0: 0, flightT: 0, count: 0, milestone: 0, engine: null, overAt: 0 };
   const shake = { amp: 0 };
   const timers = [];
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 
   function hud() {
-    info.textContent = `Credits ${money(credits)} · Bet ${money(bet)}`;
-    betBtn.textContent = `Bet ${money(bet)}`;
+    info.textContent = `${wallet.lab ? 'Credits' : 'Wallet'} ${money(wallet.balance())} · Bet ${money(st.state === 'flying' || st.state === 'countdown' ? st.stake : betSize())}`;
+    betBtn.textContent = `Bet ${money(betSize())}`;
     autoBtn.textContent = auto ? `Auto ${auto}×` : 'Auto off';
     autoBtn.setAttribute('aria-pressed', String(!!auto));
     const flying = st.state === 'flying';
@@ -446,24 +447,28 @@ export async function mount({ stage, controls, info }) {
   function launch() {
     if (st.state === 'countdown' || st.state === 'flying') return;
     sound.unlock();
-    if (credits < BETS[0]) {
-      credits += LAB_START;
-      persist();
+    if (wallet.balance() < BETS[0]) {
+      lineEl.textContent = wallet.broke();
       hud();
-      lineEl.textContent = 'Out of credits. The duck lent you $1,000.';
-      sound.quack();
+      if (wallet.lab) sound.quack();
       return;
     }
-    if (credits < bet) {
-      bet = [...BETS].reverse().find(b => b <= credits);
+    if (wallet.balance() < betSize()) {
+      if (wallet.chip()) { lineEl.textContent = 'Not enough for that chip. Pick a smaller one.'; return; }
+      bet = [...BETS].reverse().find(b => b <= wallet.balance());
       persist();
       hud();
       lineEl.textContent = `Bet lowered to ${money(bet)}.`;
       return;
     }
-    credits -= bet;
-    st.stake = bet;
-    st.crashAt = crashPoint(rand);
+    const stake = betSize();
+    const crashAt = crashPoint(rand);
+    // If the app closes mid-flight, the auto cash-out still counts if the rocket got that far
+    const id = wallet.bet(stake, auto && auto <= crashAt ? Math.round(stake * auto) : 0, { game: 'crash', crashAt });
+    if (id == null) return;
+    st.id = id;
+    st.stake = stake;
+    st.crashAt = crashAt;
     st.cashed = 0;
     st.milestone = 0;
     st.flightT = 0;
@@ -515,8 +520,7 @@ export async function mount({ stage, controls, info }) {
     if (m > st.crashAt || (!at && m >= st.crashAt)) return;
     st.cashed = m;
     const win = Math.round(st.stake * m);
-    credits += win;
-    persist();
+    wallet.settle(st.id, win);
     multEl.className = 'cr-mult cashed';
     lineEl.textContent = `Cashed out at ${fmt(m)} · +${money(win - st.stake)}`;
     // The duck ejects and floats down under its parachute
@@ -560,6 +564,7 @@ export async function mount({ stage, controls, info }) {
     puffAt(at, 16, 1.2, 0.5, 1, true);
     shake.amp = 0.3;
     sound.boom();
+    if (!st.cashed) wallet.settle(st.id, 0);
     if (!st.cashed) {
       // The duck is fine. Singed, but fine.
       const wp = duck.getWorldPosition(new THREE.Vector3());
@@ -614,6 +619,7 @@ export async function mount({ stage, controls, info }) {
   };
   soundLabel();
   controls.append(betBtn, autoBtn, goBtn, soundBtn);
+  betBtn.hidden = !!wallet.chip();   // in the casino the chip you picked is the bet
   function onKey(e) {
     if (e.key !== ' ' && e.key !== 'Enter') return;
     if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLInputElement) return;
@@ -716,9 +722,8 @@ export async function mount({ stage, controls, info }) {
       // Leaving mid-flight cashes out at the current multiplier; leaving during the countdown refunds
       if (st.state === 'flying' && !st.cashed) {
         const m = multAt(st.flightT);
-        if (m < st.crashAt) credits += Math.round(st.stake * m);
-      } else if (st.state === 'countdown') credits += st.stake;
-      saveCredits(credits);
+        wallet.settle(st.id, m < st.crashAt ? Math.round(st.stake * m) : 0);
+      } else if (st.state === 'countdown') wallet.settle(st.id, st.stake);
       if (st.engine) st.engine.stop();
       gsap.killTweensOf([toastEl, lineEl, flash.scale, flash.material, chute.scale]);
       window.removeEventListener('keydown', onKey);

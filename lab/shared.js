@@ -77,3 +77,56 @@ export function loadCredits() {
 export function saveCredits(n) {
   try { localStorage.setItem(CREDITS_KEY, JSON.stringify(n)); } catch (e) { /* storage unavailable */ }
 }
+
+// A small seeded random generator (mulberry32): the same seed always gives the same numbers
+export function seeded(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+export function randomSeed() {
+  try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0]; }
+  catch (e) { return Math.floor(Math.random() * 4294967296); }
+}
+
+/* The money a game plays with. In the casino app the page passes its own `bank`, backed by
+   the wallet; in the lab, labBank() stands in with lab credits. Either way:
+     balance()                  what's left to bet
+     chip()                     the bet size the player picked, or null to let the game choose
+     bet(amount, payout, info)  takes a bet whose result is already known (payout, if
+                                nothing else happens) and returns an id, or null if it can't
+     settle(id, payout?)        pays it out: the known payout, or the one given
+     broke()                    out of money: the lab lends more (returns a line to show),
+                                the casino can't (returns its own line) */
+export function labBank() {
+  let credits = Math.round(loadCredits());
+  const live = new Map();
+  let n = 0;
+  return {
+    lab: true,
+    balance: () => credits,
+    chip: () => null,
+    bet(amount, payout) {
+      if (!(amount > 0) || credits < amount) return null;
+      credits -= amount;
+      saveCredits(credits);
+      live.set(++n, payout);
+      return n;
+    },
+    settle(id, payout) {
+      if (!live.has(id)) return;
+      credits += payout == null ? live.get(id) : payout;
+      live.delete(id);
+      saveCredits(credits);
+    },
+    broke() {
+      credits += LAB_START;
+      saveCredits(credits);
+      return 'The duck lent you $1,000';
+    },
+  };
+}

@@ -5,12 +5,15 @@
 // rows, lower notes), so a drop plays a little tune. They land in one of 13 buckets that
 // pay a multiple of the bet: small in the middle, huge at the edges. Three risk levels
 // trade safe middles for bigger edges. ×10 drops a storm of ducks at once.
-// Bounces come from the physics in plinko-physics.js. It plays with the shared lab credits.
+// Bounces come from the physics in plinko-physics.js. Each duck gets its own seeded random
+// numbers, so where it lands is worked out the moment it's dropped, and the fall you see
+// replays exactly that. It plays with the casino wallet when the app passes a `bank`, and
+// with the shared lab credits otherwise.
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { gsap } from 'gsap';
-import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, loadCredits, saveCredits, LAB_START } from './shared.js';
+import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, labBank, seeded, randomSeed } from './shared.js';
 import { makeSound, createWinFx } from './fx.js';
 import { canvas, tex, rrect, signCanvas, casinoScene, bloomComposer, glow, duckGeometry } from './arcade.js';
 import { ROWS, BUCKETS, SPACING, ROW_H, PEG_R, BALL_R, BOTTOM_Y, STEP, RISKS, pegLayout, makeBall, stepBall } from './plinko-physics.js';
@@ -95,7 +98,8 @@ function labelCanvas(pays) {
   return c;
 }
 
-export async function mount({ stage, controls, info }) {
+export async function mount({ stage, controls, info, bank }) {
+  const wallet = bank || labBank();
   await fontReady();
   const calm = reducedMotion();
   const style = document.createElement('style');
@@ -236,13 +240,12 @@ export async function mount({ stage, controls, info }) {
 
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; } catch (e) { /* storage unavailable */ }
-  let credits = Math.round(loadCredits());
   let bet = BETS.includes(saved.bet) ? saved.bet : 25;
+  const betSize = () => wallet.chip() || bet;
   let risk = RISKS[saved.risk] ? saved.risk : 'medium';
   const sound = makeSound();
   sound.on = saved.sound !== false;
   const persist = () => {
-    saveCredits(credits);
     try { localStorage.setItem(STORE, JSON.stringify({ bet, risk, sound: sound.on })); } catch (e) { /* storage unavailable */ }
   };
   const timers = [];
@@ -266,21 +269,31 @@ export async function mount({ stage, controls, info }) {
   }
   function hud() {
     const inPlay = ducks.filter(d => !d.ball.done).length;
-    let line = `Credits ${money(credits)} · Bet ${money(bet)}`;
-    if (net) line = `${net} · ${money(credits)}`;
+    const label = wallet.lab ? 'Credits' : 'Wallet';
+    let line = `${label} ${money(wallet.balance())} · Bet ${money(betSize())}`;
+    if (net) line = `${net} · ${money(wallet.balance())}`;
     else if (inPlay) line += ` · ${inPlay} falling`;
     info.textContent = line;
-    betBtn.textContent = `Bet ${money(bet)}`;
+    betBtn.textContent = `Bet ${money(betSize())}`;
   }
 
   // ---- Dropping ducks ----
   function releaseOne() {
     if (ducks.length >= MAX_DUCKS) return false;
-    if (credits < bet) return false;
-    credits -= bet;
-    persist();
-    const ball = makeBall(rand);
-    ducks.push({ ball, bet, pays: RISKS[risk].pays, rot: rand() * TAU, spin: (rand() - 0.5) * 6, landed: 0, restY: 0, x0: 0 });
+    const b = betSize();
+    if (wallet.balance() < b) return false;
+    // Work out where this duck lands before it falls, then replay the same bounces on screen
+    const seed = randomSeed();
+    const pays = RISKS[risk].pays;
+    const trial = seeded(seed);
+    const ghost = makeBall(trial);
+    for (let s = 0; !ghost.done && s < 240 * 30; s++) stepBall(ghost, rows, trial);
+    const bucket = ghost.done ? ghost.bucket : (BUCKETS - 1) / 2;
+    const id = wallet.bet(b, Math.round(b * pays[bucket]), { game: 'plinko', mult: pays[bucket], risk });
+    if (id == null) return false;
+    const rng = seeded(seed);
+    const ball = makeBall(rng);
+    ducks.push({ ball, rng, id, bucket, bet: b, pays, rot: rand() * TAU, spin: (rand() - 0.5) * 6, landed: 0, restY: 0, x0: 0 });
     gsap.fromTo(funnel.scale, { x: 1.25, z: 1.25 }, { x: 1, z: 1, duration: 0.35, ease: 'elastic.out(1, 0.4)' });
     sound.note(220, 0.08, { type: 'triangle', vol: 0.12, to: 440 });
     buzz(8);
@@ -290,17 +303,19 @@ export async function mount({ stage, controls, info }) {
   }
   function drop(n) {
     sound.unlock();
-    if (credits < BETS[0]) {
-      credits += LAB_START;
-      persist();
+    if (wallet.balance() < BETS[0]) {
+      const line = wallet.broke();
       hud();
-      winFx.float('The duck lent you $1,000', view.w / 2, view.h * 0.3, { color: '#7cff6b', size: 22 });
-      sound.quack();
-      sound.quack(0.25);
+      winFx.float(line, view.w / 2, view.h * 0.3, { color: wallet.lab ? '#7cff6b' : '#ffe27a', size: 22 });
+      if (wallet.lab) { sound.quack(); sound.quack(0.25); }
       return;
     }
-    if (credits < bet) {
-      bet = [...BETS].reverse().find(b => b <= credits);
+    if (wallet.balance() < betSize()) {
+      if (wallet.chip()) {
+        winFx.float('Not enough for that chip', view.w / 2, view.h * 0.3, { color: '#ffe27a', size: 22 });
+        return;
+      }
+      bet = [...BETS].reverse().find(b => b <= wallet.balance());
       persist();
       hud();
       winFx.float(`Bet lowered to ${money(bet)}`, view.w / 2, view.h * 0.3, { color: '#ffe27a', size: 22 });
@@ -319,11 +334,10 @@ export async function mount({ stage, controls, info }) {
     return [((tmp.x + 1) / 2) * view.w, ((1 - tmp.y) / 2) * view.h];
   }
   function landed(d) {
-    const i = d.ball.bucket;
+    const i = d.bucket;                     // decided at the drop; the fall replays it
     const mult = d.pays[i];
     const win = Math.round(d.bet * mult);   // whole dollars
-    credits += win;
-    persist();
+    wallet.settle(d.id);
     const b = buckets[i];
     b.flash = 1;
     const [sx, sy] = screenOf(b.x, BUCKET_TOP + 0.02);
@@ -392,6 +406,7 @@ export async function mount({ stage, controls, info }) {
   };
   soundLabel();
   controls.append(betBtn, dropBtn, stormBtn, soundBtn);
+  betBtn.hidden = !!wallet.chip();   // in the casino the chip you picked is the bet
   paintRisk();
   hud();
   function onKey(e) {
@@ -433,7 +448,7 @@ export async function mount({ stage, controls, info }) {
       acc -= STEP;
       for (const d of ducks) {
         if (d.ball.done) continue;
-        stepBall(d.ball, rows, rand, onHit);
+        stepBall(d.ball, rows, d.rng, onHit);
         if (d.ball.done) {
           d.landed = now;
           d.x0 = d.ball.x;
@@ -453,7 +468,7 @@ export async function mount({ stage, controls, info }) {
       if (d.landed) {
         // Half-sunk in the bucket, with a couple of little bounces, turning upright
         const t = now - d.landed;
-        const bx = buckets[d.ball.bucket].x;
+        const bx = buckets[d.bucket].x;
         x = d.x0 + (bx - d.x0) * Math.min(1, t * 5);
         y = BUCKET_TOP - 0.012 + Math.abs(Math.sin(t * 9)) * 0.025 * Math.exp(-t * 4);
         s = t > 0.9 ? Math.max(0.001, 1 - (t - 0.9) / 0.4) : 1;
@@ -516,9 +531,8 @@ export async function mount({ stage, controls, info }) {
     dispose() {
       cancelAnimationFrame(raf);
       for (const t of timers) clearTimeout(t);
-      // Ducks still in the air get their bets back
-      const refund = ducks.filter(d => !d.ball.done).reduce((a, d) => a + d.bet, 0);
-      if (refund) { credits += refund; saveCredits(credits); }
+      // Ducks still in the air are paid what they were going to land on
+      for (const d of ducks) if (!d.ball.done) wallet.settle(d.id);
       gsap.killTweensOf(funnel.scale);
       window.removeEventListener('keydown', onKey);
       winFx.dispose();

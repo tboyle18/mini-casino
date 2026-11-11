@@ -36,7 +36,8 @@
     --gr: max(16px, env(safe-area-inset-right, 0px));
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --bar-h: 48px;
+    --bar-h: 46px;
+    --nav-h: 62px;
     --cw: 64px;
     --ch: 90px;
     --chip: min(50px, 12.6vw);
@@ -200,17 +201,15 @@
     font-size: 14px;
   }
 
-  /* ---------- App bar ---------- */
+  /* ---------- Game strip ----------
+     No banner: the main tabs have none at all, and games and sub-pages get a slim see-through
+     strip with a back arrow on the left and your balance (and ?) on the right. */
   .appbar {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 10;
     margin: 0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl));
     padding: var(--safe-top) var(--gr) 0 var(--gl);
-    background: var(--bar);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(255, 255, 255, .06);
+    background: none;
   }
   .appbar-in { height: var(--bar-h); display: flex; align-items: center; gap: 8px; }
   .back {
@@ -450,6 +449,73 @@
   .acct-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .acct-actions { display: flex; gap: 8px; }
   .acct-actions .btn { flex: 1; }
+  /* ---------- Bottom tab bar ---------- */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; justify-content: center;
+    padding: 0 max(8px, env(safe-area-inset-right, 0px)) var(--safe-bottom) max(8px, env(safe-area-inset-left, 0px));
+    background: rgba(4, 26, 16, .94);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255, 255, 255, .08);
+  }
+  .tab {
+    appearance: none; background: none; border: none; cursor: pointer;
+    flex: 1; max-width: 130px; height: var(--nav-h);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    color: var(--ink-3); font: 700 11px/1 var(--font-body); letter-spacing: .04em;
+    transition: color .15s;
+  }
+  .tab svg { width: 25px; height: 25px; transition: transform .15s; }
+  .tab.on { color: var(--gold); }
+  .tab.on svg { transform: translateY(-1px) scale(1.06); }
+  .tab:active svg { transform: scale(.9); }
+  html.has-nav .view { padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 22px); }
+  .tab-head { padding: calc(var(--safe-top) + 18px) 2px 0; }
+  .tab-head h1 { margin: 0; font: 800 32px/1.1 var(--font-display); letter-spacing: -.02em; color: var(--ink); }
+  .tab-head p { margin: 6px 0 0; color: var(--ink-3); font-size: 13px; }
+  .tab-head .brand { display: block; font: 800 15px/1 var(--font-display); color: var(--gold); letter-spacing: .24em; text-transform: uppercase; }
+  .home .wallet-card { margin-top: 2px; }
+  .settings { gap: 0; padding-top: 4px; padding-bottom: 4px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; cursor: pointer; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .lcard label.toggle-row { font-size: 14px; font-weight: 400; letter-spacing: 0; text-transform: none; color: inherit; }
+  .toggle-row + .toggle-row { border-top: 1px solid var(--line); }
+  .toggle-row > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .toggle-row b { color: var(--ink); font-size: 16px; }
+  .toggle-row > span > span { color: var(--ink-2); font-size: 13px; }
+  .toggle-row input {
+    appearance: none; flex: none; width: 50px; height: 30px; border-radius: 10px; cursor: pointer; position: relative;
+    background: rgba(255, 255, 255, .14); transition: background .15s;
+  }
+  .toggle-row input::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 7px;
+    background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, .3); transition: transform .15s;
+  }
+  .toggle-row input:checked { background: var(--gold); }
+  .toggle-row input:checked::after { transform: translateX(20px); }
+  .arcade-tiles { grid-template-columns: minmax(0, 1fr); }
+  .arcade-tiles .tile { flex-direction: row; align-items: center; gap: 14px; }
+  .arcade-art { width: 96px; height: 96px; flex: none; border-radius: 18px; display: grid; place-items: center; font-size: 54px; }
+  .arcade-art.plinko { background: radial-gradient(circle at 50% 30%, #3a7bd5, #12305e); }
+  .arcade-art.crash { background: radial-gradient(circle at 50% 70%, #f39c34, #5a1e0c); }
+  /* ---------- Arcade games: the 3D stage fills the screen above the dock ---------- */
+  html.arc body::before { background: #0b0907; }
+  html.arc .dock { background: rgba(16, 12, 9, .94); }
+  .ag-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; margin: 0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl)); }
+  .ag-stage canvas { display: block; width: 100%; height: 100%; }
+  .ag-stage .hud { position: absolute; top: 8px; left: 12px; right: 12px; z-index: 3; pointer-events: none; }
+  #ag-info { font-weight: 700; font-size: 14px; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
+  .ag-controls { display: flex; gap: 8px; }
+  .ag-controls .lab-btn {
+    flex: 1 0 auto; min-width: 56px; min-height: 50px; padding: 0 12px; cursor: pointer;
+    appearance: none; border: 0; border-radius: 14px;
+    background: var(--panel-2); color: var(--ink); font: 700 16px/1 var(--font-body);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 2px 0 rgba(0, 0, 0, .3);
+    transition: transform .08s, opacity .15s;
+  }
+  .ag-controls .lab-btn:active { transform: scale(.96); }
+  .ag-controls .lab-btn.primary { flex-grow: 2; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); box-shadow: 0 2px 0 #8a6522; }
+  .ag-controls .lab-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
+  .ag-controls .lab-btn:disabled { opacity: .35; }
   .home-foot { margin-top: auto; padding-top: 6px; text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
 
   /* ---------- Stats ---------- */
@@ -1221,7 +1287,6 @@
   <header class="appbar" id="casino-bar">
     <div class="appbar-in">
       <button class="back" id="home-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="back-label">Home</span></button>
-      <span class="brand" id="brand">Mini Casino</span>
       <div class="bar-title" id="bar-title" hidden><span class="bt-main" id="t-name"></span><span class="bt-sub" id="t-code"></span></div>
       <div class="bar-right">
         <button class="barbtn help" id="help-btn" aria-label="How to play" title="How to play" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.1"/></svg></button>
@@ -1229,7 +1294,6 @@
           <button class="barbtn" id="invite-btn" aria-expanded="false">Invite</button>
           <button class="barbtn hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
         </span>
-        <button class="acct-btn" id="acct-btn" hidden></button>
         <button class="balance" id="balance-btn" title="When your next $1,000 arrives">
           <span class="balance-label">Your wallet balance</span>
           <span class="balance-amt" id="wallet-amt">—</span>
@@ -1238,8 +1302,9 @@
     </div>
   </header>
 
-  <!-- ================= Home ================= -->
+  <!-- ================= Casino (home tab) ================= -->
   <section class="view home" id="home" hidden>
+    <div class="tab-head"><span class="brand">Mini Casino</span></div>
     <div class="wallet-card">
       <div class="wc-label">Your wallet balance</div>
       <div class="wc-amt" id="home-wallet">—</div>
@@ -1248,32 +1313,62 @@
         <button class="btn primary small" id="daily-btn" hidden>Sign in</button>
       </div>
     </div>
-    <div class="section-label">Games</div>
+    <div class="section-label">Table games</div>
     <div class="tiles" id="tiles"></div>
-    <button class="stats-link" id="home-stats">
-      <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>
-      <span class="sl-text"><b>Your stats</b><span id="home-stats-sub">Play a round to start tracking</span></span>
-      <span class="sl-go" aria-hidden="true">›</span>
-    </button>
-    <button class="stats-link" id="home-learn">
+    <div class="home-foot">Play money only</div>
+  </section>
+
+  <!-- ================= Arcade tab ================= -->
+  <section class="view" id="arcade-view" hidden>
+    <div class="tab-head"><h1>Arcade</h1><p>3D games, straight from your wallet</p></div>
+    <div class="tiles arcade-tiles" id="arcade-tiles"></div>
+    <div class="home-foot">Play money only</div>
+  </section>
+
+  <!-- ================= Arcade game (Duck Drop, Duck Rocket) ================= -->
+  <section class="view has-dock" id="arcadegame-view" hidden>
+    <div class="ag-stage" id="ag-stage"><div class="hud"><span id="ag-info"></span></div></div>
+    <div class="dock ag-dock">
+      <div class="rlow" id="ag-low" hidden></div>
+      <div class="chips" id="ag-chips" aria-label="Chip value"></div>
+      <div class="ag-controls" id="ag-controls"></div>
+    </div>
+  </section>
+
+  <!-- ================= Profile tab ================= -->
+  <section class="view" id="profile-view" hidden>
+    <div class="tab-head"><h1>Profile</h1></div>
+    <div class="lcard">
+      <h2 id="acct-title">Your account</h2>
+      <div class="account" id="account"></div>
+    </div>
+    <div class="lcard">
+      <h2>Daily bonus</h2>
+      <p class="fine" id="pf-daily"></p>
+    </div>
+    <div class="section-label">Help</div>
+    <button class="stats-link" id="pf-learn">
       <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.1"/></svg></span>
-      <span class="sl-text"><b>How to play</b><span>Rules and tips for every game</span></span>
+      <span class="sl-text"><b>How to play</b><span>Rules, payouts and tips for every game</span></span>
       <span class="sl-go" aria-hidden="true">›</span>
     </button>
-    <a class="stats-link" id="home-lab" href="/lab/">
+    <div class="section-label">Settings</div>
+    <div class="lcard settings">
+      <label class="toggle-row"><span><b>Vibration</b><span>A little buzz when you bet, deal and win</span></span><input type="checkbox" id="pf-vibe"></label>
+      <label class="toggle-row"><span><b>Blackjack hints</b><span>Highlight the basic-strategy move</span></span><input type="checkbox" id="pf-hints"></label>
+    </div>
+    <div class="section-label">Experimental</div>
+    <a class="stats-link" href="/lab/">
       <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span>
-      <span class="sl-text"><b>3D preview<i class="sl-tag">Experimental</i></b><span>Slots, plinko, crash and more</span></span>
+      <span class="sl-text"><b>Graphics lab<i class="sl-tag">Experimental</i></b><span>Lucky Duck slots and 3D test demos</span></span>
       <span class="sl-go" aria-hidden="true">›</span>
     </a>
-    <div class="home-foot">Play money only</div>
+    <div class="home-foot">Mini Casino · play money only</div>
   </section>
 
   <!-- ================= Stats ================= -->
   <section class="view" id="stats-view" hidden>
-    <div class="page-head">
-      <h1>Your stats</h1>
-      <p id="st-since">Since today</p>
-    </div>
+    <div class="tab-head"><h1>Stats</h1><p id="st-since">Since today</p></div>
     <div class="stat-hero">
       <div class="sh-label">Net winnings</div>
       <div class="sh-amt" id="st-net">$0</div>
@@ -1362,6 +1457,26 @@
       <p class="fine" id="rd-line">No hands yet</p>
     </div>
     <div class="lcard stat-card">
+      <div class="sc-head"><h2>Duck Drop</h2><span class="sc-net" id="pk-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Ducks dropped</dt><dd id="pk-hands">0</dd></div>
+        <div><dt>Winners</dt><dd id="pk-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="pk-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="pk-biggest">$0</dd></div>
+      </dl>
+      <p class="fine" id="pk-line">No drops yet</p>
+    </div>
+    <div class="lcard stat-card">
+      <div class="sc-head"><h2>Duck Rocket</h2><span class="sc-net" id="cr-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Flights</dt><dd id="cr-hands">0</dd></div>
+        <div><dt>Winners</dt><dd id="cr-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="cr-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="cr-biggest">$0</dd></div>
+      </dl>
+      <p class="fine" id="cr-line">No flights yet</p>
+    </div>
+    <div class="lcard stat-card">
       <div class="sc-head"><h2>Wallet statement</h2></div>
       <p class="fine" id="ledger-summary"></p>
       <ul class="ledger-list" id="ledger-list"></ul>
@@ -1413,12 +1528,7 @@
         <span class="sl-text"><b>Red Dog</b><span>Will the third card land in between?</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
-      <div class="section-label">3D lab · experimental</div>
-      <button class="stats-link" data-learn="slots">
-        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6h9l-5.5 12"/></svg></span>
-        <span class="sl-text"><b>Lucky Duck slots</b><span>Pull the lever, line up three</span></span>
-        <span class="sl-go" aria-hidden="true">›</span>
-      </button>
+      <div class="section-label">Arcade</div>
       <button class="stats-link" data-learn="plinko">
         <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.6"/><circle cx="8.5" cy="10" r="1.6"/><circle cx="15.5" cy="10" r="1.6"/><circle cx="5" cy="14.5" r="1.6"/><circle cx="12" cy="14.5" r="1.6"/><circle cx="19" cy="14.5" r="1.6"/><circle cx="8.5" cy="19" r="1.6"/><circle cx="15.5" cy="19" r="1.6"/></svg></span>
         <span class="sl-text"><b>Duck Drop plinko</b><span>Drop ducks, hit the edges</span></span>
@@ -1427,6 +1537,12 @@
       <button class="stats-link" data-learn="crash">
         <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 2.5 4.2 6 3.6 10.5H8.4C7.8 9 9 5.5 12 3z"/><path d="M8.6 13.5 6 16.5l2.8.4M15.4 13.5l2.6 3-2.8.4M10.5 17.5 12 21l1.5-3.5"/></svg></span>
         <span class="sl-text"><b>Duck Rocket crash</b><span>Cash out before it blows</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <div class="section-label">Graphics lab · experimental</div>
+      <button class="stats-link" data-learn="slots">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6h9l-5.5 12"/></svg></span>
+        <span class="sl-text"><b>Lucky Duck slots</b><span>Pull the lever, line up three</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
       <div class="section-label">Your money</div>
@@ -1770,10 +1886,10 @@
 
     <article class="kb" data-kb="plinko" hidden>
       <h1>Duck Drop plinko</h1>
-      <p class="kb-lead">Drop rubber ducks down a board of pegs and see which bucket they land in. It's in the graphics lab, so it's experimental and plays with lab credits.</p>
+      <p class="kb-lead">Drop rubber ducks down a board of pegs and see which bucket they land in. It's in the Arcade, and every duck is paid from your wallet.</p>
       <h2>How to play</h2>
       <ol>
-        <li>Tap <b>Bet</b> to choose how much each duck costs.</li>
+        <li>Pick a chip: that's what each duck costs.</li>
         <li>Pick a risk level at the top: Low, Medium or High.</li>
         <li>Tap <b>Drop</b> for one duck, or <b>×10</b> for ten in a row.</li>
         <li>Each duck pays the multiplier on the bucket it lands in.</li>
@@ -1790,18 +1906,19 @@
       <p>Most ducks land near the middle, so higher risk means more small losses and rarer, much bigger wins. Every level pays back about 97% over time.</p>
       <h2>Good to know</h2>
       <ul>
-        <li>Where a duck lands comes only from how it bounces. Nothing steers it.</li>
+        <li>Where a duck lands comes only from how it bounces. Nothing steers it: the bounces are worked out the moment you drop it, and the fall you see plays them out.</li>
+        <li>If you leave while ducks are still falling, they're paid exactly what they were going to land on.</li>
         <li>Every peg plays a note when a duck hits it, so turn the sound up.</li>
       </ul>
-      <a class="btn primary block kb-cta" href="/lab/#plinko">Open Duck Drop</a>
+      <button class="btn primary block kb-cta" data-go="arcade-plinko">Play Duck Drop</button>
     </article>
 
     <article class="kb" data-kb="crash" hidden>
       <h1>Duck Rocket crash</h1>
-      <p class="kb-lead">A rubber duck rides a rocket, and the multiplier climbs as it goes up. Cash out before it blows up to win your bet times the multiplier. Wait too long and you lose the bet. It's in the 3D lab, so it plays with lab credits.</p>
+      <p class="kb-lead">A rubber duck rides a rocket, and the multiplier climbs as it goes up. Cash out before it blows up to win your bet times the multiplier. Wait too long and you lose the bet. It's in the Arcade, and bets come from your wallet.</p>
       <h2>How to play</h2>
       <ol>
-        <li>Tap <b>Bet</b> to choose your bet, and <b>Auto</b> to pick an automatic cash-out (1.5× to 10×, or off).</li>
+        <li>Pick a chip for your bet, and tap <b>Auto</b> to pick an automatic cash-out (1.5× to 10×, or off).</li>
         <li>Tap <b>Launch</b>. After a countdown the rocket lifts off and the multiplier starts at 1.00×.</li>
         <li>Tap <b>Cash out</b> whenever you like. Your duck ejects on a parachute, and you win your bet times the multiplier at that moment.</li>
         <li>If the rocket explodes before you cash out, you lose the bet.</li>
@@ -1813,8 +1930,9 @@
         <li>Now and then it blows up right on the pad, at 1.00×.</li>
         <li>After you cash out, the flight speeds up so you can see how far it would have gone.</li>
         <li>The row of numbers at the top shows where the last rockets exploded.</li>
+        <li>Leaving mid-flight cashes you out at the multiplier at that moment. If the app closes mid-flight, your Auto cash-out still pays if the rocket got that far.</li>
       </ul>
-      <a class="btn primary block kb-cta" href="/lab/#crash">Open Duck Rocket</a>
+      <button class="btn primary block kb-cta" data-go="arcade-crash">Play Duck Rocket</button>
     </article>
 
     <article class="kb" data-kb="wallet" hidden>
@@ -2196,13 +2314,6 @@
   </div>
 </div>
 
-<div class="overlay" id="acct-panel" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="acct-title">
-    <h2 id="acct-title">Your account</h2>
-    <div class="account" id="account"></div>
-    <button class="btn block" id="acct-close">Done</button>
-  </div>
-</div>
 
 <div class="overlay" id="invite-panel" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="inv-title">
@@ -2255,6 +2366,13 @@
   <div class="stage-hint" id="r-cap-hint" hidden>Tap to place your next bets</div>
 </div>
 
+<nav class="tabbar" id="tabbar" aria-label="Sections" hidden>
+  <button class="tab" data-tab="casino" aria-label="Casino"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="10" height="14" rx="2" transform="rotate(-8 8.5 11.5)"/><rect x="10.5" y="5.5" width="10" height="14" rx="2" transform="rotate(8 15.5 12.5)"/></svg><span>Casino</span></button>
+  <button class="tab" data-tab="arcade" aria-label="Arcade"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c3 2 4.5 5.5 4.5 9.5l-2 4h-5l-2-4c0-4 1.5-7.5 4.5-9.5z"/><circle cx="12" cy="9.5" r="1.8"/><path d="M9.5 16l-2.5 3.5 3-.8M14.5 16l2.5 3.5-3-.8M12 18v3.5"/></svg><span>Arcade</span></button>
+  <button class="tab" data-tab="stats" aria-label="Stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>Stats</span></button>
+  <button class="tab" data-tab="profile" aria-label="Profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg><span>Profile</span></button>
+</nav>
+
 <div class="toast" id="toast" role="status" hidden></div>
 <script>
 'use strict';
@@ -2270,6 +2388,13 @@ const RESULT_LABEL = { win: 'Win', lose: 'Lose', push: 'Push', bust: 'Bust', bla
 const TEXT_VS = '︎';
 const SOLO_ID = 'solo';
 const WALLET_MAX = 1e15;              // the vault's idea of infinity
+// Which tab each screen belongs to (games have none: they hide the nav bar), and the tabs themselves
+const TAB_OF = { home: 'casino', lobby: 'casino', arcade: 'arcade', stats: 'stats', profile: 'profile', learn: 'profile' };
+const TAB_HOME = new Set(['home', 'arcade', 'stats', 'profile']);
+const ARCADE = [
+  { go: 'arcade-plinko', name: 'Duck Drop', blurb: 'Drop rubber ducks down a 3D peg board. The edges pay big.', art: 'plinko', emoji: '🦆' },
+  { go: 'arcade-crash', name: 'Duck Rocket', blurb: 'The multiplier climbs until the rocket blows. Cash out first.', art: 'crash', emoji: '🚀' },
+];
 const GAMES = [
   { go: 'blackjack', name: 'Blackjack', blurb: 'Solo, or a room for up to four friends.', cta: 'Play', art: 'cards', cards: ['AS', 'KH'] },
   { go: 'roulette', name: 'Roulette', blurb: 'Single zero. Bets straight from your wallet.', cta: 'Play', art: 'wheel' },
@@ -2306,8 +2431,11 @@ const app = {
 const $ = id => document.getElementById(id);
 const ui = {
   casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
-  backLabel: $('back-label'), brand: $('brand'), barTitle: $('bar-title'), tableTools: $('table-tools'),
-  homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'), homeStats: $('home-stats'), homeStatsSub: $('home-stats-sub'),
+  backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
+  homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
+  arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
+  arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
+  pfDaily: $('pf-daily'), pfLearn: $('pf-learn'), pfVibe: $('pf-vibe'), pfHints: $('pf-hints'),
   statsView: $('stats-view'), stSince: $('st-since'), stNet: $('st-net'), stRounds: $('st-rounds'), stBiggest: $('st-biggest'), stStreak: $('st-streak'),
   bjNet: $('bj-net'), bjBar: $('bj-bar'), bjWon: $('bj-won'), bjPushed: $('bj-pushed'), bjLost: $('bj-lost'), bjHands: $('bj-hands'), bjRate: $('bj-rate'), bjBjs: $('bj-bjs'), bjWagered: $('bj-wagered'),
   rlNet: $('rl-net'), rlSpins: $('rl-spins'), rlRate: $('rl-rate'), rlWagered: $('rl-wagered'), rlBiggest: $('rl-biggest'),
@@ -2329,17 +2457,19 @@ const ui = {
   rdBet: $('rd-bet'), rdRaiseWrap: $('rd-raise-wrap'), rdRaise: $('rd-raise'), rdLow: $('rd-low'), rdChips: $('rd-chips'), rdActions: $('rd-actions'), rdDecide: $('rd-decide'),
   rdUndo: $('rd-undo'), rdClear: $('rd-clear'), rdRebet: $('rd-rebet'), rdDouble: $('rd-double'), rdSpot: $('rd-spot'), rdSpotHint: $('rd-spot-hint'), rdDeal: $('rd-deal'), rdCall: $('rd-call'), rdRaiseBtn: $('rd-raise-btn'),
   tcNet: $('tc-net'), tcHands: $('tc-hands'), tcRate: $('tc-rate'), tcWagered: $('tc-wagered'), tcBiggest: $('tc-biggest'), tcLine: $('tc-line'),
+  pkNet: $('pk-net'), pkHands: $('pk-hands'), pkRate: $('pk-rate'), pkWagered: $('pk-wagered'), pkBiggest: $('pk-biggest'), pkLine: $('pk-line'),
+  crNet: $('cr-net'), crHands: $('cr-hands'), crRate: $('cr-rate'), crWagered: $('cr-wagered'), crBiggest: $('cr-biggest'), crLine: $('cr-line'),
   rdNet: $('rd-net'), rdHands: $('rd-hands'), rdRate: $('rd-rate'), rdWagered: $('rd-wagered'), rdBiggest: $('rd-biggest'), rdLine: $('rd-line'),
   wrNet: $('wr-net'), wrRounds: $('wr-rounds'), wrRate: $('wr-rate'), wrWagered: $('wr-wagered'), wrBiggest: $('wr-biggest'), wrWars: $('wr-wars'),
   bcNet: $('bc-net'), bcRounds: $('bc-rounds'), bcRate: $('bc-rate'), bcWagered: $('bc-wagered'), bcBiggest: $('bc-biggest'), bcResults: $('bc-results'),
   learnView: $('learn-view'), learnIndex: $('learn-index'), kbArticles: [...document.querySelectorAll('.kb')], kbPokerPays: $('kb-poker-pays'),
-  helpBtn: $('help-btn'), homeLearn: $('home-learn'),
+  helpBtn: $('help-btn'),
   rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
   ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
   rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
   rCapNum: $('r-cap-num'), rCapTitle: $('r-cap-title'), rCapSub: $('r-cap-sub'), rCapHint: $('r-cap-hint'),
-  account: $('account'), acctBtn: $('acct-btn'), acctPanel: $('acct-panel'), acctTitle: $('acct-title'), acctClose: $('acct-close'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
+  account: $('account'), acctTitle: $('acct-title'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
   authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
   authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
   authGoogle: $('auth-google'), lobbySignin: $('lobby-signin'), lobbyGoogle: $('lobby-google'), lobbyEmail: $('lobby-email'),
@@ -2424,20 +2554,21 @@ function toast(text) {
 }
 /* A tap of haptic feedback where the phone supports it (Android). iPhones ignore it. */
 function buzz(pattern) {
+  if (app.vibe === false) return;
   try { if (navigator.vibrate) navigator.vibrate(pattern || 8); } catch (e) { /* not allowed in this frame */ }
 }
 function syncLock() {
-  const open = !ui.auth.hidden || !ui.acctPanel.hidden || !ui.chipsPanel.hidden || !ui.invitePanel.hidden || !ui.rStage.hidden;
+  const open = !ui.auth.hidden || !ui.chipsPanel.hidden || !ui.invitePanel.hidden || !ui.rStage.hidden;
   document.body.classList.toggle('locked', open);
 }
 function inviteURL(code) {
   return `${location.origin}/#table-${code}`;
 }
 function prefsLoad() {
-  try { const p = JSON.parse(localStorage.getItem('bj.rooms.prefs') || '{}'); app.hints = !!p.hints; } catch (e) { /* storage unavailable */ }
+  try { const p = JSON.parse(localStorage.getItem('bj.rooms.prefs') || '{}'); app.hints = !!p.hints; app.vibe = p.vibe !== false; } catch (e) { /* storage unavailable */ }
 }
 function prefsSave() {
-  try { localStorage.setItem('bj.rooms.prefs', JSON.stringify({ hints: app.hints })); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem('bj.rooms.prefs', JSON.stringify({ hints: app.hints, vibe: app.vibe })); } catch (e) { /* storage unavailable */ }
 }
 
 /* ================= Routing ================= */
@@ -2448,6 +2579,9 @@ function route() {
   else if (h === 'blackjack') target = { view: 'lobby', code: '' };
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
   else if (h === 'stats') target = { view: 'stats', code: '' };
+  else if (h === 'arcade') target = { view: 'arcade', code: '' };
+  else if (h === 'arcade-plinko' || h === 'arcade-crash') target = { view: 'arcadegame', code: h.slice(7) };
+  else if (h === 'profile') target = { view: 'profile', code: '' };
   else if (h === 'poker') target = { view: 'poker', code: '' };
   else if (h === 'baccarat') target = { view: 'baccarat', code: '' };
   else if (h === 'war') target = { view: 'war', code: '' };
@@ -2466,6 +2600,7 @@ function route() {
   if (target.view === 'lobby') enterLobby();
   else if (target.view === 'solo') enterSolo();
   else if (target.view === 'table') enterTable(target.code);
+  else if (target.view === 'arcadegame') { app.view = 'arcadegame'; app.solo = false; render(); arcOpen(target.code); }
   else { app.view = target.view; app.solo = false; app.learnId = target.view === 'learn' ? target.code : ''; render(); }
   window.scrollTo(0, 0);
 }
@@ -2480,6 +2615,7 @@ function teardown() {
   for (const t of app.timers) clearInterval(t);
   app.timers = [];
   roomDisconnect();
+  arcClose();
   app.T = null; app.confirmed = false; app.missing = false; app.loadErr = ''; app.slow = false;
   app.opt = null; app.pendingPlay = null; app.present = null; app.names = {}; app.seq = 0; app.wsTries = 0;
   app.inviteOpen = false; app.chipsOpen = false; app.renderedRound = -1; app.msgKey = ''; app.bjHist = [];
@@ -2983,6 +3119,17 @@ function syncCashed(T) {
   toast(`${moneyFull(total - seen)} back in your wallet`);
 }
 
+function buildArcade() {
+  for (const g of ARCADE) {
+    const a = document.createElement('button');
+    a.className = 'tile';
+    a.addEventListener('click', () => go(g.go));
+    a.innerHTML = `<div class="arcade-art ${g.art}" aria-hidden="true">${g.emoji}</div><div class="tile-body"><h2></h2><p></p><span class="go">Play →</span></div>`;
+    a.querySelector('h2').textContent = g.name;
+    a.querySelector('p').textContent = g.blurb;
+    ui.arcadeTiles.appendChild(a);
+  }
+}
 function buildTiles() {
   GAMES.forEach((g, i) => {
     const b = document.createElement('button');
@@ -3034,6 +3181,8 @@ function freshStats() {
     wr: { rounds: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, wars: 0, warsWon: 0, surrenders: 0 },
     tc: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, folds: 0, pairPlus: 0 },
     rd: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, raises: 0, trips: 0 },
+    pk: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, best: 0 },
+    cr: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, best: 0 },
     streak: 0, best: 0,
     seen: [],
   };
@@ -3059,6 +3208,8 @@ function statsLoad(d) {
   for (const k of Object.keys(f.wr)) f.wr[k] = finite(d.wr && d.wr[k]);
   for (const k of Object.keys(f.tc)) f.tc[k] = finite(d.tc && d.tc[k]);
   for (const k of Object.keys(f.rd)) f.rd[k] = finite(d.rd && d.rd[k]);
+  for (const k of Object.keys(f.pk)) f.pk[k] = finite(d.pk && d.pk[k]);
+  for (const k of Object.keys(f.cr)) f.cr[k] = finite(d.cr && d.cr[k]);
   f.streak = finite(d.streak);
   f.best = finite(d.best);
   if (Array.isArray(d.seen)) f.seen = d.seen.filter(x => typeof x === 'string').slice(-200);
@@ -3146,6 +3297,13 @@ function recordRedDog(h, o) {
   recordTable(t, h.total, o.net);
   if (h.raise) t.raises++;
   if (o.s.kind === 'pair' && o.won) t.trips++;
+  statsSave();
+}
+// Duck Drop (pk) and Duck Rocket (cr): one drop or flight at a time; `best` is the top multiplier won
+function recordArcade(game, stake, payout) {
+  const t = game === 'plinko' ? stats.pk : stats.cr;
+  recordTable(t, stake, payout - stake);
+  if (payout > 0) t.best = Math.max(t.best, Math.round((payout / stake) * 100) / 100);
   statsSave();
 }
 function recordBlackjackRound(T) {
@@ -4802,6 +4960,86 @@ function renderRedDog() {
   paintLow(ui.rdLow, !(rd.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal >= 5)));
 }
 
+/* ================= Arcade: Duck Drop and Duck Rocket, on the wallet =================
+   The 3D games live in the lab's code (lab/plinko.js, lab/crash.js), loaded through
+   /lab/embed.js only when one is opened. The page hands each game a `bank` backed by the
+   wallet. Every bet's result is known when it's made (where the duck lands, or what the
+   rocket pays if the app closes mid-flight), so it's saved as pending until the game pays
+   it out; anything still pending when the app next opens is paid then. */
+const ARC_KEY = 'mini-casino.arcade-live';
+const ARC_NAME = { plinko: 'Duck Drop', crash: 'Duck Rocket' };
+const arc = { live: {}, game: '', inst: null, token: 0 };
+function arcSave() {
+  try { localStorage.setItem(ARC_KEY, JSON.stringify(arc.live)); } catch (e) { /* storage unavailable */ }
+}
+function arcLoad() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(ARC_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
+  if (!d || typeof d !== 'object') return;
+  for (const [id, l] of Object.entries(d)) {
+    if (l && ARC_NAME[l.game] && Number.isFinite(l.stake) && l.stake > 0 && Number.isFinite(l.payout) && l.payout >= 0) arc.live[id] = l;
+  }
+}
+function arcSettle(id, payout) {
+  const l = arc.live[id];
+  if (!l) return;
+  delete arc.live[id];
+  arcSave();
+  const p = Math.max(0, Math.round(payout == null ? l.payout : payout));
+  recordArcade(l.game, l.stake, p);
+  const net = p - l.stake;
+  // Plinko drops come fast, so only the big ones go on the statement
+  const log = l.game === 'crash' || p >= l.stake * 10
+    ? { log: { a: net, w: `${ARC_NAME[l.game]} · ${p ? `${(Math.round((p / l.stake) * 100) / 100)}×` : 'Crashed'}` } } : {};
+  walletChange(p, null, log);
+}
+// Bets the app closed on: pay them what they were going to get
+function arcRecover() {
+  for (const id of Object.keys(arc.live)) arcSettle(id);
+}
+const arcadeBank = {
+  balance: () => (wallet.ready ? wallet.balance : 0),
+  chip: () => chipPick,
+  bet(amount, payout, info) {
+    if (!wallet.ready || !(amount > 0) || !walletChange(-amount, null)) return null;
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    arc.live[id] = { game: info && info.game, stake: amount, payout: Math.max(0, payout || 0), at: Date.now() };
+    arcSave();
+    return id;
+  },
+  settle: (id, payout) => arcSettle(id, payout),
+  broke: () => `Out of money. ${dailyText(true)}`,
+};
+async function arcOpen(name) {
+  const mine = ++arc.token;
+  arc.game = name;
+  ui.agInfo.textContent = 'Loading…';
+  try {
+    const mod = await import('/lab/embed.js');
+    const game = await mod.games[name]();
+    if (mine !== arc.token) return;
+    const inst = await game.mount({ stage: ui.agStage, controls: ui.agControls, info: ui.agInfo, bank: arcadeBank });
+    if (mine !== arc.token) { inst.dispose(); return; }
+    arc.inst = inst;
+  } catch (err) {
+    console.error(err);
+    if (mine === arc.token) ui.agInfo.textContent = `${ARC_NAME[name]} couldn’t start on this device: ${(err && err.message) || err}`;
+  }
+}
+function arcClose() {
+  arc.token++;
+  if (arc.inst) { try { arc.inst.dispose(); } catch (e) { /* already gone */ } arc.inst = null; }
+  for (const el of [...ui.agStage.children]) if (!el.classList.contains('hud')) el.remove();
+  ui.agControls.textContent = '';
+  ui.agInfo.textContent = '';
+  arc.game = '';
+}
+function renderArcadeGame() {
+  const bal = wallet.ready ? wallet.balance : 0;
+  paintChipRail(ui.agChips, bal, false);
+  paintLow(ui.agLow, wallet.ready && bal < chipPick);
+}
+
 /* ================= How to play ================= */
 const LEARN = ['blackjack', 'roulette', 'poker', 'baccarat', 'threecard', 'war', 'reddog', 'slots', 'plinko', 'crash', 'wallet'];
 // Game screens with a ? button: the article it opens, and what its back button says
@@ -4832,7 +5070,7 @@ function renderLearn() {
   for (const a of ui.kbArticles) a.hidden = a.dataset.kb !== id;
 }
 function openHelp() {
-  const h = HELP_FOR[app.view];
+  const h = app.view === 'arcadegame' ? [arc.game, ARC_NAME[arc.game]] : HELP_FOR[app.view];
   if (!h) return;
   const here = app.hashOverride != null ? app.hashOverride : decodeURIComponent(location.hash.slice(1));
   app.learnBack = { hash: here || app.view, label: h[1] };
@@ -5029,20 +5267,18 @@ async function cloudPush(keepalive = false) {
 /* The account button in the top right of the home bar: "Sign in" when signed out, the
    player's initial when signed in. It opens the account sheet. */
 function renderAccount() {
-  const show = app.view === 'home' && cloud.ready && cloud.on;
-  ui.acctBtn.hidden = !show;
-  if (!show) { app.acctOpen = false; ui.acctPanel.hidden = true; return; }
+  if (app.view !== 'profile') return;
   const u = cloud.user;
-  const who = u ? (u.name || u.email || '') : '';
-  ui.acctBtn.classList.toggle('is-user', !!u);
-  ui.acctBtn.textContent = u ? ((who.trim()[0] || '•').toUpperCase()) : 'Sign in';
-  ui.acctBtn.setAttribute('aria-label', u ? `Account: ${who || 'signed in'}` : 'Sign in or create an account');
-  ui.acctBtn.setAttribute('aria-expanded', String(!!app.acctOpen));
-  ui.acctPanel.hidden = !app.acctOpen;
-  if (!app.acctOpen) return;
-
   const el = ui.account;
   el.textContent = '';
+  if (!cloud.ready || !cloud.on) {
+    ui.acctTitle.textContent = 'Your account';
+    const t = document.createElement('p');
+    t.className = 'fine';
+    t.textContent = cloud.ready ? 'Accounts aren’t available here. Your progress stays in this browser.' : 'Checking…';
+    el.appendChild(t);
+    return;
+  }
   const text = document.createElement('div');
   text.className = 'acct-text';
   const btn = (label, fn, primary) => {
@@ -5066,24 +5302,28 @@ function renderAccount() {
     status.textContent = { loading: 'Loading your save…', saving: 'Saving…', saved: 'Progress saved', error: 'Couldn’t save. Will retry on your next move.' }[cloud.state]
       || 'Your progress saves to your account.';
     text.appendChild(status);
-    el.append(text, btn('Sign out', () => { closeAcct(); signOut(); }));
+    el.append(text, btn('Sign out', signOut));
   } else {
     ui.acctTitle.textContent = 'Save your progress';
     const line = document.createElement('span');
-    line.textContent = 'Keep your wallet, stats and tables on every device.';
+    line.textContent = 'Sign in to get $1,000 every day and keep your wallet and stats on every device.';
+    line.style.whiteSpace = 'normal';
     text.appendChild(line);
     const g = document.createElement('button');
     g.className = 'btn google-btn';
     const actions = document.createElement('div');
     actions.className = 'acct-actions';
-    actions.append(btn('Sign in', () => { closeAcct(); openAuth('in'); }), btn('Create account', () => { closeAcct(); openAuth('up'); }, true));
+    actions.append(btn('Sign in', () => openAuth('in')), btn('Create account', () => openAuth('up'), true));
     el.append(text, googleButton(g), actions);
   }
 }
-function closeAcct() {
-  app.acctOpen = false;
+function renderProfile() {
   renderAccount();
-  syncLock();
+  ui.pfDaily.textContent = !cloud.ready ? '' : !signedIn() ? 'Signed-in players get $1,000 the first time they open the casino each day. Sign in above to start collecting.'
+    : dailyClaimed() ? `Today’s $1,000 is in your wallet. The next one arrives in ${untilMidnight()}, at midnight your time.`
+    : 'Today’s $1,000 is on its way.';
+  ui.pfVibe.checked = app.vibe !== false;
+  ui.pfHints.checked = !!app.hints;
 }
 
 function openAuth(mode) {
@@ -5308,6 +5548,9 @@ function totalText(cards, showSoft) {
 function render() {
   const v = app.view;
   ui.home.hidden = v !== 'home';
+  ui.arcadeView.hidden = v !== 'arcade';
+  ui.arcadeGameView.hidden = v !== 'arcadegame';
+  ui.profileView.hidden = v !== 'profile';
   ui.rouletteView.hidden = v !== 'roulette';
   ui.lobby.hidden = v !== 'lobby';
   ui.tableView.hidden = v !== 'table';
@@ -5319,7 +5562,8 @@ function render() {
   ui.reddogView.hidden = v !== 'reddog';
   ui.learnView.hidden = v !== 'learn';
   // Game screens fill the screen exactly and never scroll
-  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog');
+  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog' || v === 'arcadegame');
+  document.documentElement.classList.toggle('arc', v === 'arcadegame');
   document.documentElement.classList.toggle('bac', v === 'baccarat');
   document.documentElement.classList.toggle('war', v === 'war');
   document.documentElement.classList.toggle('tcp', v === 'threecard');
@@ -5327,25 +5571,29 @@ function render() {
   document.documentElement.classList.toggle('bj', v === 'table');
   document.documentElement.classList.toggle('vp', v === 'poker');
 
-  // App bar: the brand on home; elsewhere a back link, plus the wallet (or the table's tools at blackjack)
-  ui.casinoBar.classList.toggle('is-home', v === 'home');
-  ui.brand.hidden = v !== 'home';
-  ui.homeBtn.hidden = v === 'home';
+  // The four tabs have the nav bar and no strip; games have the strip and no nav bar
+  const tab = TAB_OF[v];
+  const isTab = TAB_HOME.has(v);
+  document.documentElement.classList.toggle('has-nav', !!tab);
+  ui.tabbar.hidden = !tab;
+  for (const t of ui.tabs) { t.classList.toggle('on', t.dataset.tab === tab); t.setAttribute('aria-current', t.dataset.tab === tab ? 'page' : 'false'); }
+  ui.casinoBar.hidden = isTab;
   ui.backLabel.textContent = v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms')
-    : v === 'learn' ? (app.learnBack ? app.learnBack.label : app.learnId ? 'How to play' : 'Home')
-    : 'Home';
-  ui.helpBtn.hidden = !HELP_FOR[v];
+    : v === 'learn' ? (app.learnBack ? app.learnBack.label : app.learnId ? 'How to play' : 'Profile')
+    : v === 'arcadegame' ? 'Arcade'
+    : 'Casino';
+  ui.helpBtn.hidden = !HELP_FOR[v] && v !== 'arcadegame';
   ui.barTitle.hidden = v !== 'table';
   ui.tableTools.hidden = v !== 'table';
-  ui.balanceBtn.hidden = v === 'table' || v === 'home';
+  ui.balanceBtn.hidden = v === 'table' || v === 'learn';
   const bal = wallet.ready ? money(wallet.balance) : '—';
   ui.walletAmt.textContent = bal;
   ui.homeWallet.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
 
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
-  renderAccount();
-  if (v === 'home') { renderHomeStats(); renderDaily(); }
+  if (v === 'home') renderDaily();
+  else if (v === 'profile') renderProfile();
   if (v === 'lobby') renderLobby();
   else if (v === 'stats') renderStats();
   else if (v === 'roulette') renderRoulette();
@@ -5355,6 +5603,7 @@ function render() {
   else if (v === 'war') renderWar();
   else if (v === 'threecard') renderThreeCard();
   else if (v === 'reddog') renderRedDog();
+  else if (v === 'arcadegame') renderArcadeGame();
   else if (v === 'learn') renderLearn();
   syncLock();
 }
@@ -5364,16 +5613,12 @@ const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n));
 const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');
 const tone = (el, n) => { el.classList.toggle('up', n > 0); el.classList.toggle('down', n < 0); };
 function statsTotals() {
-  const b = stats.bj, r = stats.rl, p = stats.vp, c = stats.bc, w = stats.wr, t = stats.tc, d = stats.rd;
+  const b = stats.bj, r = stats.rl, p = stats.vp, c = stats.bc, w = stats.wr, t = stats.tc, d = stats.rd, k = stats.pk, x = stats.cr;
   return {
-    net: b.net + r.net + p.net + c.net + w.net + t.net + d.net,
-    rounds: b.hands + r.spins + p.hands + c.rounds + w.rounds + t.hands + d.hands,
-    biggest: Math.max(b.biggest, r.biggest, p.biggest, c.biggest, w.biggest, t.biggest, d.biggest, 0),
+    net: b.net + r.net + p.net + c.net + w.net + t.net + d.net + k.net + x.net,
+    rounds: b.hands + r.spins + p.hands + c.rounds + w.rounds + t.hands + d.hands + k.hands + x.hands,
+    biggest: Math.max(b.biggest, r.biggest, p.biggest, c.biggest, w.biggest, t.biggest, d.biggest, k.biggest, x.biggest, 0),
   };
-}
-function renderHomeStats() {
-  const t = statsTotals();
-  ui.homeStatsSub.textContent = t.rounds ? `Net ${signed(t.net)} · ${t.rounds.toLocaleString('en-US')} played` : 'Play a round to start tracking';
 }
 function topNumber(map) {
   let best = null;
@@ -5469,6 +5714,16 @@ function renderStats() {
   ui.rdBiggest.textContent = money(ds.biggest);
   ui.rdLine.textContent = !ds.hands ? 'No hands yet' : `Raised ${ds.raises} time${ds.raises === 1 ? '' : 's'} · Three of a kind ${ds.trips} time${ds.trips === 1 ? '' : 's'}`;
 
+  for (const [k, noun, empty] of [['pk', 'Best bucket', 'No drops yet'], ['cr', 'Best cash-out', 'No flights yet']]) {
+    const a = stats[k];
+    ui[k + 'Net'].textContent = a.hands ? signed(a.net) : '';
+    tone(ui[k + 'Net'], a.net);
+    ui[k + 'Hands'].textContent = a.hands.toLocaleString('en-US');
+    ui[k + 'Rate'].textContent = pct(a.won, a.hands);
+    ui[k + 'Wagered'].textContent = money(a.wagered);
+    ui[k + 'Biggest'].textContent = money(a.biggest);
+    ui[k + 'Line'].textContent = !a.hands ? empty : a.best ? `${noun}: ${a.best}×` : `${noun}: none yet`;
+  }
   renderLedger();
   ui.stWhere.textContent = cloud.user && !cloud.user.dev ? 'Saved to your account, so your stats follow you to any device.'
     : 'Saved on this device. Sign in to keep your stats on every device.';
@@ -5851,16 +6106,20 @@ ui.joinCode.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode
 ui.soloBtn.addEventListener('click', () => go('solo'));
 ui.homeBtn.addEventListener('click', () => {
   if (app.view === 'table') { go('blackjack'); return; }
+  if (app.view === 'arcadegame') { go('arcade'); return; }
   if (app.view === 'learn') {
     const back = app.learnBack;
     app.learnBack = null;
-    go(back ? back.hash : app.learnId ? 'learn' : 'home');
+    go(back ? back.hash : app.learnId ? 'learn' : 'profile');
     return;
   }
   go('home');
 });
 ui.helpBtn.addEventListener('click', openHelp);
-ui.homeLearn.addEventListener('click', () => go('learn'));
+ui.pfLearn.addEventListener('click', () => go('learn'));
+ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? '' : t.dataset.tab); window.scrollTo(0, 0); }));
+ui.pfVibe.addEventListener('change', () => { app.vibe = ui.pfVibe.checked; prefsSave(); buzz(10); });
+ui.pfHints.addEventListener('change', () => { app.hints = ui.pfHints.checked; prefsSave(); render(); });
 ui.vpDeal.addEventListener('click', vpDeal);
 ui.bcGo.addEventListener('click', bcDeal);
 ui.bcUndo.addEventListener('click', bcUndo);
@@ -5868,8 +6127,7 @@ ui.bcClear.addEventListener('click', bcClear);
 ui.bcRebet.addEventListener('click', bcRebet);
 ui.bcDouble.addEventListener('click', bcDouble);
 ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
-ui.dailyBtn.addEventListener('click', () => { app.acctOpen = true; render(); });
-ui.homeStats.addEventListener('click', () => go('stats'));
+ui.dailyBtn.addEventListener('click', () => go('profile'));
 ui.stReset.addEventListener('click', resetStats);
 ui.authForm.addEventListener('submit', authSubmit);
 googleButton(ui.authGoogle);
@@ -5879,9 +6137,6 @@ ui.lobbyEmail.addEventListener('click', () => openAuth('in'));
 ui.tEmail.addEventListener('click', () => openAuth('in'));
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
 ui.authClose.addEventListener('click', closeAuth);
-ui.acctBtn.addEventListener('click', () => { app.acctOpen = true; renderAccount(); syncLock(); });
-ui.acctClose.addEventListener('click', closeAcct);
-ui.acctPanel.addEventListener('click', e => { if (e.target === ui.acctPanel) closeAcct(); });
 ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
 // Sheets close from Done, a tap on the dimmed backdrop, or Escape
 const closeChips = () => { app.chipsOpen = false; render(); };
@@ -5894,7 +6149,6 @@ ui.rStage.addEventListener('click', () => { if (rl.stage === 'result') rlStageCl
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!ui.auth.hidden) closeAuth();
-  else if (app.acctOpen) closeAcct();
   else if (app.chipsOpen) closeChips();
   else if (app.inviteOpen) closeInvite();
   else if (rl.stage === 'result') rlStageClose();
@@ -6069,6 +6323,7 @@ async function boot() {
   prefsLoad();
   rlLoad();
   buildTiles();
+  buildArcade();
   buildRoulette();
   vpLoad();
   buildPoker();
@@ -6080,12 +6335,15 @@ async function boot() {
   buildThreeCard();
   rdLoad();
   buildRedDog();
+  arcLoad();
+  buildChipRail(ui.agChips);
   buildLearn();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
   walletInit();
   try { statsLoad(JSON.parse(localStorage.getItem(STATS_KEY) || 'null')); } catch (e) { /* storage unavailable */ }
   bcRecover();
   wrRecover();
+  arcRecover();
   tcRecover();
   rdRecover();
   route();
