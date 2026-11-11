@@ -1128,7 +1128,8 @@
   .bc-spot.win { background: rgba(233, 196, 106, .18); box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(233, 196, 106, .55); }
   .bc-name { font: 800 16px/1.1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
   .bc-odds { font-size: 12px; font-weight: 600; color: var(--ink-3); }
-  .bet-spot { flex: none; width: min(100%, 260px); min-height: 70px; margin: 0 auto; }
+  .bet-spot { flex: none; width: min(100%, 260px); min-height: 70px; margin: 0 auto; pointer-events: none; }
+  .bet-spot:disabled { opacity: 1; }
   .bet-spot.slim { width: 100%; min-height: 48px; flex-direction: row; justify-content: space-between; gap: 10px; padding: 6px 16px; margin-bottom: 8px; }
   .bet-spot.slim .bc-odds { flex: 1; text-align: left; }
   .bc-amt { min-height: 20px; font-size: 16px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
@@ -1560,7 +1561,7 @@
       <p>Number cards count as their number. Jacks, Queens and Kings count as 10. An Ace counts as 11, or as 1 if 11 would take you over 21. A hand where an Ace still counts as 11 is called <b>soft</b>.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Pick a chip, then tap <b>Bet</b> once for each chip you want down. Each hand starts with no bet; <b>Rebet</b> repeats your last one.</li>
+        <li>Tap chips to bet: each tap adds that much. Each hand starts with no bet, and <b>Deal again · $50</b> repeats your last one. The money comes straight from your wallet, and whatever's left goes straight back when the hand ends.</li>
         <li>You and the dealer each get two cards. One of the dealer's cards is face down.</li>
         <li>On your turn, <b>Hit</b> takes another card, <b>Stand</b> keeps what you have, <b>Double</b> doubles your bet for exactly one more card, and <b>Split</b> turns two cards of the same value into two hands, each with its own bet.</li>
         <li>Go over 21 and you <b>bust</b>: that hand loses, whatever the dealer does.</li>
@@ -1604,11 +1605,11 @@
       <p class="kb-lead">Bet on where the ball will land. This is a single-zero wheel: 37 pockets, numbered 0 to 36.</p>
       <h2>How to bet</h2>
       <ol>
-        <li>Pick a chip. It stays picked until you choose another.</li>
-        <li>Tap the spots you want on the board: single numbers, or the outside bets around them. Each tap drops one chip there.</li>
+        <li>Tap a spot on the board to highlight it: a single number, or one of the outside bets around them.</li>
+        <li>Tap chips to bet on the highlighted spot. Tap another spot to bet there instead.</li>
         <li>Tap <b>Spin</b>. Winning bets are paid straight into your wallet.</li>
       </ol>
-      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last spin's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; spin</b> to do it in one go.</p>
+      <p>Tap a chip to bet it; each tap adds that much. <b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down, and the main button then offers your last bets again with the amount on it, like <b>Spin again · $50</b>.</p>
       <h2>Bets and payouts</h2>
       <table class="kb-table">
         <thead><tr><th>Bet</th><th>Covers</th><th>Pays</th></tr></thead>
@@ -1635,7 +1636,7 @@
       <p class="kb-lead">You get five cards and one chance to swap any of them. Your final hand pays from the table. There are two machines: <b>Jacks or Better</b> and <b>Deuces Wild</b>. Tap the machine's name above the chips to switch between hands.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Pick a chip and tap <b>Bet</b> once for each chip you want down, then tap <b>Deal</b>.</li>
+        <li>Tap chips to bet (each tap adds that much), then tap <b>Deal</b>.</li>
         <li>Tap the cards you want to keep. They lift up and show <b>Held</b>. Tap one again to let it go.</li>
         <li>Tap <b>Draw</b>. Every card you didn't hold is replaced from the rest of the deck.</li>
         <li>Your final hand pays from the table at the top of the screen.</li>
@@ -1704,10 +1705,10 @@
       <p class="kb-lead">Bet on which hand finishes closer to 9: the Player's or the Banker's. You don't play either hand. The cards are dealt by fixed rules, so all you choose is your bet.</p>
       <h2>How a round goes</h2>
       <ol>
-        <li>Pick a chip, then tap <b>Player</b>, <b>Banker</b> or <b>Tie</b>. Each tap drops one chip there, and you can bet on more than one.</li>
+        <li>Tap <b>Player</b>, <b>Banker</b> or <b>Tie</b> to highlight it, then tap chips to bet on it. You can bet on more than one.</li>
         <li>Tap <b>Deal</b>. Each hand gets two cards, sometimes a third, and the one closer to 9 wins.</li>
       </ol>
-      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last round's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; deal</b> to do it in one go.</p>
+      <p>Tap a chip to bet it; each tap adds that much. <b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down, and the main button then offers your last bets again with the amount on it, like <b>Deal again · $50</b>.</p>
       <h2>Counting</h2>
       <p>Aces are worth 1, 2 to 9 are worth their number, and 10s and picture cards are worth 0. Only the last digit of the total counts, so a 7 and an 8 make 15, which is 5. The best hand is 9.</p>
       <h2>Payouts</h2>
@@ -1753,13 +1754,13 @@
       <p class="kb-lead">Your three cards against the dealer's three. Look at your hand, then decide whether it's worth playing.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Pick a chip and tap <b>Ante</b> to bet it. Each tap adds one more chip.</li>
-        <li>Tap <b>Pair Plus</b> to bet the side bet too. You can play Pair Plus on its own.</li>
+        <li>Tap chips to bet on the <b>Ante</b>, which starts highlighted.</li>
+        <li>For the <b>Pair Plus</b> side bet, tap Pair Plus to highlight it, then tap chips. You can play Pair Plus on its own.</li>
         <li>Tap <b>Deal</b>. You get three cards face up, the dealer three face down.</li>
         <li>Tap <b>Fold</b> to give up your Ante, or <b>Play</b> to add a Play bet the same size as your Ante.</li>
         <li>The dealer's cards turn over and every bet is paid.</li>
       </ol>
-      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last round's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; deal</b> to do it in one go.</p>
+      <p>Tap a chip to bet it; each tap adds that much. <b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down, and the main button then offers your last bets again with the amount on it, like <b>Deal again · $50</b>.</p>
       <h2>Who wins</h2>
       <ul>
         <li>The dealer needs <b>queen high or better</b> to qualify. If not, your Ante wins 1 to 1 and your Play bet comes back.</li>
@@ -1797,12 +1798,12 @@
       <p class="kb-lead">You and the dealer each get one card, and the higher card wins. If they match, you choose: go to war, or surrender.</p>
       <h2>How a round goes</h2>
       <ol>
-        <li>Pick a chip and tap <b>War</b>, your main bet. Each tap adds one more chip.</li>
-        <li>If you want the <b>Tie</b> side bet too, tap Tie. It needs a War bet beside it.</li>
+        <li>Tap chips to bet on <b>War</b>, your main bet, which starts highlighted.</li>
+        <li>For the <b>Tie</b> side bet, tap Tie to highlight it, then tap chips. It needs a War bet beside it.</li>
         <li>Tap <b>Deal</b>. You get a card, then the dealer does. Aces are high and suits don't matter.</li>
         <li>Higher card wins 1 to 1. Lower card loses.</li>
       </ol>
-      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last round's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; deal</b> to do it in one go.</p>
+      <p>Tap a chip to bet it; each tap adds that much. <b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down, and the main button then offers your last bets again with the amount on it, like <b>Deal again · $50</b>.</p>
       <h2>When the cards tie</h2>
       <ul>
         <li><b>Surrender</b>: you get half your War bet back and the round ends.</li>
@@ -1836,7 +1837,7 @@
       <p class="kb-lead">Two cards go face up. You're betting that the third lands strictly between them. The closer together they are, the more it pays.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Pick a chip and tap <b>Bet</b> once for each chip you want down, then tap <b>Deal</b>. Each hand starts with no bet; <b>Rebet &amp; deal</b> repeats your last one.</li>
+        <li>Tap chips to bet (each tap adds that much), then tap <b>Deal</b>. Each hand starts with no bet; <b>Deal again · $50</b> repeats your last one.</li>
         <li>Two cards come out, lower on the left. Aces are high and suits don't matter.</li>
         <li>The <b>spread</b> is how many ranks fit between them. A 4 and a 9 have a spread of 4: 5, 6, 7 and 8.</li>
         <li>Tap <b>Raise</b> to add a bet the same size as yours, or <b>No raise</b>. Then the third card comes out.</li>
@@ -1939,13 +1940,13 @@
       <h1>Wallet and daily bonus</h1>
       <p class="kb-lead">Everything here is play money. Nothing costs anything, and nothing can be cashed out for real money.</p>
       <h2>Your wallet</h2>
-      <p>One wallet pays for every casino game. Roulette, video poker, baccarat, Three Card Poker, Casino War and Red Dog bets come straight out of it, and at blackjack you bring chips from it to the table.</p>
+      <p>One wallet pays for every casino game. Roulette, video poker, baccarat, Three Card Poker, Casino War and Red Dog bets come straight out of it, blackjack included.</p>
       <h2>Getting money</h2>
       <ul>
         <li>Everyone starts with <b>$1,000</b>.</li>
         <li>Signed in, you get another <b>$1,000 every day</b> the first time you open the casino. It resets at midnight, your time.</li>
         <li>That's the only free money. Run out, and you wait for tomorrow's $1,000, so bet like it matters.</li>
-        <li>At blackjack you bring chips from your wallet to the table. They go back to your wallet when you cash out or leave your seat.</li>
+        <li>Every game takes bets straight from your wallet and pays straight back into it. Nothing stays behind in a game when you leave.</li>
       </ul>
       <h2>Saving your progress</h2>
       <p>Sign in from the top right of the home screen with Google, or with an email and password. Your wallet, stats and solo blackjack table then save to your account and follow you to any device. You also need to be signed in to sit at a table with friends. Signed out, everything stays in this browser.</p>
@@ -1978,8 +1979,6 @@
       <div class="row">
         <button class="btn" id="r-undo">Undo <kbd>U</kbd></button>
         <button class="btn" id="r-clear">Clear <kbd>C</kbd></button>
-        <button class="btn" id="r-rebet">Rebet <kbd>R</kbd></button>
-        <button class="btn" id="r-double">Rebet ×2 <kbd>X</kbd></button>
         <button class="btn primary wide" id="r-spin">Spin <kbd>Space</kbd></button>
       </div>
     </div>
@@ -1991,7 +1990,7 @@
     <div class="vp-screen">
       <div class="vp-msg" id="vp-msg" role="status" aria-live="polite"><div class="vp-title" id="vp-title"></div><div class="vp-sub" id="vp-sub"></div></div>
       <div class="vp-hand" id="vp-hand" aria-label="Your hand"></div>
-      <button class="bc-spot bet-spot" id="vp-spot"><span class="bc-name">Bet</span><span class="bc-odds" id="vp-spot-hint"></span><span class="bc-amt"></span></button>
+      <button class="bc-spot bet-spot" id="vp-spot" tabindex="-1" aria-hidden="true"><span class="bc-name">Bet</span><span class="bc-odds" id="vp-spot-hint"></span><span class="bc-amt"></span></button>
     </div>
     <div class="dock">
       <div class="dock-top">
@@ -2003,8 +2002,6 @@
       <div class="row actions">
         <button class="btn" id="vp-undo">Undo</button>
         <button class="btn" id="vp-clear">Clear</button>
-        <button class="btn" id="vp-rebet">Rebet</button>
-        <button class="btn" id="vp-double">Rebet ×2</button>
         <button class="btn primary wide" id="vp-deal">Deal</button>
       </div>
     </div>
@@ -2040,8 +2037,6 @@
       <div class="row actions" id="bc-actions">
         <button class="btn" id="bc-undo">Undo</button>
         <button class="btn" id="bc-clear">Clear</button>
-        <button class="btn" id="bc-rebet">Rebet</button>
-        <button class="btn" id="bc-double">Rebet ×2</button>
         <button class="btn primary wide" id="bc-go">Deal</button>
       </div>
     </div>
@@ -2077,8 +2072,6 @@
       <div class="row actions" id="wr-actions">
         <button class="btn" id="wr-undo">Undo</button>
         <button class="btn" id="wr-clear">Clear</button>
-        <button class="btn" id="wr-rebet">Rebet</button>
-        <button class="btn" id="wr-double">Rebet ×2</button>
         <button class="btn primary wide" id="wr-go">Deal</button>
       </div>
       <div class="row actions" id="wr-decide" hidden>
@@ -2118,8 +2111,6 @@
       <div class="row actions" id="tc-actions">
         <button class="btn" id="tc-undo">Undo</button>
         <button class="btn" id="tc-clear">Clear</button>
-        <button class="btn" id="tc-rebet">Rebet</button>
-        <button class="btn" id="tc-double">Rebet ×2</button>
         <button class="btn primary wide" id="tc-go">Deal</button>
       </div>
       <div class="row actions" id="tc-decide" hidden>
@@ -2140,7 +2131,7 @@
       </div>
       <div class="rd-spread" id="rd-spread"></div>
       <div class="bc-msg" id="rd-msg" role="status" aria-live="polite"><div class="bc-title" id="rd-title"></div><div class="bc-sub" id="rd-sub"></div></div>
-      <button class="bc-spot bet-spot" id="rd-spot"><span class="bc-name">Bet</span><span class="bc-odds" id="rd-spot-hint"></span><span class="bc-amt"></span></button>
+      <button class="bc-spot bet-spot" id="rd-spot" tabindex="-1" aria-hidden="true"><span class="bc-name">Bet</span><span class="bc-odds" id="rd-spot-hint"></span><span class="bc-amt"></span></button>
     </div>
     <div class="dock">
       <div class="dock-top">
@@ -2152,8 +2143,6 @@
       <div class="row actions" id="rd-actions">
         <button class="btn" id="rd-undo">Undo</button>
         <button class="btn" id="rd-clear">Clear</button>
-        <button class="btn" id="rd-rebet">Rebet</button>
-        <button class="btn" id="rd-double">Rebet ×2</button>
         <button class="btn primary wide" id="rd-deal">Deal</button>
       </div>
       <div class="row actions" id="rd-decide" hidden>
@@ -2242,18 +2231,17 @@
 
       <section class="dock">
         <div class="dock-top">
-          <button class="chipcount" id="bank-pill" aria-expanded="false" title="Add chips from your wallet">Chips <b id="bank">—</b><span class="plus" aria-hidden="true">+</span></button>
+          <button class="chipcount" id="bank-pill" aria-expanded="false" title="Your wallet">Wallet <b id="bank">—</b></button>
           <span class="bet-amt" id="bet-amt"></span>
         </div>
         <div class="panels">
           <div class="panel" id="bet-panel" hidden>
-            <button class="bc-spot bet-spot slim" id="bj-spot"><span class="bc-name">Bet</span><span class="bc-odds" id="bj-spot-hint"></span><span class="bc-amt"></span></button>
+            <button class="bc-spot bet-spot slim" id="bj-spot" tabindex="-1" aria-hidden="true"><span class="bc-name">Bet</span><span class="bc-odds" id="bj-spot-hint"></span><span class="bc-amt"></span></button>
+            <div class="rlow" id="bj-low" hidden></div>
             <div class="chips" id="bj-chips" aria-label="Chip value"></div>
             <div class="row bet-row">
               <button class="btn" id="bj-undo">Undo</button>
               <button class="btn" id="clear-btn">Clear</button>
-              <button class="btn" id="bj-rebet">Rebet</button>
-              <button class="btn" id="bj-double">Rebet ×2</button>
               <button class="btn" id="out-btn">Sit out</button>
               <button class="btn primary wide" id="ready-btn">Ready <kbd>Space</kbd></button>
               <button class="btn primary wide" id="rebuy-btn" hidden>Add chips</button>
@@ -2291,10 +2279,10 @@
 <!-- ================= Sheets and overlays ================= -->
 <div class="overlay" id="chips-panel" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cp-title">
-    <h2 id="cp-title">Your chips</h2>
+    <h2 id="cp-title">Your seat</h2>
     <div class="sheet-stats"><span>At this table<b id="cp-table">—</b></span><span>Wallet<b id="cp-wallet">—</b></span></div>
-    <p class="fine">Bring money from your wallet to this table. Your chips go back to your wallet when you cash out or leave your seat.</p>
-    <div class="quick" id="cp-buttons">
+    <p class="fine">Bets come straight from your wallet, and whatever you win goes straight back when each hand ends.</p>
+    <div class="quick" id="cp-buttons" hidden>
       <button class="btn small" data-a="100">+$100</button>
       <button class="btn small" data-a="250">+$250</button>
       <button class="btn small" data-a="500">+$500</button>
@@ -2304,7 +2292,7 @@
     </div>
     <p class="fine" id="cp-help"></p>
     <div class="row">
-      <button class="btn" id="cp-cashout">Cash out</button>
+      <button class="btn" id="cp-cashout" hidden>Cash out</button>
       <button class="btn" id="cp-close">Done</button>
     </div>
     <div class="sheet-foot">
@@ -2441,21 +2429,21 @@ const ui = {
   rlNet: $('rl-net'), rlSpins: $('rl-spins'), rlRate: $('rl-rate'), rlWagered: $('rl-wagered'), rlBiggest: $('rl-biggest'),
   vpNet: $('vp-net'), vpHands: $('vp-hands'), vpRate: $('vp-rate'), vpWagered: $('vp-wagered'), vpBiggest: $('vp-biggest'), vpBest: $('vp-best'),
   pokerView: $('poker-view'), vpPays: $('vp-pays'), vpMsg: $('vp-msg'), vpTitle: $('vp-title'), vpSub: $('vp-sub'), vpHand: $('vp-hand'),
-  vpBet: $('vp-bet'), vpLow: $('vp-low'), vpChips: $('vp-chips'), vpUndo: $('vp-undo'), vpClear: $('vp-clear'), vpRebet: $('vp-rebet'), vpDouble: $('vp-double'), vpSpot: $('vp-spot'), vpSpotHint: $('vp-spot-hint'), vpDeal: $('vp-deal'), vpGame: $('vp-game'), vpGameName: $('vp-game-name'), kbDeucesPays: $('kb-deuces-pays'),
+  vpBet: $('vp-bet'), vpLow: $('vp-low'), vpChips: $('vp-chips'), vpUndo: $('vp-undo'), vpClear: $('vp-clear'), vpSpot: $('vp-spot'), vpSpotHint: $('vp-spot-hint'), vpDeal: $('vp-deal'), vpGame: $('vp-game'), vpGameName: $('vp-game-name'), kbDeucesPays: $('kb-deuces-pays'),
   baccaratView: $('baccarat-view'), bcRoad: $('bc-road'), bcPlayerSide: $('bc-player-side'), bcBankerSide: $('bc-banker-side'), bcPt: $('bc-pt'), bcBt: $('bc-bt'),
   bcPcards: $('bc-pcards'), bcBcards: $('bc-bcards'), bcMsg: $('bc-msg'), bcTitle: $('bc-title'), bcSub: $('bc-sub'), bcSpots: [...document.querySelectorAll('#bc-spots .bc-spot')],
-  bcBet: $('bc-bet'), bcLow: $('bc-low'), bcChips: $('bc-chips'), bcUndo: $('bc-undo'), bcClear: $('bc-clear'), bcRebet: $('bc-rebet'), bcDouble: $('bc-double'), bcGo: $('bc-go'),
+  bcBet: $('bc-bet'), bcLow: $('bc-low'), bcChips: $('bc-chips'), bcUndo: $('bc-undo'), bcClear: $('bc-clear'), bcGo: $('bc-go'),
   warView: $('war-view'), wrRoad: $('wr-road'), wrPlayerSide: $('wr-player-side'), wrDealerSide: $('wr-dealer-side'), wrPcards: $('wr-pcards'), wrDcards: $('wr-dcards'), wrVs: $('wr-vs'),
   wrMsg: $('wr-msg'), wrTitle: $('wr-title'), wrSub: $('wr-sub'), wrSpots: [...document.querySelectorAll('#wr-spots .bc-spot')],
   wrBet: $('wr-bet'), wrUndo: $('wr-undo'), wrLow: $('wr-low'), wrChips: $('wr-chips'), wrActions: $('wr-actions'), wrDecide: $('wr-decide'),
-  wrClear: $('wr-clear'), wrRebet: $('wr-rebet'), wrDouble: $('wr-double'), wrGo: $('wr-go'), wrWar: $('wr-war'), wrSurrender: $('wr-surrender'),
+  wrClear: $('wr-clear'), wrGo: $('wr-go'), wrWar: $('wr-war'), wrSurrender: $('wr-surrender'),
   tcpView: $('tcp-view'), tcPays: $('tc-pays'), tcDealerSide: $('tc-dealer-side'), tcPlayerSide: $('tc-player-side'), tcDname: $('tc-dname'), tcPname: $('tc-pname'),
   tcDcards: $('tc-dcards'), tcPcards: $('tc-pcards'), tcMsg: $('tc-msg'), tcTitle: $('tc-title'), tcSub: $('tc-sub'), tcSpots: [...document.querySelectorAll('#tc-spots button.bc-spot')], tcPlaySpot: $('tc-play-spot'),
   tcBet: $('tc-bet'), tcUndo: $('tc-undo'), tcLow: $('tc-low'), tcChips: $('tc-chips'), tcActions: $('tc-actions'), tcDecide: $('tc-decide'),
-  tcClear: $('tc-clear'), tcRebet: $('tc-rebet'), tcDouble: $('tc-double'), tcGo: $('tc-go'), tcFold: $('tc-fold'), tcPlay: $('tc-play'),
+  tcClear: $('tc-clear'), tcGo: $('tc-go'), tcFold: $('tc-fold'), tcPlay: $('tc-play'),
   reddogView: $('reddog-view'), rdPays: $('rd-pays'), rdLo: $('rd-lo'), rdMid: $('rd-mid'), rdHi: $('rd-hi'), rdSpread: $('rd-spread'), rdMsg: $('rd-msg'), rdTitle: $('rd-title'), rdSub: $('rd-sub'),
   rdBet: $('rd-bet'), rdRaiseWrap: $('rd-raise-wrap'), rdRaise: $('rd-raise'), rdLow: $('rd-low'), rdChips: $('rd-chips'), rdActions: $('rd-actions'), rdDecide: $('rd-decide'),
-  rdUndo: $('rd-undo'), rdClear: $('rd-clear'), rdRebet: $('rd-rebet'), rdDouble: $('rd-double'), rdSpot: $('rd-spot'), rdSpotHint: $('rd-spot-hint'), rdDeal: $('rd-deal'), rdCall: $('rd-call'), rdRaiseBtn: $('rd-raise-btn'),
+  rdUndo: $('rd-undo'), rdClear: $('rd-clear'), rdSpot: $('rd-spot'), rdSpotHint: $('rd-spot-hint'), rdDeal: $('rd-deal'), rdCall: $('rd-call'), rdRaiseBtn: $('rd-raise-btn'),
   tcNet: $('tc-net'), tcHands: $('tc-hands'), tcRate: $('tc-rate'), tcWagered: $('tc-wagered'), tcBiggest: $('tc-biggest'), tcLine: $('tc-line'),
   pkNet: $('pk-net'), pkHands: $('pk-hands'), pkRate: $('pk-rate'), pkWagered: $('pk-wagered'), pkBiggest: $('pk-biggest'), pkLine: $('pk-line'),
   crNet: $('cr-net'), crHands: $('cr-hands'), crRate: $('cr-rate'), crWagered: $('cr-wagered'), crBiggest: $('cr-biggest'), crLine: $('cr-line'),
@@ -2476,7 +2464,7 @@ const ui = {
   tSignin: $('t-signin'), tGoogle: $('t-google'), tEmail: $('t-email'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
   rHist: $('r-hist'), rTotal: $('r-total'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
-  rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'),
+  rUndo: $('r-undo'), rClear: $('r-clear'), rLow: $('r-low'),
   home: $('home'), tiles: $('tiles'),
   chipsPanel: $('chips-panel'), cpWallet: $('cp-wallet'), cpButtons: [...document.querySelectorAll('#cp-buttons [data-a]')],
   cpAll: $('cp-all'), cpHelp: $('cp-help'), cpCashout: $('cp-cashout'),
@@ -2489,7 +2477,7 @@ const ui = {
   dealerCards: $('dealer-cards'), dealerTotal: $('dealer-total'),
   msg: $('msg'), msgTitle: $('msg-title'), msgSub: $('msg-sub'), statusLine: $('status-line'), seats: $('seats'),
   betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
-  bjChips: $('bj-chips'), bjSpot: $('bj-spot'), bjSpotHint: $('bj-spot-hint'), bjUndo: $('bj-undo'), bjRebet: $('bj-rebet'), bjDouble: $('bj-double'),
+  bjChips: $('bj-chips'), bjLow: $('bj-low'), bjSpot: $('bj-spot'), bjSpotHint: $('bj-spot-hint'), bjUndo: $('bj-undo'),
   clear: $('clear-btn'), betAmt: $('bet-amt'),
   out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
   insText: $('ins-text'), insYes: $('ins-yes'), insNo: $('ins-no'),
@@ -2596,6 +2584,7 @@ function route() {
   if (key === app.routeKey) { render(); return; }
   app.routeKey = key;
   if (target.view !== 'learn') app.learnBack = null;
+  if (app.view === 'table') bjLeaveTable();
   teardown();
   if (target.view === 'lobby') enterLobby();
   else if (target.view === 'solo') enterSolo();
@@ -2868,41 +2857,76 @@ function leaveSeat() {
   send({ t: 'leave' });
   toast('You left your seat. Your chips stay with this room.');
 }
-function setBet(nb) {
+// `covered`: chips for it are already on their way from the wallet, so don't cap it at the table's chips
+function setBet(nb, covered) {
   const T = app.T, P = myP();
   if (!T || !P || T.phase !== 'betting' || mySeat() < 0) return;
-  nb = Math.max(0, Math.min(Math.floor(nb / 5) * 5, Math.floor(P.bank / 5) * 5));
+  nb = Math.max(0, Math.floor(nb / 5) * 5);
+  if (!covered) nb = Math.min(nb, Math.floor(P.bank / 5) * 5);
   if (nb === viewBet()) return;
   const s = send({ t: 'bet', a: nb });
   if (s) app.opt = { s, bet: nb, status: 'betting' };
   render();
 }
-/* Pick a chip and tap Bet: each tap adds one chip to your bet, straight from the chips you
-   have at this table. app.bjHist holds your earlier bets this round, for Undo. */
+/* Tapping a chip adds it to your bet. The chips for it come out of your wallet as you need
+   them (and for doubles, splits and insurance), and whatever is left at the table goes back
+   to the wallet as soon as a hand is over, so there's never money stuck at a table.
+   app.bjHist holds your earlier bets this round, for Undo. */
 function canBetNow() { const T = app.T; return !!T && T.phase === 'betting' && mySeat() >= 0 && !!myP(); }
-function bjBet() {
+// Make sure the table holds at least `need` of your chips, bringing the rest from the wallet
+function bjCover(need) {
   const P = myP();
+  if (!P) return false;
+  const short = Math.ceil(need - P.bank);
+  if (short <= 0) return true;
+  if (short > (wallet.ready ? wallet.balance : 0)) return false;
+  return addTableChips(short, true);
+}
+const bjCanAfford = a => { const P = myP(); return !!P && P.bank + (wallet.ready ? wallet.balance : 0) >= a; };
+function bjChip(v) {
   if (!canBetNow() || viewStatus() === 'ready') return;
-  const room = P.bank - viewBet();
-  if (chipPick > room) {
-    toast(P.bank < MIN_BET ? 'Bring chips from your wallet first: tap Chips +.' : room >= 5 ? `Not enough chips at the table for ${money(chipPick)}. Pick a smaller chip, or tap Chips + to bring more.` : 'All your table chips are bet. Tap Chips + to bring more.');
-    return;
-  }
-  app.bjHist.push(viewBet());
-  buzz(5);
-  setBet(viewBet() + chipPick);
+  const bet = viewBet();
+  if (!bjCanAfford(bet + v)) { toast(bet ? `Not enough left in your wallet for ${money(v)}.` : `Your wallet is empty. ${dailyText(true)}`); return; }
+  app.bjPlacing = true;   // hold the sweep back while the chips and the bet go out together
+  try {
+    if (!bjCover(bet + v)) return;
+    app.bjHist.push(bet);
+    buzz(5);
+    setBet(bet + v, true);
+  } finally { app.bjPlacing = false; }
+  render();
 }
 function bjUndo() {
   if (!canBetNow() || viewStatus() === 'ready' || !app.bjHist.length) return;
   setBet(app.bjHist.pop());
 }
-function bjRebet(mult) {
+// Put the last hand's bet back, the same amount
+function bjRebet() {
   const P = myP();
-  if (!canBetNow() || viewBet() || !P.lastBet) return;
-  const a = P.lastBet * mult;
-  if (a > P.bank) { toast('Not enough chips at the table. Tap Chips + to bring more.'); return; }
-  app.bjHist.push(0);
-  setBet(a);
+  if (!canBetNow() || viewBet() || !P.lastBet || !bjCanAfford(P.lastBet)) return false;
+  app.bjPlacing = true;
+  try {
+    if (!bjCover(P.lastBet)) return false;
+    app.bjHist.push(0);
+    setBet(P.lastBet, true);
+  } finally { app.bjPlacing = false; }
+  return true;
+}
+// Leaving the table between hands takes any bet back and sends every chip home to the wallet
+function bjLeaveTable() {
+  const P = myP();
+  if (!canBetNow() || !P) return;
+  if (viewBet()) send({ t: 'bet', a: 0 });
+  if (P.bank > 0) send({ t: 'cashout' });
+}
+/* When a hand is over, chips left at the table go back to the wallet (they're counted in
+   `cashed` and paid by syncCashed). Runs on every render of the table. */
+function bjSweep() {
+  const T = app.T, P = myP();
+  if (!T || !P || app.bjPlacing || !canBetNow() || !(P.bank > 0) || viewBet() || viewStatus() === 'ready' || optLive()) return;
+  if (app.sweptRev === T.rev) return;
+  app.sweptRev = T.rev;
+  send({ t: 'cashout' });
 }
 function clearBet() {
   const T = app.T;
@@ -2915,8 +2939,7 @@ function clearBet() {
 function toggleReady() {
   const T = app.T, P = myP();
   if (!T || !P || T.phase !== 'betting' || mySeat() < 0) return;
-  if (P.bank < MIN_BET) return;
-  if (viewStatus() !== 'ready' && !viewBet() && P.lastBet && P.lastBet <= P.bank) bjRebet(1);   // nothing down: Deal repeats the last bet
+  if (viewStatus() !== 'ready' && !viewBet() && !bjRebet()) return;   // nothing down: Deal repeats the last bet, if it can
   if (viewStatus() === 'ready') {
     const s = send({ t: 'unready' });
     if (s) app.opt = { s, bet: viewBet(), status: 'betting' };
@@ -2977,6 +3000,11 @@ const walletBody = () => ({ v: WALLET_VERSION, balance: wallet.balance, log: wal
 function walletSave() {
   try { localStorage.setItem('mini-casino.wallet', JSON.stringify(walletBody())); } catch (e) { /* storage unavailable */ }
   cloudMarkDirty();
+}
+// A line on the statement without moving any money (blackjack's money moves through the table)
+function walletNote(a, w) {
+  wallet.log = [{ a, w: String(w).slice(0, 60), at: Date.now() }, ...wallet.log].slice(0, 12);
+  walletSave();
 }
 /* opts.log replaces the default statement line. */
 function walletChange(delta, what, opts = {}) {
@@ -3082,17 +3110,16 @@ function renderLedger() {
    Chips at a blackjack table come out of the wallet, and the table counts everything each
    player has cashed out (`cashed`). The wallet remembers how much of that it has already
    paid in for each table, so cashing out pays exactly once, even across devices. */
-function addTableChips(amount) {
+function addTableChips(amount, quiet) {
   const T = app.T;
-  if (!T || mySeat() < 0 || !canPlayHere()) return;
-  const a = Math.floor(Math.min(amount, wallet.balance));
-  if (!(a > 0)) return;
+  if (!T || mySeat() < 0 || !canPlayHere()) return false;
+  const a = Math.ceil(Math.min(amount, wallet.balance));
+  if (!(a > 0)) return false;
   const where = app.solo ? 'Solo table' : (T.name || 'Blackjack table');
-  if (!walletChange(-a, `Chips · ${where}`)) return;
-  send({ t: 'chips', a });
-  app.chipsOpen = false;
-  toast(`${moneyFull(a)} in chips added`);
-  render();
+  if (!walletChange(-a, quiet ? null : `Chips · ${where}`)) return false;
+  if (!send({ t: 'chips', a })) { walletChange(a, null); return false; }   // couldn't reach the table: keep the money
+  if (!quiet) { app.chipsOpen = false; toast(`${moneyFull(a)} in chips added`); render(); }
+  return true;
 }
 function cashOutTable() {
   const T = app.T, P = myP();
@@ -3114,9 +3141,7 @@ function syncCashed(T) {
   wallet.cashed[key] = total;
   const keys = Object.keys(wallet.cashed);
   if (keys.length > 40) delete wallet.cashed[keys[0]];
-  const where = app.solo ? 'Solo table' : (T.name || 'Blackjack table');
-  walletChange(total - seen, null, { log: { a: total - seen, w: `Cashed out · ${where}` } });
-  toast(`${moneyFull(total - seen)} back in your wallet`);
+  walletChange(total - seen, null);   // the hand's result goes on the statement (recordBlackjackRound)
 }
 
 function buildArcade() {
@@ -3328,6 +3353,7 @@ function recordBlackjackRound(T) {
   b.biggest = Math.max(b.biggest, net);
   statsStreak(net);
   statsSave();
+  walletNote(net, `Blackjack · ${net > 0 ? 'Won' : net < 0 ? 'Lost' : 'Push'}`);
 }
 
 /* ================= Roulette (single zero, solo, plays from the wallet) ================= */
@@ -3375,11 +3401,14 @@ function randInt(n) {
 }
 
 /* ================= Chips and bets, shared by every game =================
-   Pick a chip and it stays picked; each tap on a betting spot drops one chip of that value
-   there. Undo takes back the last chip, Clear takes back everything, and every round starts
-   with nothing down: Rebet puts the last round's bets back, Rebet ×2 doubles them.
+   Tapping a chip bets it. In games with more than one bet, the highlighted spot is where
+   chips go; tap another spot to move the highlight. Undo takes back the last chip, Clear
+   takes back everything, and every round starts with nothing down. With nothing down, the
+   main button offers the last round's bets again, with the amount on it ("Deal again · $50").
    A game's bets live in an object with `bets` (spot -> amount), `hist` (earlier versions
-   of `bets`, for Undo) and `last` (the last round's bets). */
+   of `bets`, for Undo), `last` (the last round's bets) and `target` (where chips go).
+   The arcade games are the exception: there the chip is just the size of each drop or
+   launch, so the rail works as a picker (chipPick). */
 const CHIP_KEY = 'mini-casino.chip';
 let chipPick = 25;
 try { const v = Number(localStorage.getItem(CHIP_KEY)); if (R_CHIPS.includes(v)) chipPick = v; } catch (e) { /* storage unavailable */ }
@@ -3390,41 +3419,47 @@ function pickChip(v) {
   buzz(4);
   render();
 }
-function buildChipRail(el) {
-  el.setAttribute('role', 'radiogroup');
+// A row of chips; tapping one calls onChip(value). Without onChip it's a picker (arcade).
+function buildChipRail(el, onChip) {
+  if (!onChip) el.setAttribute('role', 'radiogroup');
+  el.dataset.picker = onChip ? '' : '1';
   for (const v of R_CHIPS) {
     const c = document.createElement('button');
     c.className = 'chip chipface';
     c.style.setProperty('--c', R_CHIP_COLORS[v]);
     c.dataset.v = String(v);
     c.textContent = chipLabel(v);
-    c.setAttribute('role', 'radio');
-    c.setAttribute('aria-label', `${moneyFull(v)} chip`);
-    c.addEventListener('click', () => pickChip(v));
+    if (onChip) c.setAttribute('aria-label', `Bet ${moneyFull(v)}`);
+    else { c.setAttribute('role', 'radio'); c.setAttribute('aria-label', `${moneyFull(v)} a go`); }
+    c.addEventListener('click', () => (onChip ? onChip(v) : pickChip(v)));
     el.appendChild(c);
   }
 }
-// `room` is how much more can be bet; chips bigger than that are dimmed but still pickable
+// `room` is how much more can be bet: chips bigger than that are greyed out
 function paintChipRail(el, room, locked) {
+  const picker = el.dataset.picker === '1';
   for (const c of el.children) {
     const v = Number(c.dataset.v);
-    c.classList.toggle('sel', v === chipPick);
-    c.classList.toggle('cant', v > room);
-    c.setAttribute('aria-checked', String(v === chipPick));
-    c.disabled = !!locked;
+    if (picker) {
+      c.classList.toggle('sel', v === chipPick);
+      c.classList.toggle('cant', v > room);
+      c.setAttribute('aria-checked', String(v === chipPick));
+      c.disabled = !!locked;
+    } else c.disabled = !!locked || v > room;
   }
 }
 const betsTotal = bets => Object.values(bets || {}).reduce((a, v) => a + (v || 0), 0);
 const zeroBets = bets => Object.fromEntries(Object.keys(bets).map(k => [k, 0]));
 function betSnap(G) { G.hist.push({ ...G.bets }); if (G.hist.length > 100) G.hist.shift(); }
-// Drop the picked chip on spot k, if `room` (what's left in the wallet) covers it
-function betAdd(G, k, room) {
-  if (chipPick > room) {
-    toast(room >= R_CHIPS[0] ? `Not enough left for a ${money(chipPick)} chip. Pick a smaller one.` : `That’s everything in your wallet. ${dailyText(true)}`);
+// Put a chip of value v on the highlighted spot, if `room` (what's left in the wallet) covers it
+function betAdd(G, v, room) {
+  if (!G.target) { toast('Tap a spot first, then chips to bet on it.'); return false; }
+  if (v > room) {
+    toast(room >= R_CHIPS[0] ? `Not enough left in your wallet for ${money(v)}.` : `That’s everything in your wallet. ${dailyText(true)}`);
     return false;
   }
   betSnap(G);
-  G.bets[k] = (G.bets[k] || 0) + chipPick;
+  G.bets[G.target] = (G.bets[G.target] || 0) + v;
   buzz(5);
   return true;
 }
@@ -3440,41 +3475,39 @@ function betClear(G) {
   G.bets = zeroBets(G.bets);
   return true;
 }
-function betRebet(G, mult = 1) {
-  const t = betsTotal(G.last) * mult;
+// Put the last round's bets back, exactly as they were
+function betRebet(G) {
+  const t = betsTotal(G.last);
   if (!t || betsTotal(G.bets)) return false;
   if (t > (wallet.ready ? wallet.balance : 0)) { toast(`Your wallet can’t cover ${money(t)}. ${dailyText(true)}`); return false; }
   betSnap(G);
   const next = zeroBets(G.bets);
-  for (const [k, v] of Object.entries(G.last)) if (v > 0) next[k] = v * mult;
+  for (const [k, v] of Object.entries(G.last)) if (v > 0) next[k] = v;
   G.bets = next;
-  buzz(8);
   return true;
 }
 // Nothing down yet, and the last round's bets fit in the wallet: the main button can repeat them
 const canRebetNow = G => !betsTotal(G.bets) && betsTotal(G.last) > 0 && betsTotal(G.last) <= (wallet.ready ? wallet.balance : 0);
-// The round has started with these bets: remember them for Rebet and clear the table
+// The main button's words: "Deal", or "Deal again · $50" when it would repeat the last bets
+const goLabel = (G, verb, locked) => (!locked && canRebetNow(G) ? `${verb} again · ${money(betsTotal(G.last))}` : verb);
+// The round has started with these bets: remember them and clear the table
 function betDone(G) {
   G.last = { ...G.bets };
   G.bets = zeroBets(G.bets);
   G.hist = [];
 }
-/* The bet buttons in a dock: Undo and Clear while chips are down, Rebet and Rebet ×2
-   before the first chip of a round. */
+// Undo and Clear show while chips are down
 function paintBetButtons(b, G, locked) {
   const total = betsTotal(G.bets);
-  const last = betsTotal(G.last);
-  const bal = wallet.ready ? wallet.balance : 0;
   b.undo.hidden = b.clear.hidden = !total;
-  b.rebet.hidden = b.double.hidden = !!total;
   b.undo.disabled = locked || !G.hist.length;
   b.clear.disabled = locked || !total;
-  b.rebet.disabled = locked || !last || last > bal;
-  b.double.disabled = locked || !last || last * 2 > bal;
+  if (b.rebet) b.rebet.hidden = true;
+  if (b.double) b.double.hidden = true;
 }
 
 const rl = {
-  bets: {}, hist: [], last: null, history: [],
+  bets: {}, hist: [], last: null, target: null, history: [],
   spinning: false, live: null, result: null, net: 0, payout: 0, wins: new Set(), showResult: false, popNum: false,
   anim: null, w: 0, rel: 0, br: 0,
   stage: null, stageTimer: 0,   // full-screen wheel: 'spin' while the ball rolls, 'result' once it lands
@@ -3499,11 +3532,18 @@ function rlSave() {
 function rlFresh() { if (rl.showResult) { rl.showResult = false; rl.wins = new Set(); } }
 function rlRoom() { return Math.max(0, (wallet.ready ? wallet.balance : 0) - rlTotal()); }
 const rlLocked = () => rl.spinning || !wallet.ready;
-// Tap a spot: one chip of the picked value goes on it
-function rlBet(key) {
+// Tap a spot to highlight it; chips then go on it
+function rlSpot(key) {
   if (rlLocked()) return;
   rlFresh();
-  betAdd(rl, key, rlRoom());
+  rl.target = key;
+  buzz(4);
+  render();
+}
+function rlChip(v) {
+  if (rlLocked()) return;
+  rlFresh();
+  betAdd(rl, v, rlRoom());
   render();
 }
 // Right-click (or long-press menu) takes a spot's chips off
@@ -3515,8 +3555,6 @@ function rlRemove(key) {
 }
 function rlUndo() { if (!rlLocked() && betUndo(rl)) render(); }
 function rlClear() { if (!rlLocked() && betClear(rl)) render(); }
-function rlRebet() { if (!rlLocked()) { rlFresh(); if (betRebet(rl)) render(); } }
-function rlDouble() { if (!rlLocked()) { rlFresh(); if (betRebet(rl, 2)) render(); } }
 
 function rlSpin() {
   if (rlLocked()) return;
@@ -3730,7 +3768,7 @@ function buildRoulette() {
     chip.hidden = true;
     b.append(lab, chip);
     b.setAttribute('aria-label', key[0] === 'n' ? `Bet on ${label}` : `Bet on ${OUTSIDE[key]}`);
-    b.addEventListener('click', () => rlBet(key));
+    b.addEventListener('click', () => rlSpot(key));
     b.addEventListener('contextmenu', e => { e.preventDefault(); rlRemove(key); });
     if (key[0] !== 'n') {
       b.addEventListener('pointerenter', () => { for (const n of coversOf(key)) rCells.get('n' + n).classList.add('cover'); });
@@ -3746,7 +3784,7 @@ function buildRoulette() {
   [['low', '1–18'], ['even', 'Even'], ['red', 'Red'], ['black', 'Black'], ['odd', 'Odd'], ['high', '19–36']].forEach(([k, l], i) =>
     add(k, l, 'out' + (k === 'red' ? ' is-red' : k === 'black' ? ' is-black' : ''), [`${2 + i * 2} / span 2`, '2']));
 
-  buildChipRail(ui.rChips);
+  buildChipRail(ui.rChips, rlChip);
 }
 
 function renderRoulette() {
@@ -3761,6 +3799,8 @@ function renderRoulette() {
     if (amt) { chip.textContent = chipLabel(amt); chip.style.setProperty('--c', rChipColor(amt)); }
     el.classList.toggle('win', rl.showResult && rl.wins.has(key));
     el.classList.toggle('hit', rl.showResult && key === 'n' + rl.result);
+    el.classList.toggle('pick', key === rl.target && !rl.spinning);
+    el.setAttribute('aria-pressed', String(key === rl.target));
     el.setAttribute('aria-disabled', String(rl.spinning));
   }
 
@@ -3784,8 +3824,10 @@ function renderRoulette() {
       if (rl.popNum) { rl.popNum = false; void ui.rNum.offsetWidth; ui.rNum.classList.add('pop'); }
     } else {
       const n = Object.values(bets).filter(v => v > 0).length;
-      title = 'Place your bets';
-      sub = total ? `${n} spot${n === 1 ? '' : 's'} covered · tap again to add ${money(chipPick)}` : `Tap the board to bet ${money(chipPick)} a tap`;
+      const where = rl.target ? (rl.target[0] === 'n' ? rl.target.slice(1) : OUTSIDE[rl.target]) : '';
+      title = rl.target ? `Chips go on ${where}` : 'Place your bets';
+      sub = !rl.target ? 'Tap a spot on the board, then tap chips to bet'
+        : total ? `${n} spot${n === 1 ? '' : 's'} covered · tap another spot to move` : 'Tap chips to bet, or tap another spot';
     }
   }
   ui.rTitle.textContent = title;
@@ -3813,8 +3855,8 @@ function renderRoulette() {
 
   // Controls
   ui.rSpin.disabled = rlLocked() || (!total && !canRebetNow(rl));
-  ui.rSpin.innerHTML = !total && canRebetNow(rl) && !rl.live ? 'Rebet & spin <kbd>Space</kbd>' : 'Spin <kbd>Space</kbd>';
-  paintBetButtons({ undo: ui.rUndo, clear: ui.rClear, rebet: ui.rRebet, double: ui.rDouble }, rl, rlLocked());
+  ui.rSpin.innerHTML = `${goLabel(rl, 'Spin', rlLocked())} <kbd>Space</kbd>`;
+  paintBetButtons({ undo: ui.rUndo, clear: ui.rClear }, rl, rlLocked());
   paintChipRail(ui.rChips, bal - (rl.live ? 0 : total), rl.spinning);
   paintLow(ui.rLow, !(rl.spinning || !wallet.ready || bal - total >= 25));
   if (!rl.anim) rlDraw();
@@ -3825,7 +3867,7 @@ function renderRoulette() {
    hold, and Draw replaces the rest. The hand in progress is kept in this browser. Replacement
    cards are picked when you draw, so nothing saved here gives away what's coming. */
 const VP_KEY = 'mini-casino.poker';
-const vp = { game: 'jacks', bets: { main: 0 }, hist: [], last: null, hand: [], held: [false, false, false, false, false], phase: 'bet', stake: 0, result: null, busy: false };
+const vp = { game: 'jacks', bets: { main: 0 }, hist: [], last: null, target: 'main', hand: [], held: [false, false, false, false, false], phase: 'bet', stake: 0, result: null, busy: false };
 // The two machines: their names, pay tables and hand ranking
 const VP_GAMES = {
   jacks: { name: 'Jacks or Better', pays: POKER_PAYS, rank: pokerRank },
@@ -3872,12 +3914,9 @@ function buildPoker() {
   }
   vpBuildRows();
   ui.vpGame.addEventListener('click', vpSwitch);
-  buildChipRail(ui.vpChips);
-  ui.vpSpot.addEventListener('click', vpBet);
+  buildChipRail(ui.vpChips, vpChip);
   ui.vpUndo.addEventListener('click', () => { if (vpCanBet() && betUndo(vp)) render(); });
   ui.vpClear.addEventListener('click', () => { if (vpCanBet() && betClear(vp)) render(); });
-  ui.vpRebet.addEventListener('click', () => vpRebet(1));
-  ui.vpDouble.addEventListener('click', () => vpRebet(2));
   // A hand that was in progress comes back face up
   vp.hand.forEach((c, i) => { vpPaintCard(i, c); vpCards[i].card.classList.remove('down'); });
 }
@@ -3911,16 +3950,12 @@ function vpSwitch() {
 function vpFresh() {
   if (vp.phase === 'done') { vp.phase = 'bet'; vp.result = null; }
 }
-function vpBet() {
+// Tapping a chip adds it to the bet
+function vpChip(v) {
   if (!vpCanBet() || !wallet.ready) return;
   vpFresh();
-  betAdd(vp, 'main', wallet.balance - vp.bets.main);
+  betAdd(vp, v, wallet.balance - vp.bets.main);
   render();
-}
-function vpRebet(mult) {
-  if (!vpCanBet() || !wallet.ready) return;
-  vpFresh();
-  if (betRebet(vp, mult)) render();
 }
 function vpToggle(i) {
   if (vp.busy || vp.phase !== 'hold') return;
@@ -4011,7 +4046,7 @@ function renderPoker() {
     else { title = `${r.name}!`; sub = `+${money(vp.stake * r.pays - vp.stake)}`; cls = 'win'; }
   } else {
     title = vpGame().name;
-    sub = vp.bets.main ? 'Tap Deal when you’re ready' : `Tap Bet to add ${money(chipPick)}`;
+    sub = vp.bets.main ? 'Tap Deal when you’re ready' : 'Tap chips to bet';
   }
   ui.vpTitle.textContent = title;
   ui.vpSub.textContent = sub;
@@ -4019,13 +4054,13 @@ function renderPoker() {
   ui.vpDeal.textContent = hold ? 'Draw' : 'Deal';
   ui.vpGameName.textContent = vpGame().name;
   ui.vpGame.disabled = !vpCanBet();
-  if (!hold) ui.vpDeal.textContent = !vp.bets.main && canRebetNow(vp) ? 'Rebet & deal' : 'Deal';
+  if (!hold) ui.vpDeal.textContent = goLabel(vp, 'Deal', !vpCanBet());
   ui.vpDeal.disabled = vp.busy || (!hold && !vp.bets.main && !canRebetNow(vp));
-  paintBetButtons({ undo: ui.vpUndo, clear: ui.vpClear, rebet: ui.vpRebet, double: ui.vpDouble }, vp, !vpCanBet());
+  paintBetButtons({ undo: ui.vpUndo, clear: ui.vpClear }, vp, !vpCanBet());
   paintChipRail(ui.vpChips, bal - vp.bets.main, !vpCanBet());
   ui.vpSpot.disabled = !vpCanBet();
   ui.vpSpot.querySelector('.bc-amt').textContent = money(hold ? vp.stake : vp.bets.main);
-  ui.vpSpotHint.textContent = hold ? 'In play' : `Tap to add ${money(chipPick)}`;
+  ui.vpSpotHint.textContent = hold ? 'In play' : 'Tap chips to bet';
   paintLow(ui.vpLow, !(hold || vp.busy || !wallet.ready || bal >= 5));
 }
 
@@ -4037,7 +4072,7 @@ function renderPoker() {
 const BC_KEY = 'mini-casino.baccarat';
 const BC_SIDES = ['player', 'tie', 'banker'];
 const BC_NAME = { player: 'Player', banker: 'Banker', tie: 'Tie' };
-const bc = { bets: { player: 0, tie: 0, banker: 0 }, hist: [], last: null, road: [], live: null, result: null, busy: false };
+const bc = { bets: { player: 0, tie: 0, banker: 0 }, hist: [], last: null, target: 'player', road: [], live: null, result: null, busy: false };
 const bcTotal = (bets = bc.bets) => BC_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
 const bcLocked = () => bc.busy || !wallet.ready;
 const bcRoom = () => Math.max(0, (wallet.ready ? wallet.balance : 0) - bcTotal());
@@ -4075,21 +4110,27 @@ function bcSettle() {
   walletChange(live.payout, null, { log: { a: Math.round((live.payout - live.total) * 100) / 100, w: `Baccarat · ${live.winner === 'tie' ? 'Tie' : BC_NAME[live.winner] + ' won'}` } });
 }
 function buildBaccarat() {
-  buildChipRail(ui.bcChips);
-  for (const spot of ui.bcSpots) spot.addEventListener('click', () => bcBet(spot.dataset.k));
+  buildChipRail(ui.bcChips, bcChip);
+  for (const spot of ui.bcSpots) spot.addEventListener('click', () => bcSpot(spot.dataset.k));
 }
 // Changing bets after a round clears its result (the cards stay until the next deal)
 function bcFresh() { bc.result = null; }
-function bcBet(k) {
+// Tap a spot to send chips there; tap a chip to bet it on that spot
+function bcSpot(k) {
   if (bcLocked()) return;
   bcFresh();
-  betAdd(bc, k, bcRoom());
+  bc.target = k;
+  buzz(4);
+  render();
+}
+function bcChip(v) {
+  if (bcLocked()) return;
+  bcFresh();
+  betAdd(bc, v, bcRoom());
   render();
 }
 function bcUndo() { if (!bcLocked() && betUndo(bc)) render(); }
 function bcClear() { if (!bcLocked() && betClear(bc)) render(); }
-function bcRebet() { if (!bcLocked()) { bcFresh(); if (betRebet(bc)) render(); } }
-function bcDouble() { if (!bcLocked()) { bcFresh(); if (betRebet(bc, 2)) render(); } }
 function bcCard(code, third) {
   const e = document.createElement('div');
   e.className = 'card deal-in' + (/[HD]$/.test(code) ? ' red' : '') + (rankOf(code) === 'A' ? ' ace' : '');
@@ -4110,7 +4151,7 @@ function bcDeal() {
   const coup = bacCoup(bacShoe(randInt));
   const bets = { ...bc.bets };
   bc.live = { bets, total, winner: coup.winner, pt: coup.pt, bt: coup.bt, natural: coup.natural, payout: bacPayout(bets, coup.winner) };
-  betDone(bc);   // settled with this coup; Rebet brings them back
+  betDone(bc);   // settled with this coup; "Deal again" brings them back
   bc.result = null;
   bcSave();
   buzz(10);
@@ -4157,6 +4198,8 @@ function renderBaccarat() {
     const live = bc.busy && bc.live ? bc.live.bets[k] : bc.bets[k];
     spot.querySelector('.bc-amt').textContent = live ? money(live) : '';
     spot.classList.toggle('win', !!r && r.winner === k);
+    spot.classList.toggle('pick', !bc.busy && bc.target === k);
+    spot.setAttribute('aria-pressed', String(bc.target === k));
     spot.disabled = bcLocked();
   }
   ui.bcPlayerSide.classList.toggle('win', !!r && r.winner === 'player');
@@ -4172,18 +4215,18 @@ function renderBaccarat() {
     cls = net > 0 ? 'win' : net < 0 ? 'lose' : '';
   } else if (total) {
     title = 'Bets are down';
-    sub = `Tap Deal, or a spot to add ${money(chipPick)}`;
+    sub = `Chips go on ${BC_NAME[bc.target]} · tap a spot to switch`;
   } else {
     title = 'Place your bets';
-    sub = `Tap Player, Banker or Tie to bet ${money(chipPick)}`;
+    sub = `Tap chips to bet on ${BC_NAME[bc.target]}, or tap another spot`;
   }
   ui.bcTitle.textContent = title;
   ui.bcSub.textContent = sub;
   ui.bcMsg.className = 'bc-msg' + (cls ? ' ' + cls : '');
 
   ui.bcGo.disabled = bcLocked() || (!total && !canRebetNow(bc));
-  ui.bcGo.textContent = !total && canRebetNow(bc) && !bc.busy ? 'Rebet & deal' : 'Deal';
-  paintBetButtons({ undo: ui.bcUndo, clear: ui.bcClear, rebet: ui.bcRebet, double: ui.bcDouble }, bc, bcLocked());
+  ui.bcGo.textContent = goLabel(bc, 'Deal', bcLocked());
+  paintBetButtons({ undo: ui.bcUndo, clear: ui.bcClear }, bc, bcLocked());
   paintChipRail(ui.bcChips, bal - total, bc.busy);
   paintLow(ui.bcLow, !(bc.busy || !wallet.ready || bal - total >= 5));
 
@@ -4212,7 +4255,7 @@ const WR_KEY = 'mini-casino.war';
 const WR_SIDES = ['war', 'tie'];
 const WR_CARD = /^(10|[2-9JQKA])[SHDC]$/;
 const wr = {
-  bets: { war: 0, tie: 0 }, hist: [], last: null, road: [], live: null, result: null,
+  bets: { war: 0, tie: 0 }, hist: [], last: null, target: 'war', road: [], live: null, result: null,
   busy: false, burning: false, table: { p: [], d: [], burn: 0 },
 };
 const wrTotal = (bets = wr.bets) => WR_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
@@ -4271,12 +4314,10 @@ function wrSettle() {
   walletChange(live.payout, null, { log: { a: o.net, w: `Casino War · ${o.words}` } });
 }
 function buildWar() {
-  buildChipRail(ui.wrChips);
-  for (const spot of ui.wrSpots) spot.addEventListener('click', () => wrBet(spot.dataset.k));
+  buildChipRail(ui.wrChips, wrChip);
+  for (const spot of ui.wrSpots) spot.addEventListener('click', () => wrSpot(spot.dataset.k));
   ui.wrUndo.addEventListener('click', () => { if (!wrLocked() && betUndo(wr)) render(); });
   ui.wrClear.addEventListener('click', () => { if (!wrLocked() && betClear(wr)) render(); });
-  ui.wrRebet.addEventListener('click', () => wrRebet(1));
-  ui.wrDouble.addEventListener('click', () => wrRebet(2));
   ui.wrGo.addEventListener('click', wrGo);
   ui.wrWar.addEventListener('click', wrWar);
   ui.wrSurrender.addEventListener('click', wrSurrender);
@@ -4288,16 +4329,18 @@ function wrFresh() {
   wr.result = null;
   wr.table = { p: [], d: [], burn: 0 };
 }
-function wrBet(k) {
+function wrSpot(k) {
   if (wrLocked()) return;
   wrFresh();
-  betAdd(wr, k, wrRoom());
+  wr.target = k;
+  buzz(4);
   render();
 }
-function wrRebet(mult) {
+function wrChip(v) {
   if (wrLocked()) return;
   wrFresh();
-  if (betRebet(wr, mult)) render();
+  betAdd(wr, v, wrRoom());
+  render();
 }
 // The main button: Deal, or Go to war on a tie
 function wrGo() {
@@ -4319,7 +4362,7 @@ function wrDeal() {
   if (warRank(player) === warRank(dealer)) live.phase = 'decide';
   else live.payout = warPayout(live);
   wr.live = live;
-  betDone(wr);   // settled with this round; Rebet brings them back
+  betDone(wr);   // settled with this round; "Deal again" brings them back
   wr.result = null;
   wr.table = { p: [], d: [], burn: 0 };
   wrSave();
@@ -4419,6 +4462,8 @@ function renderWar() {
     spot.querySelector('.bc-amt').textContent = text;
     const tieHit = (live || r) && warRank((live || r).player) === warRank((live || r).dealer);
     spot.classList.toggle('win', k === 'tie' ? !!tieHit && !!(live || r).tie : !!o && o.code !== 'S' && o.won);
+    spot.classList.toggle('pick', !wrLocked() && wr.target === k);
+    spot.setAttribute('aria-pressed', String(wr.target === k));
     spot.disabled = wrLocked();
   }
 
@@ -4437,10 +4482,10 @@ function renderWar() {
     cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
   } else if (total) {
     title = wr.bets.war ? 'Bets are down' : 'Add a War bet';
-    sub = wr.bets.war ? `Tap Deal, or a spot to add ${money(chipPick)}` : 'The Tie bet rides along with one';
+    sub = wr.bets.war ? `Chips go on ${wr.target === 'war' ? 'War' : 'Tie'} · tap a spot to switch` : 'The Tie bet rides along with one: tap War';
   } else {
     title = 'High card wins';
-    sub = `Tap War to bet ${money(chipPick)}`;
+    sub = wr.target === 'war' ? 'Tap chips to bet on War' : 'Tap chips to bet on Tie, or tap War';
   }
   ui.wrTitle.textContent = title;
   ui.wrSub.textContent = sub;
@@ -4453,8 +4498,8 @@ function renderWar() {
   ui.wrSurrender.disabled = !deciding;
 
   ui.wrGo.disabled = wrLocked() || (!wr.bets.war && !(!total && canRebetNow(wr)));
-  ui.wrGo.textContent = !total && canRebetNow(wr) && !live ? 'Rebet & deal' : 'Deal';
-  paintBetButtons({ undo: ui.wrUndo, clear: ui.wrClear, rebet: ui.wrRebet, double: ui.wrDouble }, wr, wrLocked());
+  ui.wrGo.textContent = goLabel(wr, 'Deal', wrLocked());
+  paintBetButtons({ undo: ui.wrUndo, clear: ui.wrClear }, wr, wrLocked());
   paintChipRail(ui.wrChips, bal - total, wr.busy || !!live);
   paintLow(ui.wrLow, !(wr.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal - total >= 5)));
 
@@ -4498,7 +4543,7 @@ const cardsOk = (a, n) => Array.isArray(a) && a.length === n && a.every(c => typ
 const TC_KEY = 'mini-casino.threecard';
 const TC_SIDES = ['ante', 'pair'];
 const tc = {
-  bets: { ante: 0, pair: 0 }, hist: [], last: null, live: null, result: null, busy: false,
+  bets: { ante: 0, pair: 0 }, hist: [], last: null, target: 'ante', live: null, result: null, busy: false,
   table: { p: [], d: [], up: false },
 };
 const tcTotal = (bets = tc.bets) => TC_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
@@ -4574,12 +4619,10 @@ function buildThreeCard() {
   for (const [k] of TC_PAY_ROWS) cell('v pp', String(TC_PAIR_PLUS[k]), k);
   cell('l', 'Ante bonus');
   for (const [k] of TC_PAY_ROWS) cell('v ab', TC_ANTE_BONUS[k] ? String(TC_ANTE_BONUS[k]) : '–', k);
-  buildChipRail(ui.tcChips);
-  for (const spot of ui.tcSpots) spot.addEventListener('click', () => tcBet(spot.dataset.k));
+  buildChipRail(ui.tcChips, tcChip);
+  for (const spot of ui.tcSpots) spot.addEventListener('click', () => tcSpot(spot.dataset.k));
   ui.tcUndo.addEventListener('click', () => { if (!tcLocked() && betUndo(tc)) render(); });
   ui.tcClear.addEventListener('click', () => { if (!tcLocked() && betClear(tc)) render(); });
-  ui.tcRebet.addEventListener('click', () => tcRebet(1));
-  ui.tcDouble.addEventListener('click', () => tcRebet(2));
   ui.tcGo.addEventListener('click', tcGo);
   ui.tcPlay.addEventListener('click', tcPlay);
   ui.tcFold.addEventListener('click', tcFold);
@@ -4589,16 +4632,18 @@ function tcFresh() {
   tc.result = null;
   tc.table = { p: [], d: [], up: false };
 }
-function tcBet(k) {
+function tcSpot(k) {
   if (tcLocked()) return;
   tcFresh();
-  betAdd(tc, k, tcRoom());
+  tc.target = k;
+  buzz(4);
   render();
 }
-function tcRebet(mult) {
+function tcChip(v) {
   if (tcLocked()) return;
   tcFresh();
-  if (betRebet(tc, mult)) render();
+  betAdd(tc, v, tcRoom());
+  render();
 }
 // The main button: Deal, or Play once your cards are out
 function tcGo() {
@@ -4712,6 +4757,8 @@ function renderThreeCard() {
     const amt = live ? live[k] : tc.bets[k];
     spot.querySelector('.bc-amt').textContent = amt ? money(amt) : '';
     spot.classList.toggle('win', !!o && (k === 'pair' ? !!r.pair && !!TC_PAIR_PLUS[o.me.key] : !!r.ante && o.winner === 'player'));
+    spot.classList.toggle('pick', !tcLocked() && tc.target === k);
+    spot.setAttribute('aria-pressed', String(tc.target === k));
     spot.disabled = tcLocked();
   }
   ui.tcPlaySpot.querySelector('.bc-amt').textContent = live && live.choice === 'play' ? money(live.ante) : '';
@@ -4729,10 +4776,10 @@ function renderThreeCard() {
     cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
   } else if (total) {
     title = 'Bets are down';
-    sub = `Tap Deal, or a spot to add ${money(chipPick)}`;
+    sub = `Chips go on ${tc.target === 'ante' ? 'the Ante' : 'Pair Plus'} · tap a spot to switch`;
   } else {
     title = 'Three Card Poker';
-    sub = `Tap Ante or Pair Plus to bet ${money(chipPick)}`;
+    sub = tc.target === 'ante' ? 'Tap chips to bet on the Ante' : 'Tap chips to bet on Pair Plus';
   }
   ui.tcTitle.textContent = title;
   ui.tcSub.textContent = sub;
@@ -4742,8 +4789,8 @@ function renderThreeCard() {
   ui.tcDecide.hidden = !deciding;
   if (deciding) ui.tcPlay.textContent = `Play · ${money(live.ante)}`;
   ui.tcGo.disabled = tcLocked() || (!total && !canRebetNow(tc));
-  ui.tcGo.textContent = !total && canRebetNow(tc) && !live ? 'Rebet & deal' : 'Deal';
-  paintBetButtons({ undo: ui.tcUndo, clear: ui.tcClear, rebet: ui.tcRebet, double: ui.tcDouble }, tc, tcLocked());
+  ui.tcGo.textContent = goLabel(tc, 'Deal', tcLocked());
+  paintBetButtons({ undo: ui.tcUndo, clear: ui.tcClear }, tc, tcLocked());
   paintChipRail(ui.tcChips, bal - total, tc.busy || !!live);
   paintLow(ui.tcLow, !(tc.busy || !wallet.ready || (deciding ? bal >= live.ante : !!live || bal - total >= 5)));
 }
@@ -4754,7 +4801,7 @@ function renderThreeCard() {
    raise by your bet before the third card. A hand waiting on that choice is kept if you
    leave, and one the app closed mid-reveal is paid next time. */
 const RD_KEY = 'mini-casino.reddog';
-const rd = { bets: { main: 0 }, hist: [], last: null, live: null, result: null, busy: false, table: [] };
+const rd = { bets: { main: 0 }, hist: [], last: null, target: 'main', live: null, result: null, busy: false, table: [] };
 const rdDeciding = () => !!rd.live && rd.live.phase === 'decide' && !rd.busy;
 const rdLocked = () => rd.busy || !!rd.live || !wallet.ready;
 function rdSave() {
@@ -4803,12 +4850,9 @@ function buildRedDog() {
     e.innerHTML = `<span>${label}</span><b>${pays}</b>`;
     ui.rdPays.appendChild(e);
   }
-  buildChipRail(ui.rdChips);
-  ui.rdSpot.addEventListener('click', rdBet);
+  buildChipRail(ui.rdChips, rdChip);
   ui.rdUndo.addEventListener('click', () => { if (!rdLocked() && betUndo(rd)) render(); });
   ui.rdClear.addEventListener('click', () => { if (!rdLocked() && betClear(rd)) render(); });
-  ui.rdRebet.addEventListener('click', () => rdRebet(1));
-  ui.rdDouble.addEventListener('click', () => rdRebet(2));
   ui.rdDeal.addEventListener('click', rdGo);
   ui.rdCall.addEventListener('click', () => rdThirdCard(false));
   ui.rdRaiseBtn.addEventListener('click', () => rdThirdCard(true));
@@ -4818,16 +4862,12 @@ function rdFresh() {
   rd.result = null;
   rd.table = [];
 }
-function rdBet() {
+// Tapping a chip adds it to the bet
+function rdChip(v) {
   if (rdLocked()) return;
   rdFresh();
-  betAdd(rd, 'main', wallet.balance - rd.bets.main);
+  betAdd(rd, v, wallet.balance - rd.bets.main);
   render();
-}
-function rdRebet(mult) {
-  if (rdLocked()) return;
-  rdFresh();
-  if (betRebet(rd, mult)) render();
 }
 function rdGo() {
   if (rdDeciding()) rdThirdCard(true);
@@ -4938,7 +4978,7 @@ function renderRedDog() {
     cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
   } else {
     title = 'Red Dog';
-    sub = rd.bets.main ? 'Will the third card land in between?' : `Tap Bet to add ${money(chipPick)}`;
+    sub = rd.bets.main ? 'Will the third card land in between?' : 'Tap chips to bet';
   }
   ui.rdTitle.textContent = title;
   ui.rdSub.textContent = sub;
@@ -4950,13 +4990,13 @@ function renderRedDog() {
   ui.rdActions.hidden = deciding;
   ui.rdDecide.hidden = !deciding;
   if (deciding) ui.rdRaiseBtn.textContent = `Raise · ${money(live.bet)}`;
-  ui.rdDeal.textContent = !rd.bets.main && canRebetNow(rd) ? 'Rebet & deal' : 'Deal';
+  ui.rdDeal.textContent = goLabel(rd, 'Deal', rdLocked());
   ui.rdDeal.disabled = rdLocked() || (!rd.bets.main && !canRebetNow(rd));
-  paintBetButtons({ undo: ui.rdUndo, clear: ui.rdClear, rebet: ui.rdRebet, double: ui.rdDouble }, rd, rdLocked());
+  paintBetButtons({ undo: ui.rdUndo, clear: ui.rdClear }, rd, rdLocked());
   paintChipRail(ui.rdChips, bal - rd.bets.main, rd.busy || !!live);
   ui.rdSpot.disabled = rdLocked();
   ui.rdSpot.querySelector('.bc-amt').textContent = live ? (live.raise ? `${money(live.bet)} + ${money(live.raise)}` : money(live.bet)) : money(rd.bets.main);
-  ui.rdSpotHint.textContent = live ? 'In play' : `Tap to add ${money(chipPick)}`;
+  ui.rdSpotHint.textContent = live ? 'In play' : 'Tap chips to bet';
   paintLow(ui.rdLow, !(rd.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal >= 5)));
 }
 
@@ -5416,8 +5456,9 @@ function act(t) {
   const T = app.T;
   const h = myTurnHand();
   if (!h || playPending()) return;
-  if (t === 'double' && !canDouble(T, h)) return;
-  if (t === 'split' && !canSplit(T, h)) return;
+  if (t === 'double' && !bjCanDouble(T, h)) return;
+  if (t === 'split' && !bjCanSplit(T, h)) return;
+  if ((t === 'double' || t === 'split') && !bjCover(h.bet)) return;
   buzz(10);
   const k = T.turn;
   const s = send({ t, k });
@@ -5426,8 +5467,16 @@ function act(t) {
 }
 function insure(y) {
   const T = app.T;
-  if (!T || T.phase !== 'insurance' || !myUndecided()) return;
+  const h = myUndecided();
+  if (!T || T.phase !== 'insurance' || !h) return;
+  if (y && !bjCover(h.bet / 2)) { toast(`Insurance costs ${money(h.bet / 2)}, more than your wallet has.`); return; }
   send({ t: 'ins', y: !!y });
+}
+// Doubling and splitting can use chips from the wallet, so only the cards decide
+function bjCanDouble(T, h) { return h.cards.length === 2 && !h.splitAces && bjCanAfford(h.bet); }
+function bjCanSplit(T, h) {
+  return h.cards.length === 2 && val(h.cards[0]) === val(h.cards[1]) && !h.splitAces
+    && T.round.hands.filter(x => x.uid === h.uid).length < MAX_HANDS && bjCanAfford(h.bet);
 }
 function myUndecided() {
   const T = app.T;
@@ -5836,7 +5885,8 @@ function renderTable() {
   // Chips at this table (minus your bet and whatever is in your hand)
   const P = myP();
   if (!canBetNow()) app.bjHist = [];
-  if (P) ui.bank.textContent = money(P.bank - (T.phase === 'betting' ? viewBet() : 0));
+  ui.bank.textContent = wallet.ready ? money(wallet.balance) : '—';
+  bjSweep();
   renderChipsPanel();
 
   renderMessage(T, R, ctx);
@@ -6039,30 +6089,30 @@ function renderControls(T, R, ctx) {
     ui.betPanel.hidden = false;
     const bet = viewBet();
     const status = viewStatus();
-    const broke = P.bank < MIN_BET && !bet;
+    const spare = P.bank - bet + (wallet.ready ? wallet.balance : 0);   // what's left to bet, wallet included
+    const broke = !bet && spare < MIN_BET;
     const ready = status === 'ready';
-    const canRebet = !bet && P.lastBet >= MIN_BET && P.lastBet <= P.bank;
-    paintChipRail(ui.bjChips, P.bank - bet, ready);
+    const canRebet = !bet && P.lastBet >= MIN_BET && P.lastBet <= spare;
+    paintChipRail(ui.bjChips, spare, ready);
     ui.bjSpot.disabled = ready || broke;
     ui.bjSpot.querySelector('.bc-amt').textContent = money(bet);
-    ui.bjSpotHint.textContent = broke ? 'Bring chips to bet' : ready ? 'Locked in' : `Tap to add ${money(chipPick)}`;
+    ui.bjSpotHint.textContent = broke ? 'Your wallet is empty' : ready ? 'Locked in' : 'Tap chips to bet';
     ui.betAmt.innerHTML = '';
-    // Undo and Clear while chips are down; Rebet and Rebet ×2 before the first one
+    // Undo and Clear while chips are down
     ui.bjUndo.hidden = ui.clear.hidden = !bet;
-    ui.bjRebet.hidden = ui.bjDouble.hidden = !!bet;
     ui.bjUndo.disabled = ready || !app.bjHist.length;
     ui.clear.disabled = ready;
-    ui.bjRebet.disabled = ready || !canRebet;
-    ui.bjDouble.disabled = ready || !(P.lastBet >= MIN_BET && P.lastBet * 2 <= P.bank);
     ui.out.hidden = app.solo || broke;
     ui.out.textContent = status === 'out' ? 'Sitting out' : 'Sit out';
     ui.out.classList.toggle('pressed', status === 'out');
     ui.ready.hidden = broke;
     ui.ready.disabled = bet < MIN_BET && !ready && !canRebet;
     ui.ready.classList.toggle('pressed', ready);
-    const go = app.solo ? (!bet && canRebet ? 'Rebet & deal' : 'Deal') : ready ? 'Not ready' : !bet && canRebet ? 'Rebet & ready' : 'Ready';
+    const again = !bet && canRebet ? ` again · ${money(P.lastBet)}` : '';
+    const go = app.solo ? `Deal${again}` : ready ? 'Not ready' : `Ready${again}`;
     ui.ready.innerHTML = `${go} <kbd>Space</kbd>`;
-    ui.rebuy.hidden = !broke;
+    ui.rebuy.hidden = true;
+    paintLow(ui.bjLow, broke);
     return;
   }
 
@@ -6081,8 +6131,8 @@ function renderControls(T, R, ctx) {
   const h = myTurnHand();
   const ok = !!h && !playPending();
   ui.hit.disabled = ui.stand.disabled = !ok;
-  ui.dbl.disabled = !(ok && canDouble(T, h));
-  ui.split.disabled = !(ok && canSplit(T, h));
+  ui.dbl.disabled = !(ok && bjCanDouble(T, h));
+  ui.split.disabled = !(ok && bjCanSplit(T, h));
   const btnFor = { hit: ui.hit, stand: ui.stand, double: ui.dbl, split: ui.split };
   Object.values(btnFor).forEach(b => b.classList.remove('recommend'));
   let note = '';
@@ -6124,8 +6174,6 @@ ui.vpDeal.addEventListener('click', vpDeal);
 ui.bcGo.addEventListener('click', bcDeal);
 ui.bcUndo.addEventListener('click', bcUndo);
 ui.bcClear.addEventListener('click', bcClear);
-ui.bcRebet.addEventListener('click', bcRebet);
-ui.bcDouble.addEventListener('click', bcDouble);
 ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
 ui.dailyBtn.addEventListener('click', () => go('profile'));
 ui.stReset.addEventListener('click', resetStats);
@@ -6157,11 +6205,12 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 ui.rSpin.addEventListener('click', rlSpin);
 ui.rUndo.addEventListener('click', rlUndo);
 ui.rClear.addEventListener('click', rlClear);
-ui.rRebet.addEventListener('click', rlRebet);
-ui.rDouble.addEventListener('click', rlDouble);
 window.addEventListener('resize', () => { if (app.view === 'roulette' && !rl.anim) rlDraw(); });
 ui.inviteBtn.addEventListener('click', () => { app.inviteOpen = !app.inviteOpen; app.chipsOpen = false; render(); });
-ui.bankPill.addEventListener('click', () => { app.chipsOpen = !app.chipsOpen; app.inviteOpen = false; render(); });
+ui.bankPill.addEventListener('click', () => {
+  if (app.solo) { toast(dailyText(true)); return; }
+  app.chipsOpen = !app.chipsOpen; app.inviteOpen = false; render();
+});
 ui.cpButtons.forEach(b => b.addEventListener('click', () => addTableChips(b.dataset.a === 'all' ? wallet.balance : Number(b.dataset.a))));
 ui.cpCashout.addEventListener('click', cashOutTable);
 ui.hintToggle.addEventListener('click', () => { app.hints = !app.hints; prefsSave(); render(); });
@@ -6180,11 +6229,8 @@ ui.shareBtn.addEventListener('click', async () => {
     if (!e || e.name !== 'AbortError') copyInvite();
   }
 });
-buildChipRail(ui.bjChips);
-ui.bjSpot.addEventListener('click', bjBet);
+buildChipRail(ui.bjChips, bjChip);
 ui.bjUndo.addEventListener('click', bjUndo);
-ui.bjRebet.addEventListener('click', () => bjRebet(1));
-ui.bjDouble.addEventListener('click', () => bjRebet(2));
 ui.clear.addEventListener('click', clearBet);
 ui.ready.addEventListener('click', toggleReady);
 ui.out.addEventListener('click', sitOut);
@@ -6211,11 +6257,9 @@ document.addEventListener('keydown', e => {
   if (app.view === 'roulette') {
     let used = true;
     if (k === ' ' || k === 'enter') rlSpin();
-    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
+    else if (k >= '1' && k <= '5') rlChip(R_CHIPS[Number(k) - 1]);
     else if (k === 'u' || k === 'backspace') rlUndo();
     else if (k === 'c') rlClear();
-    else if (k === 'r') rlRebet();
-    else if (k === 'x') rlDouble();
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6223,14 +6267,12 @@ document.addEventListener('keydown', e => {
   if (app.view === 'baccarat') {
     let used = true;
     if (k === ' ' || k === 'enter') bcDeal();
-    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
+    else if (k >= '1' && k <= '5') bcChip(R_CHIPS[Number(k) - 1]);
     else if (k === 'u') bcUndo();
-    else if (k === 'p') bcBet('player');
-    else if (k === 'b') bcBet('banker');
-    else if (k === 't') bcBet('tie');
+    else if (k === 'p') bcSpot('player');
+    else if (k === 'b') bcSpot('banker');
+    else if (k === 't') bcSpot('tie');
     else if (k === 'c' || k === 'backspace') bcClear();
-    else if (k === 'r') bcRebet();
-    else if (k === 'x') bcDouble();
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6238,14 +6280,12 @@ document.addEventListener('keydown', e => {
   if (app.view === 'threecard') {
     let used = true;
     if (k === ' ' || k === 'enter') tcGo();
-    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
-    else if (k === 'a') tcBet('ante');
-    else if (k === 'p') tcBet('pair');
+    else if (k >= '1' && k <= '5') tcChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'a') tcSpot('ante');
+    else if (k === 'p') tcSpot('pair');
     else if (k === 'f') tcFold();
     else if (k === 'u' || k === 'backspace') ui.tcUndo.click();
     else if (k === 'c') ui.tcClear.click();
-    else if (k === 'r') tcRebet(1);
-    else if (k === 'x') tcRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6253,13 +6293,10 @@ document.addEventListener('keydown', e => {
   if (app.view === 'reddog') {
     let used = true;
     if (k === ' ' || k === 'enter') rdGo();
-    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
-    else if (k === 'b') rdBet();
+    else if (k >= '1' && k <= '5') rdChip(R_CHIPS[Number(k) - 1]);
     else if (k === 'u') ui.rdUndo.click();
-    else if (k === 'r') rdRebet(1);
     else if (k === 'n') rdThirdCard(false);
     else if (k === 'c' || k === 'backspace') ui.rdClear.click();
-    else if (k === 'x') rdRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6267,14 +6304,12 @@ document.addEventListener('keydown', e => {
   if (app.view === 'war') {
     let used = true;
     if (k === ' ' || k === 'enter') wrGo();
-    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
-    else if (k === 'w') wrBet('war');
-    else if (k === 't') wrBet('tie');
+    else if (k >= '1' && k <= '5') wrChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'w') wrSpot('war');
+    else if (k === 't') wrSpot('tie');
     else if (k === 's') wrSurrender();
     else if (k === 'u' || k === 'backspace') ui.wrUndo.click();
     else if (k === 'c') ui.wrClear.click();
-    else if (k === 'r') wrRebet(1);
-    else if (k === 'x') wrRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6286,9 +6321,6 @@ document.addEventListener('keydown', e => {
     else if (k === 'g') vpSwitch();
     else if (k === 'u' || k === 'backspace') ui.vpUndo.click();
     else if (k === 'c') ui.vpClear.click();
-    else if (k === 'b') vpBet();
-    else if (k === 'r') vpRebet(1);
-    else if (k === 'x') vpRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6307,12 +6339,9 @@ document.addEventListener('keydown', e => {
     else handled = false;
   } else if (phase === 'betting') {
     if (k === ' ' || k === 'enter') toggleReady();
-    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
-    else if (k === 'b') bjBet();
+    else if (k >= '1' && k <= '5') bjChip(R_CHIPS[Number(k) - 1]);
     else if (k === 'u' || k === 'backspace') bjUndo();
     else if (k === 'c') clearBet();
-    else if (k === 'r') bjRebet(1);
-    else if (k === 'x') bjRebet(2);
     else handled = false;
   } else handled = false;
   if (handled) e.preventDefault();

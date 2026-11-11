@@ -267,7 +267,7 @@ export function deal(T, ctx) {
   if (rankOf(R.dealer[0]) === 'A') {
     T.phase = 'insurance';
     T.turnAt = ctx.now;
-    for (const h of R.hands) R.ins[h.id] = T.players[h.uid].bank >= h.bet / 2 ? null : 'no';
+    for (const h of R.hands) R.ins[h.id] = null;   // everyone is asked: the page brings chips from the wallet to pay for it
   } else {
     peek(T, ctx);
   }
