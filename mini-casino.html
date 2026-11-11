@@ -837,51 +837,12 @@
     font-size: 14px;
     box-shadow: inset 0 0 0 2px rgba(233, 196, 106, .65), 0 3px 0 rgba(0, 0, 0, .38), 0 8px 14px rgba(0, 0, 0, .32);
   }
+  .chip.cant:not(:disabled) { opacity: .45; }
   .chip.sel { transform: translateY(-5px); box-shadow: 0 0 0 3px var(--gold), 0 3px 0 rgba(0, 0, 0, .38), 0 8px 18px rgba(0, 0, 0, .4); }
 
-  /* ---------- Bank ---------- */
-  .atm {
-    position: relative; overflow: hidden;
-    display: flex; flex-direction: column; gap: 12px;
-    padding: 16px; border-radius: 22px;
-    background: linear-gradient(180deg, #2b2f33, #1b1e21);
-    border: 1px solid rgba(255, 255, 255, .08);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, .4);
-  }
-  .atm-screen {
-    padding: 16px; border-radius: 14px;
-    background: #0c2a1c; border: 1px solid rgba(134, 232, 176, .18);
-    box-shadow: inset 0 0 30px rgba(0, 0, 0, .5);
-    font-family: var(--font-mono); color: var(--win);
-  }
-  .atm-screen .lbl { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
-  .atm-screen .big { margin-top: 4px; font-size: clamp(26px, 9vw, 40px); font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-  .facts { display: flex; gap: 6px 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; opacity: .85; }
-  .facts b { color: var(--ink); }
-  .amount { display: flex; gap: 8px; align-items: stretch; }
-  .amount .cur {
-    display: grid; place-items: center; padding: 0 14px; border-radius: 12px;
-    background: rgba(0, 0, 0, .35); border: 1px solid var(--line);
-    color: var(--gold); font-weight: 700; font-size: 18px;
-  }
-  .amount input { flex: 1; font-family: var(--font-mono); font-size: 20px; min-height: 54px; }
+  /* ---------- Wallet statement, and the quick buttons in the chips sheet ---------- */
   .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .quick .btn { padding: 0 6px; }
-  .atm .btn.primary.block { min-height: 54px; font-size: 17px; }
-  .teller { margin: 0; min-height: 20px; color: var(--ink-2); font-size: 14px; }
-  .stamp {
-    position: absolute; right: 18px; top: 18px;
-    padding: 6px 12px; border: 3px solid #e25a5a; border-radius: 6px;
-    color: #e25a5a; font: 800 20px/1 var(--font-body); letter-spacing: .12em;
-    transform: rotate(-12deg); opacity: 0; pointer-events: none;
-  }
-  .stamp.show { animation: stamp 1.1s ease-out forwards; }
-  @keyframes stamp {
-    0% { opacity: 0; transform: rotate(-12deg) scale(2.2); }
-    22% { opacity: .95; transform: rotate(-12deg) scale(1); }
-    75% { opacity: .95; transform: rotate(-12deg) scale(1); }
-    100% { opacity: 0; transform: rotate(-12deg) scale(1); }
-  }
   .ledger-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
   .ledger-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
   .ledger-list li:last-child { border-bottom: none; }
@@ -1019,7 +980,7 @@
   .vp-msg.win .vp-sub { color: var(--win); }
   .vp-msg.lose .vp-sub { color: var(--lose); }
   .vp-hand {
-    --cw: min(calc((100cqw - 24px) / 5), calc(50cqh * .714)); --ch: calc(var(--cw) / .714);
+    --cw: min(calc((100cqw - 24px) / 5), calc((100cqh - 175px) * .714), calc(55cqh * .714)); --ch: calc(var(--cw) / .714);
     display: grid; grid-template-columns: repeat(5, var(--cw)); gap: 6px; justify-content: center;
   }
   .vp-card { appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -1101,6 +1062,9 @@
   .bc-spot.win { background: rgba(233, 196, 106, .18); box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(233, 196, 106, .55); }
   .bc-name { font: 800 16px/1.1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
   .bc-odds { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+  .bet-spot { flex: none; width: min(100%, 260px); min-height: 70px; margin: 0 auto; }
+  .bet-spot.slim { width: 100%; min-height: 48px; flex-direction: row; justify-content: space-between; gap: 10px; padding: 6px 16px; margin-bottom: 8px; }
+  .bet-spot.slim .bc-odds { flex: 1; text-align: left; }
   .bc-amt { min-height: 20px; font-size: 16px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
 
   /* ---------- Casino War ----------
@@ -1266,7 +1230,7 @@
           <button class="barbtn hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
         </span>
         <button class="acct-btn" id="acct-btn" hidden></button>
-        <button class="balance" id="balance-btn" title="Open the bank">
+        <button class="balance" id="balance-btn" title="When your next $1,000 arrives">
           <span class="balance-label">Your wallet balance</span>
           <span class="balance-amt" id="wallet-amt">—</span>
         </button>
@@ -1280,8 +1244,8 @@
       <div class="wc-label">Your wallet balance</div>
       <div class="wc-amt" id="home-wallet">—</div>
       <div class="wc-row">
-        <span class="wc-fine">Running low? The bank never says no.</span>
-        <button class="btn primary small" id="home-bank">Get money</button>
+        <span class="wc-fine" id="daily-line">Signed-in players get $1,000 every day.</span>
+        <button class="btn primary small" id="daily-btn" hidden>Sign in</button>
       </div>
     </div>
     <div class="section-label">Games</div>
@@ -1398,12 +1362,9 @@
       <p class="fine" id="rd-line">No hands yet</p>
     </div>
     <div class="lcard stat-card">
-      <div class="sc-head"><h2>The Bottomless Bank</h2></div>
-      <dl class="sc-grid">
-        <div><dt>Withdrawn</dt><dd id="bk-withdrawn">$0</dd></div>
-        <div><dt>Withdrawals</dt><dd id="bk-count">0</dd></div>
-      </dl>
-      <p class="fine" id="bk-line"></p>
+      <div class="sc-head"><h2>Wallet statement</h2></div>
+      <p class="fine" id="ledger-summary"></p>
+      <ul class="ledger-list" id="ledger-list"></ul>
     </div>
     <p class="fine center" id="st-where"></p>
     <button class="linkbtn st-reset" id="st-reset">Reset stats</button>
@@ -1471,7 +1432,7 @@
       <div class="section-label">Your money</div>
       <button class="stats-link" data-learn="wallet">
         <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M15.5 14.5h2.5"/></svg></span>
-        <span class="sl-text"><b>Wallet and bank</b><span>Play money, saving and stats</span></span>
+        <span class="sl-text"><b>Wallet and daily bonus</b><span>Play money, saving and stats</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
     </div>
@@ -1483,7 +1444,7 @@
       <p>Number cards count as their number. Jacks, Queens and Kings count as 10. An Ace counts as 11, or as 1 if 11 would take you over 21. A hand where an Ace still counts as 11 is called <b>soft</b>.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Tap chips to choose your bet, then tap <b>Place bet</b>. Your bet carries over to the next hand.</li>
+        <li>Pick a chip, then tap <b>Bet</b> once for each chip you want down. Each hand starts with no bet; <b>Rebet</b> repeats your last one.</li>
         <li>You and the dealer each get two cards. One of the dealer's cards is face down.</li>
         <li>On your turn, <b>Hit</b> takes another card, <b>Stand</b> keeps what you have, <b>Double</b> doubles your bet for exactly one more card, and <b>Split</b> turns two cards of the same value into two hands, each with its own bet.</li>
         <li>Go over 21 and you <b>bust</b>: that hand loses, whatever the dealer does.</li>
@@ -1527,12 +1488,11 @@
       <p class="kb-lead">Bet on where the ball will land. This is a single-zero wheel: 37 pockets, numbered 0 to 36.</p>
       <h2>How to bet</h2>
       <ol>
-        <li>Tap chips to choose an amount. It shows as <b>In hand</b>.</li>
-        <li>Tap the spots you want on the board: single numbers, or the outside bets around them.</li>
-        <li>Tap <b>Place</b> to put that amount on every spot you picked. Repeat to add more bets.</li>
+        <li>Pick a chip. It stays picked until you choose another.</li>
+        <li>Tap the spots you want on the board: single numbers, or the outside bets around them. Each tap drops one chip there.</li>
         <li>Tap <b>Spin</b>. Winning bets are paid straight into your wallet.</li>
       </ol>
-      <p><b>Undo</b> and <b>Clear</b> take bets back, <b>Rebet</b> repeats your last spin's bets, and <b>×2</b> doubles everything on the board.</p>
+      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last spin's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; spin</b> to do it in one go.</p>
       <h2>Bets and payouts</h2>
       <table class="kb-table">
         <thead><tr><th>Bet</th><th>Covers</th><th>Pays</th></tr></thead>
@@ -1559,7 +1519,7 @@
       <p class="kb-lead">You get five cards and one chance to swap any of them. Your final hand pays from the table. There are two machines: <b>Jacks or Better</b> and <b>Deuces Wild</b>. Tap the machine's name above the chips to switch between hands.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Tap chips to choose your bet, then tap <b>Deal</b>.</li>
+        <li>Pick a chip and tap <b>Bet</b> once for each chip you want down, then tap <b>Deal</b>.</li>
         <li>Tap the cards you want to keep. They lift up and show <b>Held</b>. Tap one again to let it go.</li>
         <li>Tap <b>Draw</b>. Every card you didn't hold is replaced from the rest of the deck.</li>
         <li>Your final hand pays from the table at the top of the screen.</li>
@@ -1628,12 +1588,10 @@
       <p class="kb-lead">Bet on which hand finishes closer to 9: the Player's or the Banker's. You don't play either hand. The cards are dealt by fixed rules, so all you choose is your bet.</p>
       <h2>How a round goes</h2>
       <ol>
-        <li>Tap chips to choose an amount. It shows as <b>In hand</b>.</li>
-        <li>Tap <b>Player</b>, <b>Banker</b> or <b>Tie</b>. You can pick more than one.</li>
-        <li>Tap <b>Place</b> to put that amount on each spot you picked.</li>
+        <li>Pick a chip, then tap <b>Player</b>, <b>Banker</b> or <b>Tie</b>. Each tap drops one chip there, and you can bet on more than one.</li>
         <li>Tap <b>Deal</b>. Each hand gets two cards, sometimes a third, and the one closer to 9 wins.</li>
       </ol>
-      <p><b>Clear</b> takes bets back, <b>Rebet</b> repeats your last round's bets, and <b>×2</b> doubles what's down.</p>
+      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last round's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; deal</b> to do it in one go.</p>
       <h2>Counting</h2>
       <p>Aces are worth 1, 2 to 9 are worth their number, and 10s and picture cards are worth 0. Only the last digit of the total counts, so a 7 and an 8 make 15, which is 5. The best hand is 9.</p>
       <h2>Payouts</h2>
@@ -1679,12 +1637,13 @@
       <p class="kb-lead">Your three cards against the dealer's three. Look at your hand, then decide whether it's worth playing.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Tap chips to choose an amount, then tap <b>Place</b>. It goes on the <b>Ante</b>.</li>
-        <li>For the <b>Pair Plus</b> side bet, tap Pair Plus before Place. You can play Pair Plus on its own.</li>
+        <li>Pick a chip and tap <b>Ante</b> to bet it. Each tap adds one more chip.</li>
+        <li>Tap <b>Pair Plus</b> to bet the side bet too. You can play Pair Plus on its own.</li>
         <li>Tap <b>Deal</b>. You get three cards face up, the dealer three face down.</li>
         <li>Tap <b>Fold</b> to give up your Ante, or <b>Play</b> to add a Play bet the same size as your Ante.</li>
         <li>The dealer's cards turn over and every bet is paid.</li>
       </ol>
+      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last round's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; deal</b> to do it in one go.</p>
       <h2>Who wins</h2>
       <ul>
         <li>The dealer needs <b>queen high or better</b> to qualify. If not, your Ante wins 1 to 1 and your Play bet comes back.</li>
@@ -1722,12 +1681,12 @@
       <p class="kb-lead">You and the dealer each get one card, and the higher card wins. If they match, you choose: go to war, or surrender.</p>
       <h2>How a round goes</h2>
       <ol>
-        <li>Tap chips to choose an amount, then tap <b>Place</b>. It goes on <b>War</b>, your main bet.</li>
-        <li>If you want the <b>Tie</b> side bet too, tap Tie before Place. It needs a War bet beside it.</li>
+        <li>Pick a chip and tap <b>War</b>, your main bet. Each tap adds one more chip.</li>
+        <li>If you want the <b>Tie</b> side bet too, tap Tie. It needs a War bet beside it.</li>
         <li>Tap <b>Deal</b>. You get a card, then the dealer does. Aces are high and suits don't matter.</li>
         <li>Higher card wins 1 to 1. Lower card loses.</li>
       </ol>
-      <p><b>Clear</b> takes bets back, <b>Rebet</b> repeats your last round's bets, and <b>×2</b> doubles what's down.</p>
+      <p><b>Undo</b> takes back your last chip and <b>Clear</b> takes back everything. Every round starts with nothing down: <b>Rebet</b> puts your last round's bets back and <b>Rebet ×2</b> doubles them, or tap <b>Rebet &amp; deal</b> to do it in one go.</p>
       <h2>When the cards tie</h2>
       <ul>
         <li><b>Surrender</b>: you get half your War bet back and the round ends.</li>
@@ -1761,7 +1720,7 @@
       <p class="kb-lead">Two cards go face up. You're betting that the third lands strictly between them. The closer together they are, the more it pays.</p>
       <h2>How a hand goes</h2>
       <ol>
-        <li>Tap chips to set your bet, then tap <b>Deal</b>. Your bet stays for the next hand.</li>
+        <li>Pick a chip and tap <b>Bet</b> once for each chip you want down, then tap <b>Deal</b>. Each hand starts with no bet; <b>Rebet &amp; deal</b> repeats your last one.</li>
         <li>Two cards come out, lower on the left. Aces are high and suits don't matter.</li>
         <li>The <b>spread</b> is how many ranks fit between them. A 4 and a 9 have a spread of 4: 5, 6, 7 and 8.</li>
         <li>Tap <b>Raise</b> to add a bet the same size as yours, or <b>No raise</b>. Then the third card comes out.</li>
@@ -1859,56 +1818,24 @@
     </article>
 
     <article class="kb" data-kb="wallet" hidden>
-      <h1>Wallet and bank</h1>
-      <p class="kb-lead">Everything here is play money. Nothing costs anything, and nothing can be cashed out.</p>
+      <h1>Wallet and daily bonus</h1>
+      <p class="kb-lead">Everything here is play money. Nothing costs anything, and nothing can be cashed out for real money.</p>
       <h2>Your wallet</h2>
       <p>One wallet pays for every casino game. Roulette, video poker, baccarat, Three Card Poker, Casino War and Red Dog bets come straight out of it, and at blackjack you bring chips from it to the table.</p>
-      <h2>The Bottomless Bank</h2>
-      <p>Out of money? Tap your balance at the top of a game, or <b>Get money</b> on the home screen, and withdraw any amount, as often as you like. No interest, no credit check.</p>
+      <h2>Getting money</h2>
+      <ul>
+        <li>Everyone starts with <b>$1,000</b>.</li>
+        <li>Signed in, you get another <b>$1,000 every day</b> the first time you open the casino. It resets at midnight, your time.</li>
+        <li>That's the only free money. Run out, and you wait for tomorrow's $1,000, so bet like it matters.</li>
+        <li>At blackjack you bring chips from your wallet to the table. They go back to your wallet when you cash out or leave your seat.</li>
+      </ul>
       <h2>Saving your progress</h2>
       <p>Sign in from the top right of the home screen with Google, or with an email and password. Your wallet, stats and solo blackjack table then save to your account and follow you to any device. You also need to be signed in to sit at a table with friends. Signed out, everything stays in this browser.</p>
       <h2>Your stats</h2>
-      <p><b>Your stats</b> on the home screen tracks every hand, spin, draw and coup: net winnings, biggest wins, streaks and more. It also remembers how much you've borrowed from the Bank.</p>
+      <p><b>Your stats</b> on the home screen tracks every hand, spin, draw and coup: net winnings, biggest wins, streaks and more. The stats page also shows your wallet statement: bonuses, chips and recent wins and losses.</p>
       <h2>3D lab credits</h2>
       <p>The games in the 3D lab use their own credits, separate from your wallet, so you can go wild there without touching your balance.</p>
     </article>
-  </section>
-
-  <!-- ================= Bank ================= -->
-  <section class="view" id="bank-view" hidden>
-    <div class="page-head">
-      <h1>The Bottomless Bank</h1>
-      <p>Member of nothing · Open 24/7</p>
-    </div>
-    <div class="atm">
-      <div class="stamp" id="stamp" aria-hidden="true">APPROVED</div>
-      <div class="atm-screen">
-        <div class="lbl">Your wallet</div>
-        <div class="big" id="atm-big">$0</div>
-        <div class="facts"><span>Vault <b>∞</b></span><span>Interest <b>0%</b></span><span>Credit check <b>Skipped</b></span></div>
-      </div>
-      <label for="wd-amount">How much do you want?</label>
-      <div class="amount">
-        <span class="cur">$</span>
-        <input class="text" id="wd-amount" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="Any amount">
-      </div>
-      <div class="quick" id="quick">
-        <button class="btn small" data-a="1000">$1K</button>
-        <button class="btn small" data-a="10000">$10K</button>
-        <button class="btn small" data-a="100000">$100K</button>
-        <button class="btn small" data-a="1000000">$1M</button>
-        <button class="btn small" data-a="1000000000">$1B</button>
-        <button class="btn small" data-a="999999999999">Max</button>
-      </div>
-      <button class="btn primary block" id="wd-btn">Withdraw</button>
-      <p class="teller" id="teller" role="status" aria-live="polite">Take as much as you like. Nobody is counting.</p>
-    </div>
-    <div class="lcard">
-      <h2>Statement</h2>
-      <p class="fine" id="ledger-summary"></p>
-      <ul class="ledger-list" id="ledger-list"></ul>
-    </div>
-    <p class="fine center">Roulette bets come straight from your wallet. At blackjack, tap <b>+</b> next to your chips to bring more to the table.</p>
   </section>
 
   <!-- ================= Roulette ================= -->
@@ -1927,16 +1854,14 @@
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="r-total">$0</b></span>
-        <span class="dt-item">In hand<b id="r-amount">$0</b></span>
       </div>
-      <div class="rlow" id="r-low" hidden>Running low? <button class="linkbtn" id="r-bank">Get more from the Bank</button></div>
+      <div class="rlow" id="r-low" hidden></div>
       <div class="chips" id="r-chips" aria-label="Chip value"></div>
       <div class="row">
         <button class="btn" id="r-undo">Undo <kbd>U</kbd></button>
         <button class="btn" id="r-clear">Clear <kbd>C</kbd></button>
         <button class="btn" id="r-rebet">Rebet <kbd>R</kbd></button>
-        <button class="btn" id="r-double">×2 <kbd>X</kbd></button>
-        <button class="btn primary wide" id="r-place" hidden>Place</button>
+        <button class="btn" id="r-double">Rebet ×2 <kbd>X</kbd></button>
         <button class="btn primary wide" id="r-spin">Spin <kbd>Space</kbd></button>
       </div>
     </div>
@@ -1948,17 +1873,20 @@
     <div class="vp-screen">
       <div class="vp-msg" id="vp-msg" role="status" aria-live="polite"><div class="vp-title" id="vp-title"></div><div class="vp-sub" id="vp-sub"></div></div>
       <div class="vp-hand" id="vp-hand" aria-label="Your hand"></div>
+      <button class="bc-spot bet-spot" id="vp-spot"><span class="bc-name">Bet</span><span class="bc-odds" id="vp-spot-hint"></span><span class="bc-amt"></span></button>
     </div>
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="vp-bet">$0</b></span>
         <button class="vp-game" id="vp-game" aria-label="Switch machine"><span id="vp-game-name">Jacks or Better</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg></button>
       </div>
-      <div class="rlow" id="vp-low" hidden>Running low? <button class="linkbtn" id="vp-bank">Get more from the Bank</button></div>
+      <div class="rlow" id="vp-low" hidden></div>
       <div class="chips" id="vp-chips" aria-label="Chip value"></div>
       <div class="row actions">
+        <button class="btn" id="vp-undo">Undo</button>
         <button class="btn" id="vp-clear">Clear</button>
-        <button class="btn" id="vp-double">×2</button>
+        <button class="btn" id="vp-rebet">Rebet</button>
+        <button class="btn" id="vp-double">Rebet ×2</button>
         <button class="btn primary wide" id="vp-deal">Deal</button>
       </div>
     </div>
@@ -1988,14 +1916,14 @@
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="bc-bet">$0</b></span>
-        <span class="dt-item">In hand<b id="bc-amount">$0</b></span>
       </div>
-      <div class="rlow" id="bc-low" hidden>Running low? <button class="linkbtn" id="bc-bank">Get more from the Bank</button></div>
+      <div class="rlow" id="bc-low" hidden></div>
       <div class="chips" id="bc-chips" aria-label="Chip value"></div>
-      <div class="row actions">
+      <div class="row actions" id="bc-actions">
+        <button class="btn" id="bc-undo">Undo</button>
         <button class="btn" id="bc-clear">Clear</button>
         <button class="btn" id="bc-rebet">Rebet</button>
-        <button class="btn" id="bc-double" hidden>×2</button>
+        <button class="btn" id="bc-double">Rebet ×2</button>
         <button class="btn primary wide" id="bc-go">Deal</button>
       </div>
     </div>
@@ -2025,14 +1953,14 @@
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="wr-bet">$0</b></span>
-        <span class="dt-item">In hand<b id="wr-amount">$0</b></span>
       </div>
-      <div class="rlow" id="wr-low" hidden>Running low? <button class="linkbtn" id="wr-bank">Get more from the Bank</button></div>
+      <div class="rlow" id="wr-low" hidden></div>
       <div class="chips" id="wr-chips" aria-label="Chip value"></div>
       <div class="row actions" id="wr-actions">
+        <button class="btn" id="wr-undo">Undo</button>
         <button class="btn" id="wr-clear">Clear</button>
         <button class="btn" id="wr-rebet">Rebet</button>
-        <button class="btn" id="wr-double" hidden>×2</button>
+        <button class="btn" id="wr-double">Rebet ×2</button>
         <button class="btn primary wide" id="wr-go">Deal</button>
       </div>
       <div class="row actions" id="wr-decide" hidden>
@@ -2066,14 +1994,14 @@
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="tc-bet">$0</b></span>
-        <span class="dt-item">In hand<b id="tc-amount">$0</b></span>
       </div>
-      <div class="rlow" id="tc-low" hidden>Running low? <button class="linkbtn" id="tc-bank">Get more from the Bank</button></div>
+      <div class="rlow" id="tc-low" hidden></div>
       <div class="chips" id="tc-chips" aria-label="Chip value"></div>
       <div class="row actions" id="tc-actions">
+        <button class="btn" id="tc-undo">Undo</button>
         <button class="btn" id="tc-clear">Clear</button>
         <button class="btn" id="tc-rebet">Rebet</button>
-        <button class="btn" id="tc-double" hidden>×2</button>
+        <button class="btn" id="tc-double">Rebet ×2</button>
         <button class="btn primary wide" id="tc-go">Deal</button>
       </div>
       <div class="row actions" id="tc-decide" hidden>
@@ -2094,17 +2022,20 @@
       </div>
       <div class="rd-spread" id="rd-spread"></div>
       <div class="bc-msg" id="rd-msg" role="status" aria-live="polite"><div class="bc-title" id="rd-title"></div><div class="bc-sub" id="rd-sub"></div></div>
+      <button class="bc-spot bet-spot" id="rd-spot"><span class="bc-name">Bet</span><span class="bc-odds" id="rd-spot-hint"></span><span class="bc-amt"></span></button>
     </div>
     <div class="dock">
       <div class="dock-top">
         <span class="dt-item">Bet<b id="rd-bet">$0</b></span>
         <span class="dt-item" id="rd-raise-wrap" hidden>Raise<b id="rd-raise">$0</b></span>
       </div>
-      <div class="rlow" id="rd-low" hidden>Running low? <button class="linkbtn" id="rd-bank">Get more from the Bank</button></div>
+      <div class="rlow" id="rd-low" hidden></div>
       <div class="chips" id="rd-chips" aria-label="Chip value"></div>
       <div class="row actions" id="rd-actions">
+        <button class="btn" id="rd-undo">Undo</button>
         <button class="btn" id="rd-clear">Clear</button>
-        <button class="btn" id="rd-double">×2</button>
+        <button class="btn" id="rd-rebet">Rebet</button>
+        <button class="btn" id="rd-double">Rebet ×2</button>
         <button class="btn primary wide" id="rd-deal">Deal</button>
       </div>
       <div class="row actions" id="rd-decide" hidden>
@@ -2198,18 +2129,14 @@
         </div>
         <div class="panels">
           <div class="panel" id="bet-panel" hidden>
-            <div class="chips">
-              <button class="chip chipface" data-v="5" style="--c:#c8303c" aria-label="Add $5 chip">5</button>
-              <button class="chip chipface" data-v="25" style="--c:#2f6fd0" aria-label="Add $25 chip">25</button>
-              <button class="chip chipface" data-v="100" style="--c:#2a2c32" aria-label="Add $100 chip">100</button>
-              <button class="chip chipface" data-v="500" style="--c:#7a3fb8" aria-label="Add $500 chip">500</button>
-              <button class="chip chip-x" id="x2-btn" aria-label="Double the amount in your hand">×2</button>
-              <button class="chip chip-x" id="max-btn" aria-label="Take all your chips">Max</button>
-            </div>
+            <button class="bc-spot bet-spot slim" id="bj-spot"><span class="bc-name">Bet</span><span class="bc-odds" id="bj-spot-hint"></span><span class="bc-amt"></span></button>
+            <div class="chips" id="bj-chips" aria-label="Chip value"></div>
             <div class="row bet-row">
+              <button class="btn" id="bj-undo">Undo</button>
               <button class="btn" id="clear-btn">Clear</button>
+              <button class="btn" id="bj-rebet">Rebet</button>
+              <button class="btn" id="bj-double">Rebet ×2</button>
               <button class="btn" id="out-btn">Sit out</button>
-              <button class="btn primary wide" id="place-btn" hidden>Place bet</button>
               <button class="btn primary wide" id="ready-btn">Ready <kbd>Space</kbd></button>
               <button class="btn primary wide" id="rebuy-btn" hidden>Add chips</button>
             </div>
@@ -2248,18 +2175,18 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cp-title">
     <h2 id="cp-title">Your chips</h2>
     <div class="sheet-stats"><span>At this table<b id="cp-table">—</b></span><span>Wallet<b id="cp-wallet">—</b></span></div>
-    <p class="fine">Bring money from your wallet to this table.</p>
+    <p class="fine">Bring money from your wallet to this table. Your chips go back to your wallet when you cash out or leave your seat.</p>
     <div class="quick" id="cp-buttons">
+      <button class="btn small" data-a="100">+$100</button>
+      <button class="btn small" data-a="250">+$250</button>
       <button class="btn small" data-a="500">+$500</button>
       <button class="btn small" data-a="1000">+$1K</button>
-      <button class="btn small" data-a="5000">+$5K</button>
-      <button class="btn small" data-a="25000">+$25K</button>
-      <button class="btn small" data-a="100000">+$100K</button>
+      <button class="btn small" data-a="2500">+$2.5K</button>
       <button class="btn small primary" data-a="all" id="cp-all">All</button>
     </div>
     <p class="fine" id="cp-help"></p>
     <div class="row">
-      <button class="btn" id="cp-bank">Go to the Bank</button>
+      <button class="btn" id="cp-cashout">Cash out</button>
       <button class="btn" id="cp-close">Done</button>
     </div>
     <div class="sheet-foot">
@@ -2343,7 +2270,6 @@ const RESULT_LABEL = { win: 'Win', lose: 'Lose', push: 'Push', bust: 'Bust', bla
 const TEXT_VS = '︎';
 const SOLO_ID = 'solo';
 const WALLET_MAX = 1e15;              // the vault's idea of infinity
-const WITHDRAW_MAX = 999999999999;
 const GAMES = [
   { go: 'blackjack', name: 'Blackjack', blurb: 'Solo, or a room for up to four friends.', cta: 'Play', art: 'cards', cards: ['AS', 'KH'] },
   { go: 'roulette', name: 'Roulette', blurb: 'Single zero. Bets straight from your wallet.', cta: 'Play', art: 'wheel' },
@@ -2353,17 +2279,6 @@ const GAMES = [
   { go: 'war', name: 'Casino War', blurb: 'One card each. High card wins. Tie? Go to war.', cta: 'Play', art: 'cards', cards: ['QH', 'QS'] },
   { go: 'reddog', name: 'Red Dog', blurb: 'Two cards up. Will the third land in between?', cta: 'Play', art: 'three', cards: ['4D', '9C', 'JH'] },
 ];
-const QUIPS = [
-  'Approved. We didn’t check.',
-  'The vault is still full. Somehow.',
-  'Repayment date: never.',
-  'Our risk department is on a permanent lunch break.',
-  'Counting it would take too long, so we didn’t.',
-  'Fresh off the printer. Still warm.',
-  'No questions asked. Not even one.',
-  'Have a nice day. You can afford it.',
-];
-
 /* ================= Rules engine =================
    Shared with the room server: src/rules.js is inlined here by scripts/build.mjs. */
 /* @@RULES@@ */
@@ -2377,7 +2292,7 @@ const QUIPS = [
 const app = {
   view: 'home', solo: false, code: null, routeKey: '', hashOverride: null,
   learnId: '', learnBack: null,       // the How to play article on screen, and where its back button returns to
-  chipsOpen: false, teller: '', lastQuip: -1,
+  chipsOpen: false,
   T: null, confirmed: false, missing: false, loadErr: '', slow: false,
   seq: 0, opt: null, pendingPlay: null,
   present: null, names: {},
@@ -2385,34 +2300,34 @@ const app = {
   hints: false, inviteOpen: false, inviteOpenNext: false,
   unsubs: [], timers: [],
   renderedRound: -1, animTimer: 0, msgKey: '',
-  pending: 0,   // blackjack chips in your hand, not yet bet
+  bjHist: [],   // your earlier blackjack bets this round, for Undo
 };
 
 const $ = id => document.getElementById(id);
 const ui = {
   casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
   backLabel: $('back-label'), brand: $('brand'), barTitle: $('bar-title'), tableTools: $('table-tools'),
-  homeWallet: $('home-wallet'), homeBank: $('home-bank'), homeStats: $('home-stats'), homeStatsSub: $('home-stats-sub'),
+  homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'), homeStats: $('home-stats'), homeStatsSub: $('home-stats-sub'),
   statsView: $('stats-view'), stSince: $('st-since'), stNet: $('st-net'), stRounds: $('st-rounds'), stBiggest: $('st-biggest'), stStreak: $('st-streak'),
   bjNet: $('bj-net'), bjBar: $('bj-bar'), bjWon: $('bj-won'), bjPushed: $('bj-pushed'), bjLost: $('bj-lost'), bjHands: $('bj-hands'), bjRate: $('bj-rate'), bjBjs: $('bj-bjs'), bjWagered: $('bj-wagered'),
   rlNet: $('rl-net'), rlSpins: $('rl-spins'), rlRate: $('rl-rate'), rlWagered: $('rl-wagered'), rlBiggest: $('rl-biggest'),
   vpNet: $('vp-net'), vpHands: $('vp-hands'), vpRate: $('vp-rate'), vpWagered: $('vp-wagered'), vpBiggest: $('vp-biggest'), vpBest: $('vp-best'),
   pokerView: $('poker-view'), vpPays: $('vp-pays'), vpMsg: $('vp-msg'), vpTitle: $('vp-title'), vpSub: $('vp-sub'), vpHand: $('vp-hand'),
-  vpBet: $('vp-bet'), vpLow: $('vp-low'), vpBank: $('vp-bank'), vpChips: $('vp-chips'), vpClear: $('vp-clear'), vpDouble: $('vp-double'), vpDeal: $('vp-deal'), vpGame: $('vp-game'), vpGameName: $('vp-game-name'), kbDeucesPays: $('kb-deuces-pays'),
+  vpBet: $('vp-bet'), vpLow: $('vp-low'), vpChips: $('vp-chips'), vpUndo: $('vp-undo'), vpClear: $('vp-clear'), vpRebet: $('vp-rebet'), vpDouble: $('vp-double'), vpSpot: $('vp-spot'), vpSpotHint: $('vp-spot-hint'), vpDeal: $('vp-deal'), vpGame: $('vp-game'), vpGameName: $('vp-game-name'), kbDeucesPays: $('kb-deuces-pays'),
   baccaratView: $('baccarat-view'), bcRoad: $('bc-road'), bcPlayerSide: $('bc-player-side'), bcBankerSide: $('bc-banker-side'), bcPt: $('bc-pt'), bcBt: $('bc-bt'),
   bcPcards: $('bc-pcards'), bcBcards: $('bc-bcards'), bcMsg: $('bc-msg'), bcTitle: $('bc-title'), bcSub: $('bc-sub'), bcSpots: [...document.querySelectorAll('#bc-spots .bc-spot')],
-  bcBet: $('bc-bet'), bcAmount: $('bc-amount'), bcLow: $('bc-low'), bcBank: $('bc-bank'), bcChips: $('bc-chips'), bcClear: $('bc-clear'), bcRebet: $('bc-rebet'), bcDouble: $('bc-double'), bcGo: $('bc-go'),
+  bcBet: $('bc-bet'), bcLow: $('bc-low'), bcChips: $('bc-chips'), bcUndo: $('bc-undo'), bcClear: $('bc-clear'), bcRebet: $('bc-rebet'), bcDouble: $('bc-double'), bcGo: $('bc-go'),
   warView: $('war-view'), wrRoad: $('wr-road'), wrPlayerSide: $('wr-player-side'), wrDealerSide: $('wr-dealer-side'), wrPcards: $('wr-pcards'), wrDcards: $('wr-dcards'), wrVs: $('wr-vs'),
   wrMsg: $('wr-msg'), wrTitle: $('wr-title'), wrSub: $('wr-sub'), wrSpots: [...document.querySelectorAll('#wr-spots .bc-spot')],
-  wrBet: $('wr-bet'), wrAmount: $('wr-amount'), wrLow: $('wr-low'), wrBank: $('wr-bank'), wrChips: $('wr-chips'), wrActions: $('wr-actions'), wrDecide: $('wr-decide'),
+  wrBet: $('wr-bet'), wrUndo: $('wr-undo'), wrLow: $('wr-low'), wrChips: $('wr-chips'), wrActions: $('wr-actions'), wrDecide: $('wr-decide'),
   wrClear: $('wr-clear'), wrRebet: $('wr-rebet'), wrDouble: $('wr-double'), wrGo: $('wr-go'), wrWar: $('wr-war'), wrSurrender: $('wr-surrender'),
   tcpView: $('tcp-view'), tcPays: $('tc-pays'), tcDealerSide: $('tc-dealer-side'), tcPlayerSide: $('tc-player-side'), tcDname: $('tc-dname'), tcPname: $('tc-pname'),
   tcDcards: $('tc-dcards'), tcPcards: $('tc-pcards'), tcMsg: $('tc-msg'), tcTitle: $('tc-title'), tcSub: $('tc-sub'), tcSpots: [...document.querySelectorAll('#tc-spots button.bc-spot')], tcPlaySpot: $('tc-play-spot'),
-  tcBet: $('tc-bet'), tcAmount: $('tc-amount'), tcLow: $('tc-low'), tcBank: $('tc-bank'), tcChips: $('tc-chips'), tcActions: $('tc-actions'), tcDecide: $('tc-decide'),
+  tcBet: $('tc-bet'), tcUndo: $('tc-undo'), tcLow: $('tc-low'), tcChips: $('tc-chips'), tcActions: $('tc-actions'), tcDecide: $('tc-decide'),
   tcClear: $('tc-clear'), tcRebet: $('tc-rebet'), tcDouble: $('tc-double'), tcGo: $('tc-go'), tcFold: $('tc-fold'), tcPlay: $('tc-play'),
   reddogView: $('reddog-view'), rdPays: $('rd-pays'), rdLo: $('rd-lo'), rdMid: $('rd-mid'), rdHi: $('rd-hi'), rdSpread: $('rd-spread'), rdMsg: $('rd-msg'), rdTitle: $('rd-title'), rdSub: $('rd-sub'),
-  rdBet: $('rd-bet'), rdRaiseWrap: $('rd-raise-wrap'), rdRaise: $('rd-raise'), rdLow: $('rd-low'), rdBank: $('rd-bank'), rdChips: $('rd-chips'), rdActions: $('rd-actions'), rdDecide: $('rd-decide'),
-  rdClear: $('rd-clear'), rdDouble: $('rd-double'), rdDeal: $('rd-deal'), rdCall: $('rd-call'), rdRaiseBtn: $('rd-raise-btn'),
+  rdBet: $('rd-bet'), rdRaiseWrap: $('rd-raise-wrap'), rdRaise: $('rd-raise'), rdLow: $('rd-low'), rdChips: $('rd-chips'), rdActions: $('rd-actions'), rdDecide: $('rd-decide'),
+  rdUndo: $('rd-undo'), rdClear: $('rd-clear'), rdRebet: $('rd-rebet'), rdDouble: $('rd-double'), rdSpot: $('rd-spot'), rdSpotHint: $('rd-spot-hint'), rdDeal: $('rd-deal'), rdCall: $('rd-call'), rdRaiseBtn: $('rd-raise-btn'),
   tcNet: $('tc-net'), tcHands: $('tc-hands'), tcRate: $('tc-rate'), tcWagered: $('tc-wagered'), tcBiggest: $('tc-biggest'), tcLine: $('tc-line'),
   rdNet: $('rd-net'), rdHands: $('rd-hands'), rdRate: $('rd-rate'), rdWagered: $('rd-wagered'), rdBiggest: $('rd-biggest'), rdLine: $('rd-line'),
   wrNet: $('wr-net'), wrRounds: $('wr-rounds'), wrRate: $('wr-rate'), wrWagered: $('wr-wagered'), wrBiggest: $('wr-biggest'), wrWars: $('wr-wars'),
@@ -2420,7 +2335,7 @@ const ui = {
   learnView: $('learn-view'), learnIndex: $('learn-index'), kbArticles: [...document.querySelectorAll('.kb')], kbPokerPays: $('kb-poker-pays'),
   helpBtn: $('help-btn'), homeLearn: $('home-learn'),
   rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
-  bkWithdrawn: $('bk-withdrawn'), bkCount: $('bk-count'), bkLine: $('bk-line'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
+  ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
   rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
   rCapNum: $('r-cap-num'), rCapTitle: $('r-cap-title'), rCapSub: $('r-cap-sub'), rCapHint: $('r-cap-hint'),
@@ -2430,14 +2345,11 @@ const ui = {
   authGoogle: $('auth-google'), lobbySignin: $('lobby-signin'), lobbyGoogle: $('lobby-google'), lobbyEmail: $('lobby-email'),
   tSignin: $('t-signin'), tGoogle: $('t-google'), tEmail: $('t-email'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
-  rHist: $('r-hist'), rTotal: $('r-total'), rAmount: $('r-amount'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
-  rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'), rBank: $('r-bank'),
-  rPlace: $('r-place'),
+  rHist: $('r-hist'), rTotal: $('r-total'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
+  rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'),
   home: $('home'), tiles: $('tiles'),
-  bankView: $('bank-view'), stamp: $('stamp'), atmBig: $('atm-big'), wdAmount: $('wd-amount'), wdBtn: $('wd-btn'),
-  quick: [...document.querySelectorAll('#quick [data-a]')], teller: $('teller'), ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'),
   chipsPanel: $('chips-panel'), cpWallet: $('cp-wallet'), cpButtons: [...document.querySelectorAll('#cp-buttons [data-a]')],
-  cpAll: $('cp-all'), cpHelp: $('cp-help'), cpBank: $('cp-bank'), x2: $('x2-btn'), max: $('max-btn'),
+  cpAll: $('cp-all'), cpHelp: $('cp-help'), cpCashout: $('cp-cashout'),
   lobby: $('lobby'), lobbyNote: $('lobby-note'), roomName: $('room-name'), createBtn: $('create-btn'),
   joinCode: $('join-code'), joinBtn: $('join-btn'), roomList: $('room-list'), roomEmpty: $('room-empty'), soloBtn: $('solo-btn'),
   tableView: $('table-view'), tName: $('t-name'), tCode: $('t-code'),
@@ -2447,8 +2359,9 @@ const ui = {
   dealerCards: $('dealer-cards'), dealerTotal: $('dealer-total'),
   msg: $('msg'), msgTitle: $('msg-title'), msgSub: $('msg-sub'), statusLine: $('status-line'), seats: $('seats'),
   betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
-  chips: [...document.querySelectorAll('.chips .chip[data-v]')], clear: $('clear-btn'), betAmt: $('bet-amt'),
-  out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'), place: $('place-btn'),
+  bjChips: $('bj-chips'), bjSpot: $('bj-spot'), bjSpotHint: $('bj-spot-hint'), bjUndo: $('bj-undo'), bjRebet: $('bj-rebet'), bjDouble: $('bj-double'),
+  clear: $('clear-btn'), betAmt: $('bet-amt'),
+  out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
   insText: $('ins-text'), insYes: $('ins-yes'), insNo: $('ins-no'),
   playNote: $('play-note'), hit: $('hit-btn'), stand: $('stand-btn'), dbl: $('double-btn'), split: $('split-btn'),
   infoText: $('info-text'), stats: $('stats'), leave: $('leave-btn'), toast: $('toast'),
@@ -2533,7 +2446,6 @@ function route() {
   let target = { view: 'home', code: '' };
   if (h === 'solo') target = { view: 'solo', code: SOLO_ID };
   else if (h === 'blackjack') target = { view: 'lobby', code: '' };
-  else if (h === 'bank') target = { view: 'bank', code: '' };
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
   else if (h === 'stats') target = { view: 'stats', code: '' };
   else if (h === 'poker') target = { view: 'poker', code: '' };
@@ -2570,7 +2482,7 @@ function teardown() {
   roomDisconnect();
   app.T = null; app.confirmed = false; app.missing = false; app.loadErr = ''; app.slow = false;
   app.opt = null; app.pendingPlay = null; app.present = null; app.names = {}; app.seq = 0; app.wsTries = 0;
-  app.inviteOpen = false; app.chipsOpen = false; app.renderedRound = -1; app.msgKey = ''; app.pending = 0;
+  app.inviteOpen = false; app.chipsOpen = false; app.renderedRound = -1; app.msgKey = ''; app.bjHist = [];
   cardEls.clear(); handEls.clear();
   ui.dealerCards.textContent = '';
   for (const s of seatEls) s.querySelector('.hands').textContent = '';
@@ -2692,6 +2604,10 @@ function enterSolo() {
     soloT.seats[0] = SOLO_ID;
     soloT.players[SOLO_ID] = newPlayer();
   }
+  if (migrateTable(soloT)) {
+    try { localStorage.setItem('bj.rooms.solo', JSON.stringify(soloT)); } catch (e) { /* storage unavailable */ }
+  }
+  if (!soloT.seats.includes(SOLO_ID)) soloT.seats[0] = SOLO_ID;   // leaving the solo table cashes out; sit back down
   app.T = soloT;
   app.confirmed = true;
   render();
@@ -2707,6 +2623,7 @@ function soloApply(m) {
   T.updated = ctx.now;
   soloT = T;
   app.T = T;
+  syncCashed(T);
   try { localStorage.setItem('bj.rooms.solo', JSON.stringify(T)); } catch (e) { /* storage unavailable */ }
   cloudMarkDirty();
   render();
@@ -2760,6 +2677,7 @@ function roomConnect(code) {
     try { msg = JSON.parse(e.data); } catch (err) { return; }
     if (!msg || msg.type !== 'state' || !msg.T || !Array.isArray(msg.T.seats)) return;
     app.T = msg.T;
+    syncCashed(msg.T);
     app.present = new Set(msg.present || []);
     app.names = msg.names || {};
     app.confirmed = true;
@@ -2823,41 +2741,37 @@ function setBet(nb) {
   if (s) app.opt = { s, bet: nb, status: 'betting' };
   render();
 }
-/* Chips build an amount in your hand (app.pending). Nothing is bet until Place bet puts it on the table. */
-function pendingRoom() {
-  const P = myP();
-  return P ? Math.max(0, Math.floor((P.bank - viewBet()) / 5) * 5) : 0;
-}
+/* Pick a chip and tap Bet: each tap adds one chip to your bet, straight from the chips you
+   have at this table. app.bjHist holds your earlier bets this round, for Undo. */
 function canBetNow() { const T = app.T; return !!T && T.phase === 'betting' && mySeat() >= 0 && !!myP(); }
-function addChip(v) {
-  if (!canBetNow()) return;
-  if (app.pending + v > pendingRoom()) { toast('Not enough chips at the table. Tap + to bring more.'); return; }
-  app.pending += v;
-  buzz();
-  render();
+function bjBet() {
+  const P = myP();
+  if (!canBetNow() || viewStatus() === 'ready') return;
+  const room = P.bank - viewBet();
+  if (chipPick > room) {
+    toast(P.bank < MIN_BET ? 'Bring chips from your wallet first: tap Chips +.' : room >= 5 ? `Not enough chips at the table for ${money(chipPick)}. Pick a smaller chip, or tap Chips + to bring more.` : 'All your table chips are bet. Tap Chips + to bring more.');
+    return;
+  }
+  app.bjHist.push(viewBet());
+  buzz(5);
+  setBet(viewBet() + chipPick);
 }
-// ×2 doubles the amount in your hand, or, with nothing in hand, matches your current bet (placing it doubles the bet)
-function doubleBet() {
-  if (!canBetNow()) return;
-  const next = Math.min(app.pending ? app.pending * 2 : viewBet(), pendingRoom());
-  if (!next) return;
-  app.pending = next;
-  buzz();
-  render();
+function bjUndo() {
+  if (!canBetNow() || viewStatus() === 'ready' || !app.bjHist.length) return;
+  setBet(app.bjHist.pop());
 }
-function maxBet() { if (canBetNow()) { app.pending = pendingRoom(); buzz(); render(); } }
-function placeBet() {
-  if (!canBetNow() || !app.pending) return;
-  const add = Math.min(app.pending, pendingRoom());
-  app.pending = 0;
-  buzz(15);
-  setBet(viewBet() + add);
-  render();
+function bjRebet(mult) {
+  const P = myP();
+  if (!canBetNow() || viewBet() || !P.lastBet) return;
+  const a = P.lastBet * mult;
+  if (a > P.bank) { toast('Not enough chips at the table. Tap Chips + to bring more.'); return; }
+  app.bjHist.push(0);
+  setBet(a);
 }
 function clearBet() {
   const T = app.T;
-  if (app.pending) { app.pending = 0; render(); return; }   // first clear what's in your hand
-  if (!T || T.phase !== 'betting' || mySeat() < 0 || !viewBet()) return;
+  if (!T || T.phase !== 'betting' || mySeat() < 0 || !viewBet() || viewStatus() === 'ready') return;
+  app.bjHist.push(viewBet());
   const s = send({ t: 'bet', a: 0 });
   if (s) app.opt = { s, bet: 0, status: 'betting' };
   render();
@@ -2866,6 +2780,7 @@ function toggleReady() {
   const T = app.T, P = myP();
   if (!T || !P || T.phase !== 'betting' || mySeat() < 0) return;
   if (P.bank < MIN_BET) return;
+  if (viewStatus() !== 'ready' && !viewBet() && P.lastBet && P.lastBet <= P.bank) bjRebet(1);   // nothing down: Deal repeats the last bet
   if (viewStatus() === 'ready') {
     const s = send({ t: 'unready' });
     if (s) app.opt = { s, bet: viewBet(), status: 'betting' };
@@ -2891,49 +2806,49 @@ function rebuy() {
   render();
 }
 
-/* ================= Wallet & the Bottomless Bank =================
-   One wallet per person for the whole casino. Signed in, it lives in a private
-   document only you can read; otherwise in this browser. */
-const wallet = { balance: 0, withdrawn: 0, count: 0, log: [], ready: false, ref: null, local: false, writing: false, again: false };
-
+/* ================= Wallet and the daily bonus =================
+   One wallet per person for the whole casino, kept in this browser and, signed in, synced
+   with the account. Everyone starts with $1,000. Signed in, the server adds $1,000 the first
+   time you open the casino each day (/api/daily); that and winning are the only ways in.
+   Wallets from before the daily bonus (no `v: 2`) start over at $1,000. */
+const WALLET_VERSION = 2;
+const START_BALANCE = 1000;
+const DAILY_BONUS = 1000;
+const wallet = { balance: 0, log: [], cashed: {}, ready: false, local: true, reset: false };
+const daily = { day: '', claiming: false };   // the last day the bonus was claimed, as YYYY-MM-DD
 function walletInit() {
-  wallet.local = true;
-  try { walletLoad(JSON.parse(localStorage.getItem('mini-casino.wallet') || 'null')); } catch (e) { /* storage unavailable */ }
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem('mini-casino.wallet') || 'null'); } catch (e) { /* storage unavailable */ }
+  walletLoad(d);
   wallet.ready = true;
+  if (wallet.reset) walletSave();
 }
 function walletLoad(d) {
-  if (!d) return;
-  if (Number.isFinite(d.balance) && d.balance >= 0) wallet.balance = d.balance;
-  if (Number.isFinite(d.withdrawn) && d.withdrawn >= 0) wallet.withdrawn = d.withdrawn;
-  if (Number.isFinite(d.count) && d.count >= 0) wallet.count = d.count;
-  if (Array.isArray(d.log)) wallet.log = d.log.filter(e => e && Number.isFinite(e.a)).slice(0, 12);
-}
-async function walletSave() {
-  const body = () => ({ balance: wallet.balance, withdrawn: wallet.withdrawn, count: wallet.count, log: wallet.log });
-  if (wallet.local) {
-    try { localStorage.setItem('mini-casino.wallet', JSON.stringify(body())); } catch (e) { /* storage unavailable */ }
-    cloudMarkDirty();
+  wallet.reset = false;
+  if (!d || d.v !== WALLET_VERSION || !Number.isFinite(d.balance) || d.balance < 0) {
+    wallet.balance = START_BALANCE;
+    wallet.log = [{ a: START_BALANCE, w: 'Fresh start', at: Date.now() }];
+    wallet.cashed = {};
+    wallet.reset = true;
     return;
   }
-  if (!wallet.ref) return;
-  if (wallet.writing) { wallet.again = true; return; }
-  wallet.writing = true;
-  try {
-    do { wallet.again = false; await wallet.ref.set({ ...body(), at: Date.now() }); } while (wallet.again);
-  } catch (e) {
-    toast('The bank couldn’t save that. Try again.');
-  } finally {
-    wallet.writing = false;
-  }
+  wallet.balance = d.balance;
+  wallet.log = Array.isArray(d.log) ? d.log.filter(e => e && Number.isFinite(e.a)).slice(0, 12) : [];
+  wallet.cashed = {};
+  if (d.cashed && typeof d.cashed === 'object') for (const [k, v] of Object.entries(d.cashed)) if (Number.isFinite(v) && v >= 0) wallet.cashed[k] = v;
 }
-/* opts.withdraw counts it as a bank withdrawal; opts.log replaces the default statement line. */
+const walletBody = () => ({ v: WALLET_VERSION, balance: wallet.balance, log: wallet.log, cashed: wallet.cashed });
+function walletSave() {
+  try { localStorage.setItem('mini-casino.wallet', JSON.stringify(walletBody())); } catch (e) { /* storage unavailable */ }
+  cloudMarkDirty();
+}
+/* opts.log replaces the default statement line. */
 function walletChange(delta, what, opts = {}) {
   if (!wallet.ready) return false;
-  let next = wallet.balance + delta;
+  let next = Math.round((wallet.balance + delta) * 100) / 100;
   if (next < 0) return false;
-  if (next > WALLET_MAX) { if (opts.withdraw) return false; next = WALLET_MAX; }
+  if (next > WALLET_MAX) next = WALLET_MAX;
   wallet.balance = next;
-  if (opts.withdraw) { wallet.withdrawn = Math.min(wallet.withdrawn + delta, Number.MAX_SAFE_INTEGER); wallet.count++; }
   const entry = opts.log || (what ? { a: delta, w: what } : null);
   if (entry) wallet.log = [{ a: entry.a, w: String(entry.w).slice(0, 60), at: Date.now() }, ...wallet.log].slice(0, 12);
   walletSave();
@@ -2941,26 +2856,96 @@ function walletChange(delta, what, opts = {}) {
   return true;
 }
 
-function withdraw(amount) {
-  if (!wallet.ready) return;
-  const a = amount != null ? amount : parseAmount(ui.wdAmount.value);
-  if (!Number.isFinite(a) || a < 1) { app.teller = 'Type an amount. Any amount.'; render(); return; }
-  if (a > WITHDRAW_MAX) { app.teller = `That’s more zeros than the vault can count. The limit is ${moneyFull(WITHDRAW_MAX)} per withdrawal.`; render(); return; }
-  if (wallet.balance + a > WALLET_MAX) { app.teller = 'Your wallet is full. Literally. Go spend some.'; render(); return; }
-  walletChange(a, 'Withdrawal', { withdraw: true });
-  buzz([12, 50, 12]);
-  ui.wdAmount.value = '';
-  ui.wdAmount.blur();
-  let i;
-  do { i = Math.floor(Math.random() * QUIPS.length); } while (i === app.lastQuip && QUIPS.length > 1);
-  app.lastQuip = i;
-  app.teller = a >= 1e9 ? `${moneyFull(a)}. That’s a lot of zeros. Enjoy every one.` : `${moneyFull(a)}. ${QUIPS[i]}`;
-  ui.stamp.classList.remove('show');
-  void ui.stamp.offsetWidth;
-  ui.stamp.classList.add('show');
-  render();
+// Today's date where the player is, as YYYY-MM-DD
+function localDay(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function untilMidnight() {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const mins = Math.max(1, Math.ceil((next - now) / 60000));
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+const signedIn = () => !!(cloud.user);
+const dailyClaimed = () => daily.day >= localDay();
+// The line shown wherever money runs low. `long` adds a little more for a toast.
+function dailyText(long) {
+  if (!cloud.ready) return '';
+  if (!signedIn()) return long ? 'Sign in to get $1,000 every day.' : 'Sign in for $1,000 every day.';
+  if (dailyClaimed()) return `Next $1,000 in ${untilMidnight()}`;
+  return daily.claiming ? 'Collecting today’s $1,000…' : 'Today’s $1,000 is on its way.';
+}
+/* Claim today's bonus, once we know who's signed in and their save has loaded. The server
+   decides; the reply carries the whole save with the money already in it. */
+async function claimDaily() {
+  if (!cloud.on || !signedIn() || daily.claiming || dailyClaimed()) return;
+  daily.claiming = true;
+  try {
+    if (cloud.timer || cloud.saving) await cloudPush();   // send anything unsaved first, so the reply doesn't undo it
+    const res = await fetch('/api/daily', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ day: localDay() }),
+    });
+    const d = await res.json().catch(() => null);
+    if (!res.ok && !(d && d.claimed)) throw new Error('daily ' + res.status);
+    if (d.day) daily.day = d.day;
+    if (d.local) {
+      if (d.ok) walletChange(DAILY_BONUS, 'Daily bonus');   // local test players have no saved data
+    } else if (d.data) {
+      cloud.version = d.version || cloud.version;
+      cloudApply(d.data);
+    }
+    if (d.ok) { toast('Daily bonus: +$1,000. See you tomorrow.'); buzz([15, 50, 25]); }
+  } catch (e) {
+    /* tried again next time the app comes back to the front */
+  } finally {
+    daily.claiming = false;
+    render();
+  }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') claimDaily(); });
+
+function renderDaily() {
+  ui.dailyLine.textContent = !cloud.ready ? ''
+    : !signedIn() ? 'Sign in to get $1,000 every day.'
+    : dailyClaimed() ? `Today’s $1,000 is in. Next one in ${untilMidnight()}.`
+    : dailyText();
+  ui.dailyBtn.hidden = !cloud.ready || !cloud.on || signedIn();
+}
+// Every game's "out of money" line
+function paintLow(el, show) {
+  el.hidden = !show || !cloud.ready;
+  if (!el.hidden) el.textContent = `Out of chips? ${dailyText()}`;
+}
+function renderLedger() {
+  ui.ledgerSummary.textContent = wallet.log.length ? 'Your last few wallet changes.' : 'Nothing yet.';
+  ui.ledgerList.textContent = '';
+  for (const e of wallet.log) {
+    const li = document.createElement('li');
+    const left = document.createElement('div');
+    left.style.minWidth = '0';
+    const what = document.createElement('div');
+    what.className = 'what';
+    what.textContent = e.w || (e.a > 0 ? 'Win' : 'Bet');
+    const when = document.createElement('div');
+    when.className = 'when';
+    when.textContent = ago(e.at).replace('active ', '');
+    left.append(what, when);
+    const amt = document.createElement('div');
+    amt.className = 'amt ' + (e.a > 0 ? 'plus' : 'minus');
+    amt.textContent = (e.a > 0 ? '+' : '') + money(e.a);
+    li.append(left, amt);
+    ui.ledgerList.appendChild(li);
+  }
 }
 
+/* ---------- Blackjack chips ----------
+   Chips at a blackjack table come out of the wallet, and the table counts everything each
+   player has cashed out (`cashed`). The wallet remembers how much of that it has already
+   paid in for each table, so cashing out pays exactly once, even across devices. */
 function addTableChips(amount) {
   const T = app.T;
   if (!T || mySeat() < 0 || !canPlayHere()) return;
@@ -2973,33 +2958,29 @@ function addTableChips(amount) {
   toast(`${moneyFull(a)} in chips added`);
   render();
 }
-
-function renderBank() {
-  ui.atmBig.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
-  ui.wdBtn.disabled = !wallet.ready;
-  ui.quick.forEach(b => { b.disabled = !wallet.ready; });
-  ui.teller.textContent = app.teller || 'Take as much as you like. Nobody is counting.';
-  ui.ledgerSummary.textContent = wallet.count
-    ? `You’ve withdrawn ${moneyFull(wallet.withdrawn)} over ${wallet.count} withdrawal${wallet.count === 1 ? '' : 's'}. Amount owed: $0.00.`
-    : 'No withdrawals yet. The vault is getting impatient.';
-  ui.ledgerList.textContent = '';
-  for (const e of wallet.log) {
-    const li = document.createElement('li');
-    const left = document.createElement('div');
-    left.style.minWidth = '0';
-    const what = document.createElement('div');
-    what.className = 'what';
-    what.textContent = e.w || (e.a > 0 ? 'Withdrawal' : 'Chips');
-    const when = document.createElement('div');
-    when.className = 'when';
-    when.textContent = ago(e.at).replace('active ', '');
-    left.append(what, when);
-    const amt = document.createElement('div');
-    amt.className = 'amt ' + (e.a > 0 ? 'plus' : 'minus');
-    amt.textContent = (e.a > 0 ? '+' : '') + money(e.a);
-    li.append(left, amt);
-    ui.ledgerList.appendChild(li);
-  }
+function cashOutTable() {
+  const T = app.T, P = myP();
+  if (!T || !P || mySeat() < 0) return;
+  if (T.phase !== 'betting') { toast('Cash out between hands.'); return; }
+  if (!(P.bank > 0)) { toast('No chips at this table.'); return; }
+  send({ t: 'cashout' });
+  app.chipsOpen = false;
+  render();
+}
+const cashKey = T => `${T.code}:${T.seed}:${T.v || 1}`;
+function syncCashed(T) {
+  const P = T && T.players && T.players[myId()];
+  if (!P || !wallet.ready || (T.v || 1) < 2) return;
+  const key = cashKey(T);
+  const seen = wallet.cashed[key] || 0;
+  const total = Number.isFinite(P.cashed) ? P.cashed : 0;
+  if (total <= seen) return;
+  wallet.cashed[key] = total;
+  const keys = Object.keys(wallet.cashed);
+  if (keys.length > 40) delete wallet.cashed[keys[0]];
+  const where = app.solo ? 'Solo table' : (T.name || 'Blackjack table');
+  walletChange(total - seen, null, { log: { a: total - seen, w: `Cashed out · ${where}` } });
+  toast(`${moneyFull(total - seen)} back in your wallet`);
 }
 
 function buildTiles() {
@@ -3194,7 +3175,7 @@ function recordBlackjackRound(T) {
 /* ================= Roulette (single zero, solo, plays from the wallet) ================= */
 const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
-const R_CHIPS = [5, 25, 100, 500, 1000, 10000];
+const R_CHIPS = [5, 25, 100, 500, 1000];
 const R_CHIP_COLORS = { 5: '#c8303c', 25: '#2f6fd0', 100: '#2a2c32', 500: '#7a3fb8', 1000: '#d9822b', 10000: '#1f8a8a' };
 const SPIN_MS = 5600;
 const TAU = Math.PI * 2;
@@ -3235,12 +3216,110 @@ function randInt(n) {
   catch (e) { return Math.floor(Math.random() * n); }
 }
 
+/* ================= Chips and bets, shared by every game =================
+   Pick a chip and it stays picked; each tap on a betting spot drops one chip of that value
+   there. Undo takes back the last chip, Clear takes back everything, and every round starts
+   with nothing down: Rebet puts the last round's bets back, Rebet ×2 doubles them.
+   A game's bets live in an object with `bets` (spot -> amount), `hist` (earlier versions
+   of `bets`, for Undo) and `last` (the last round's bets). */
+const CHIP_KEY = 'mini-casino.chip';
+let chipPick = 25;
+try { const v = Number(localStorage.getItem(CHIP_KEY)); if (R_CHIPS.includes(v)) chipPick = v; } catch (e) { /* storage unavailable */ }
+function pickChip(v) {
+  if (!R_CHIPS.includes(v)) return;
+  chipPick = v;
+  try { localStorage.setItem(CHIP_KEY, String(v)); } catch (e) { /* storage unavailable */ }
+  buzz(4);
+  render();
+}
+function buildChipRail(el) {
+  el.setAttribute('role', 'radiogroup');
+  for (const v of R_CHIPS) {
+    const c = document.createElement('button');
+    c.className = 'chip chipface';
+    c.style.setProperty('--c', R_CHIP_COLORS[v]);
+    c.dataset.v = String(v);
+    c.textContent = chipLabel(v);
+    c.setAttribute('role', 'radio');
+    c.setAttribute('aria-label', `${moneyFull(v)} chip`);
+    c.addEventListener('click', () => pickChip(v));
+    el.appendChild(c);
+  }
+}
+// `room` is how much more can be bet; chips bigger than that are dimmed but still pickable
+function paintChipRail(el, room, locked) {
+  for (const c of el.children) {
+    const v = Number(c.dataset.v);
+    c.classList.toggle('sel', v === chipPick);
+    c.classList.toggle('cant', v > room);
+    c.setAttribute('aria-checked', String(v === chipPick));
+    c.disabled = !!locked;
+  }
+}
+const betsTotal = bets => Object.values(bets || {}).reduce((a, v) => a + (v || 0), 0);
+const zeroBets = bets => Object.fromEntries(Object.keys(bets).map(k => [k, 0]));
+function betSnap(G) { G.hist.push({ ...G.bets }); if (G.hist.length > 100) G.hist.shift(); }
+// Drop the picked chip on spot k, if `room` (what's left in the wallet) covers it
+function betAdd(G, k, room) {
+  if (chipPick > room) {
+    toast(room >= R_CHIPS[0] ? `Not enough left for a ${money(chipPick)} chip. Pick a smaller one.` : `That’s everything in your wallet. ${dailyText(true)}`);
+    return false;
+  }
+  betSnap(G);
+  G.bets[k] = (G.bets[k] || 0) + chipPick;
+  buzz(5);
+  return true;
+}
+function betUndo(G) {
+  if (!G.hist.length) return false;
+  G.bets = G.hist.pop();
+  buzz(4);
+  return true;
+}
+function betClear(G) {
+  if (!betsTotal(G.bets)) return false;
+  betSnap(G);
+  G.bets = zeroBets(G.bets);
+  return true;
+}
+function betRebet(G, mult = 1) {
+  const t = betsTotal(G.last) * mult;
+  if (!t || betsTotal(G.bets)) return false;
+  if (t > (wallet.ready ? wallet.balance : 0)) { toast(`Your wallet can’t cover ${money(t)}. ${dailyText(true)}`); return false; }
+  betSnap(G);
+  const next = zeroBets(G.bets);
+  for (const [k, v] of Object.entries(G.last)) if (v > 0) next[k] = v * mult;
+  G.bets = next;
+  buzz(8);
+  return true;
+}
+// Nothing down yet, and the last round's bets fit in the wallet: the main button can repeat them
+const canRebetNow = G => !betsTotal(G.bets) && betsTotal(G.last) > 0 && betsTotal(G.last) <= (wallet.ready ? wallet.balance : 0);
+// The round has started with these bets: remember them for Rebet and clear the table
+function betDone(G) {
+  G.last = { ...G.bets };
+  G.bets = zeroBets(G.bets);
+  G.hist = [];
+}
+/* The bet buttons in a dock: Undo and Clear while chips are down, Rebet and Rebet ×2
+   before the first chip of a round. */
+function paintBetButtons(b, G, locked) {
+  const total = betsTotal(G.bets);
+  const last = betsTotal(G.last);
+  const bal = wallet.ready ? wallet.balance : 0;
+  b.undo.hidden = b.clear.hidden = !total;
+  b.rebet.hidden = b.double.hidden = !!total;
+  b.undo.disabled = locked || !G.hist.length;
+  b.clear.disabled = locked || !total;
+  b.rebet.disabled = locked || !last || last > bal;
+  b.double.disabled = locked || !last || last * 2 > bal;
+}
+
 const rl = {
-  chip: 25, bets: {}, undo: [], last: null, history: [],
+  bets: {}, hist: [], last: null, history: [],
   spinning: false, live: null, result: null, net: 0, payout: 0, wins: new Set(), showResult: false, popNum: false,
   anim: null, w: 0, rel: 0, br: 0,
   stage: null, stageTimer: 0,   // full-screen wheel: 'spin' while the ball rolls, 'result' once it lands
-  amount: 0, picks: new Set(),  // chips in your hand and the spots you've tapped, not yet bet
 };
 function rlLoad() {
   try {
@@ -3252,91 +3331,45 @@ function rlLoad() {
       for (const [k, v] of Object.entries(d.last)) if (coversOf(k).size && Number.isFinite(v) && v > 0) last[k] = v;
       if (Object.keys(last).length) rl.last = last;
     }
-    if (R_CHIPS.includes(d.chip)) rl.chip = d.chip;
   } catch (e) { /* storage unavailable */ }
 }
 function rlSave() {
-  try { localStorage.setItem('mini-casino.roulette', JSON.stringify({ history: rl.history, last: rl.last, chip: rl.chip })); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem('mini-casino.roulette', JSON.stringify({ history: rl.history, last: rl.last })); } catch (e) { /* storage unavailable */ }
   cloudMarkDirty();
 }
 
-function rlSnapshot() { rl.undo.push({ ...rl.bets }); if (rl.undo.length > 100) rl.undo.shift(); }
 function rlFresh() { if (rl.showResult) { rl.showResult = false; rl.wins = new Set(); } }
-/* Chips build an amount, taps on the board pick spots, and Place puts the amount on each picked spot. */
 function rlRoom() { return Math.max(0, (wallet.ready ? wallet.balance : 0) - rlTotal()); }
-function rlPending() { return rl.amount > 0 || rl.picks.size > 0; }
-function rlAddAmount(v) {
-  if (rl.spinning || !wallet.ready || !R_CHIPS.includes(v)) return;
+const rlLocked = () => rl.spinning || !wallet.ready;
+// Tap a spot: one chip of the picked value goes on it
+function rlBet(key) {
+  if (rlLocked()) return;
   rlFresh();
-  if (rl.amount + v > rlRoom()) { toast('Not enough in your wallet for that. The bank can fix that.'); render(); return; }
-  rl.amount += v;
-  buzz(5);
+  betAdd(rl, key, rlRoom());
   render();
 }
-function rlPick(key) {
-  if (rl.spinning || !wallet.ready) return;
-  rlFresh();
-  if (rl.picks.has(key)) rl.picks.delete(key); else rl.picks.add(key);
-  buzz();
-  render();
-}
-function rlPlace() {
-  if (rl.spinning || !wallet.ready) return;
-  if (!rl.amount) { toast('Tap chips to choose how much to bet.'); return; }
-  if (!rl.picks.size) { toast('Tap the spots on the board you want to bet on.'); return; }
-  if (rl.amount * rl.picks.size > rlRoom()) { toast('Your wallet can’t cover that many. The bank can.'); return; }
-  rlSnapshot();
-  for (const k of rl.picks) rl.bets[k] = (rl.bets[k] || 0) + rl.amount;
-  rl.picks.clear();
-  rl.amount = 0;
-  buzz(15);
-  render();
-}
+// Right-click (or long-press menu) takes a spot's chips off
 function rlRemove(key) {
-  if (rl.spinning || !rl.bets[key]) return;
-  rlSnapshot();
+  if (rlLocked() || !rl.bets[key]) return;
+  betSnap(rl);
   delete rl.bets[key];
   render();
 }
-function rlUndo() { if (rl.spinning || !rl.undo.length) return; rl.bets = rl.undo.pop(); render(); }
-function rlClear() {
-  if (rl.spinning) return;
-  if (rlPending()) { rl.amount = 0; rl.picks.clear(); render(); return; }   // first clear what isn't placed yet
-  if (!rlTotal()) return;
-  rlSnapshot();
-  rl.bets = {};
-  render();
-}
-function rlRebet() {
-  if (rl.spinning || !rl.last || rlTotal()) return false;
-  if (rlTotal(rl.last) > wallet.balance) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
-  rlFresh();
-  rlSnapshot();
-  rl.bets = { ...rl.last };
-  render();
-  return true;
-}
-function rlDouble() {
-  const t = rlTotal();
-  if (rl.spinning || !t) return;
-  if (t * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
-  rlSnapshot();
-  for (const k of Object.keys(rl.bets)) rl.bets[k] *= 2;
-  render();
-}
+function rlUndo() { if (!rlLocked() && betUndo(rl)) render(); }
+function rlClear() { if (!rlLocked() && betClear(rl)) render(); }
+function rlRebet() { if (!rlLocked()) { rlFresh(); if (betRebet(rl)) render(); } }
+function rlDouble() { if (!rlLocked()) { rlFresh(); if (betRebet(rl, 2)) render(); } }
 
 function rlSpin() {
-  if (rl.spinning || !wallet.ready) return;
-  if (!rlTotal() && rl.last && !rlRebet()) return;
+  if (rlLocked()) return;
+  if (!rlTotal() && canRebetNow(rl)) { rlFresh(); betRebet(rl); }   // nothing down: Spin repeats the last bets
   const total = rlTotal();
   if (!total) { toast('Pick a chip, then tap the board to bet.'); return; }
-  if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
+  if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
   if (!walletChange(-total, null)) return;
   const result = randInt(37);
-  rl.amount = 0;
-  rl.picks.clear();
   rl.live = { bets: { ...rl.bets }, total, result };
-  rl.last = { ...rl.bets };
+  betDone(rl);
   rl.spinning = true;
   rl.showResult = false;
   rl.wins = new Set();
@@ -3381,8 +3414,6 @@ function rlSettle() {
   rl.wins = wins;
   rl.showResult = true;
   rl.popNum = true;
-  rl.bets = {};
-  rl.undo = [];
   rl.history = [live.result, ...rl.history].slice(0, 14);
   rlSave();
   recordRoulette(live.result, live.total, payout);
@@ -3540,8 +3571,8 @@ function buildRoulette() {
     chip.className = 'rchip';
     chip.hidden = true;
     b.append(lab, chip);
-    b.setAttribute('aria-label', key[0] === 'n' ? `Pick ${label}` : `Pick ${OUTSIDE[key]}`);
-    b.addEventListener('click', () => rlPick(key));
+    b.setAttribute('aria-label', key[0] === 'n' ? `Bet on ${label}` : `Bet on ${OUTSIDE[key]}`);
+    b.addEventListener('click', () => rlBet(key));
     b.addEventListener('contextmenu', e => { e.preventDefault(); rlRemove(key); });
     if (key[0] !== 'n') {
       b.addEventListener('pointerenter', () => { for (const n of coversOf(key)) rCells.get('n' + n).classList.add('cover'); });
@@ -3557,16 +3588,7 @@ function buildRoulette() {
   [['low', '1–18'], ['even', 'Even'], ['red', 'Red'], ['black', 'Black'], ['odd', 'Odd'], ['high', '19–36']].forEach(([k, l], i) =>
     add(k, l, 'out' + (k === 'red' ? ' is-red' : k === 'black' ? ' is-black' : ''), [`${2 + i * 2} / span 2`, '2']));
 
-  for (const v of R_CHIPS) {
-    const c = document.createElement('button');
-    c.className = 'chip chipface';
-    c.style.setProperty('--c', R_CHIP_COLORS[v]);
-    c.dataset.v = String(v);
-    c.textContent = chipLabel(v);
-    c.setAttribute('aria-label', `Add ${moneyFull(v)}`);
-    c.addEventListener('click', () => rlAddAmount(v));
-    ui.rChips.appendChild(c);
-  }
+  buildChipRail(ui.rChips);
 }
 
 function renderRoulette() {
@@ -3574,7 +3596,6 @@ function renderRoulette() {
   const bets = rl.live ? rl.live.bets : rl.bets;
   const total = rlTotal(bets);
   ui.rTotal.textContent = money(total);
-  ui.rAmount.textContent = money(rl.amount);
   for (const [key, el] of rCells) {
     const amt = bets[key] || 0;
     const chip = el.lastElementChild;
@@ -3582,8 +3603,6 @@ function renderRoulette() {
     if (amt) { chip.textContent = chipLabel(amt); chip.style.setProperty('--c', rChipColor(amt)); }
     el.classList.toggle('win', rl.showResult && rl.wins.has(key));
     el.classList.toggle('hit', rl.showResult && key === 'n' + rl.result);
-    el.classList.toggle('pick', rl.picks.has(key));
-    el.setAttribute('aria-pressed', String(rl.picks.has(key)));
     el.setAttribute('aria-disabled', String(rl.spinning));
   }
 
@@ -3606,16 +3625,9 @@ function renderRoulette() {
       else { sub = `No luck · ${money(rl.net)}`; tone = 'lose'; }
       if (rl.popNum) { rl.popNum = false; void ui.rNum.offsetWidth; ui.rNum.classList.add('pop'); }
     } else {
-      // Walk the player through: chips for the amount, spots on the board, then Place
-      const n = rl.picks.size, a = rl.amount;
-      const spots = `${n} spot${n === 1 ? '' : 's'}`;
-      if (a && n) { title = `${money(a)} on ${spots}`; sub = 'Tap Place to put it down.'; }
-      else if (a) { title = `${money(a)} in hand`; sub = 'Now tap the spots you want.'; }
-      else if (n) { title = `${spots} picked`; sub = 'Tap chips to choose the amount.'; }
-      else {
-        title = 'Place your bets';
-        sub = total ? `${Object.keys(bets).length} bet${Object.keys(bets).length === 1 ? '' : 's'} on the board` : 'Chips, then spots, then Place.';
-      }
+      const n = Object.values(bets).filter(v => v > 0).length;
+      title = 'Place your bets';
+      sub = total ? `${n} spot${n === 1 ? '' : 's'} covered · tap again to add ${money(chipPick)}` : `Tap the board to bet ${money(chipPick)} a tap`;
     }
   }
   ui.rTitle.textContent = title;
@@ -3642,27 +3654,11 @@ function renderRoulette() {
   }
 
   // Controls
-  const lastTotal = rl.last ? rlTotal(rl.last) : 0;
-  const canRebet = !rl.spinning && !total && lastTotal > 0 && lastTotal <= bal;
-  const pending = rlPending();
-  const placeAmt = rl.amount * rl.picks.size;
-  ui.rPlace.hidden = !pending;               // one main button: Place while you're choosing, Spin once bets are down
-  ui.rSpin.hidden = pending;
-  ui.rPlace.disabled = rl.spinning || !rl.amount || !rl.picks.size;
-  ui.rPlace.innerHTML = placeAmt ? `Place ${money(placeAmt)} <kbd>Space</kbd>` : 'Place <kbd>Space</kbd>';
-  ui.rSpin.disabled = rl.spinning || !wallet.ready || (!total && !canRebet);
-  ui.rSpin.setAttribute('aria-label', !total && canRebet ? 'Rebet and spin' : 'Spin');
-  ui.rUndo.disabled = rl.spinning || !rl.undo.length;
-  ui.rClear.disabled = rl.spinning || (!total && !pending);
-  ui.rRebet.disabled = !canRebet;
-  ui.rDouble.disabled = rl.spinning || !total || total * 2 > bal;
-  ui.rRebet.hidden = total > 0;      // one slot: Rebet before you bet, ×2 once chips are down
-  ui.rDouble.hidden = !total;
-  for (const c of ui.rChips.children) {
-    const v = Number(c.dataset.v);
-    c.disabled = rl.spinning || !wallet.ready || rl.amount + v > bal - total;
-  }
-  ui.rLow.hidden = rl.spinning || !wallet.ready || bal - total >= 25;
+  ui.rSpin.disabled = rlLocked() || (!total && !canRebetNow(rl));
+  ui.rSpin.innerHTML = !total && canRebetNow(rl) && !rl.live ? 'Rebet & spin <kbd>Space</kbd>' : 'Spin <kbd>Space</kbd>';
+  paintBetButtons({ undo: ui.rUndo, clear: ui.rClear, rebet: ui.rRebet, double: ui.rDouble }, rl, rlLocked());
+  paintChipRail(ui.rChips, bal - (rl.live ? 0 : total), rl.spinning);
+  paintLow(ui.rLow, !(rl.spinning || !wallet.ready || bal - total >= 25));
   if (!rl.anim) rlDraw();
 }
 
@@ -3671,7 +3667,7 @@ function renderRoulette() {
    hold, and Draw replaces the rest. The hand in progress is kept in this browser. Replacement
    cards are picked when you draw, so nothing saved here gives away what's coming. */
 const VP_KEY = 'mini-casino.poker';
-const vp = { game: 'jacks', bet: 25, hand: [], held: [false, false, false, false, false], phase: 'bet', stake: 0, result: null, busy: false };
+const vp = { game: 'jacks', bets: { main: 0 }, hist: [], last: null, hand: [], held: [false, false, false, false, false], phase: 'bet', stake: 0, result: null, busy: false };
 // The two machines: their names, pay tables and hand ranking
 const VP_GAMES = {
   jacks: { name: 'Jacks or Better', pays: POKER_PAYS, rank: pokerRank },
@@ -3682,13 +3678,13 @@ const vpCards = [];
 const vpRows = [];
 const cardLabel = c => `${RANK_NAMES[rankOf(c)] || rankOf(c)} of ${SUIT_NAMES[suitOf(c)]}`;
 function vpSave() {
-  try { localStorage.setItem(VP_KEY, JSON.stringify({ game: vp.game, bet: vp.bet, hand: vp.hand, held: vp.held, phase: vp.phase, stake: vp.stake })); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem(VP_KEY, JSON.stringify({ game: vp.game, last: vp.last, hand: vp.hand, held: vp.held, phase: vp.phase, stake: vp.stake })); } catch (e) { /* storage unavailable */ }
 }
 function vpLoad() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(VP_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
   if (!d) return;
-  if (Number.isFinite(d.bet) && d.bet >= 0) vp.bet = Math.floor(d.bet);
+  if (d.last && Number.isFinite(d.last.main) && d.last.main > 0) vp.last = { main: d.last.main };
   if (d.game in VP_GAMES) vp.game = d.game;
   const deck = new Set(pokerDeck());
   const hand = Array.isArray(d.hand) ? d.hand.filter(c => deck.has(c)) : [];
@@ -3718,16 +3714,12 @@ function buildPoker() {
   }
   vpBuildRows();
   ui.vpGame.addEventListener('click', vpSwitch);
-  for (const v of R_CHIPS) {
-    const c = document.createElement('button');
-    c.className = 'chip chipface';
-    c.style.setProperty('--c', R_CHIP_COLORS[v]);
-    c.dataset.v = String(v);
-    c.textContent = chipLabel(v);
-    c.setAttribute('aria-label', `Add ${moneyFull(v)} to your bet`);
-    c.addEventListener('click', () => vpAddChip(v));
-    ui.vpChips.appendChild(c);
-  }
+  buildChipRail(ui.vpChips);
+  ui.vpSpot.addEventListener('click', vpBet);
+  ui.vpUndo.addEventListener('click', () => { if (vpCanBet() && betUndo(vp)) render(); });
+  ui.vpClear.addEventListener('click', () => { if (vpCanBet() && betClear(vp)) render(); });
+  ui.vpRebet.addEventListener('click', () => vpRebet(1));
+  ui.vpDouble.addEventListener('click', () => vpRebet(2));
   // A hand that was in progress comes back face up
   vp.hand.forEach((c, i) => { vpPaintCard(i, c); vpCards[i].card.classList.remove('down'); });
 }
@@ -3761,30 +3753,16 @@ function vpSwitch() {
 function vpFresh() {
   if (vp.phase === 'done') { vp.phase = 'bet'; vp.result = null; }
 }
-function vpAddChip(v) {
+function vpBet() {
   if (!vpCanBet() || !wallet.ready) return;
-  if (vp.bet + v > wallet.balance) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
-  vp.bet += v;
   vpFresh();
-  vpSave();
-  buzz(5);
+  betAdd(vp, 'main', wallet.balance - vp.bets.main);
   render();
 }
-function vpClear() {
-  if (!vpCanBet() || !vp.bet) return;
-  vp.bet = 0;
+function vpRebet(mult) {
+  if (!vpCanBet() || !wallet.ready) return;
   vpFresh();
-  vpSave();
-  render();
-}
-function vpDouble() {
-  if (!vpCanBet() || !vp.bet) return;
-  if (vp.bet * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
-  vp.bet *= 2;
-  vpFresh();
-  vpSave();
-  buzz(5);
-  render();
+  if (betRebet(vp, mult)) render();
 }
 function vpToggle(i) {
   if (vp.busy || vp.phase !== 'hold') return;
@@ -3811,10 +3789,13 @@ function vpReveal(which, done) {
 function vpDeal() {
   if (vp.busy || !wallet.ready) return;
   if (vp.phase === 'hold') { vpDraw(); return; }
-  if (!vp.bet) { toast('Tap chips to choose your bet.'); return; }
-  if (vp.bet > wallet.balance) { toast('Your wallet can’t cover that bet. The bank can.'); render(); return; }
-  if (!walletChange(-vp.bet, null)) return;
-  vp.stake = vp.bet;
+  if (!vp.bets.main && canRebetNow(vp)) betRebet(vp);   // nothing down: Deal repeats the last bet
+  const bet = vp.bets.main;
+  if (!bet) { toast('Pick a chip, then tap Bet.'); return; }
+  if (bet > wallet.balance) { toast('Your wallet can’t cover that bet.'); render(); return; }
+  if (!walletChange(-bet, null)) return;
+  vp.stake = bet;
+  betDone(vp);
   vp.hand = pokerDeal(randInt);
   vp.held = [false, false, false, false, false];
   vp.phase = 'hold';
@@ -3846,7 +3827,7 @@ function renderPoker() {
   const hold = vp.phase === 'hold';
   const done = vp.phase === 'done' && !vp.busy;
   const r = vp.result;
-  const base = hold ? vp.stake : vp.bet;
+  const base = hold ? vp.stake : vp.bets.main;
   ui.vpBet.textContent = money(base);
   for (const { row, amt, p } of vpRows) {
     amt.textContent = base ? money(base * p.pays) : `${p.pays}×`;
@@ -3872,7 +3853,7 @@ function renderPoker() {
     else { title = `${r.name}!`; sub = `+${money(vp.stake * r.pays - vp.stake)}`; cls = 'win'; }
   } else {
     title = vpGame().name;
-    sub = vp.bet ? 'Tap Deal when you’re ready' : 'Tap chips to choose your bet';
+    sub = vp.bets.main ? 'Tap Deal when you’re ready' : `Tap Bet to add ${money(chipPick)}`;
   }
   ui.vpTitle.textContent = title;
   ui.vpSub.textContent = sub;
@@ -3880,24 +3861,27 @@ function renderPoker() {
   ui.vpDeal.textContent = hold ? 'Draw' : 'Deal';
   ui.vpGameName.textContent = vpGame().name;
   ui.vpGame.disabled = !vpCanBet();
-  ui.vpDeal.disabled = vp.busy;
-  ui.vpClear.disabled = !vpCanBet() || !vp.bet;
-  ui.vpDouble.disabled = !vpCanBet() || !vp.bet || vp.bet * 2 > bal;
-  for (const c of ui.vpChips.children) c.disabled = !vpCanBet() || !wallet.ready || vp.bet + Number(c.dataset.v) > bal;
-  ui.vpLow.hidden = hold || vp.busy || !wallet.ready || bal >= Math.max(5, vp.bet);
+  if (!hold) ui.vpDeal.textContent = !vp.bets.main && canRebetNow(vp) ? 'Rebet & deal' : 'Deal';
+  ui.vpDeal.disabled = vp.busy || (!hold && !vp.bets.main && !canRebetNow(vp));
+  paintBetButtons({ undo: ui.vpUndo, clear: ui.vpClear, rebet: ui.vpRebet, double: ui.vpDouble }, vp, !vpCanBet());
+  paintChipRail(ui.vpChips, bal - vp.bets.main, !vpCanBet());
+  ui.vpSpot.disabled = !vpCanBet();
+  ui.vpSpot.querySelector('.bc-amt').textContent = money(hold ? vp.stake : vp.bets.main);
+  ui.vpSpotHint.textContent = hold ? 'In play' : `Tap to add ${money(chipPick)}`;
+  paintLow(ui.vpLow, !(hold || vp.busy || !wallet.ready || bal >= 5));
 }
 
 /* ================= Baccarat (punto banco, solo, plays from the wallet) =================
-   Chips build an amount, taps on Player, Banker or Tie pick spots, Place puts the amount on
-   each, and Deal plays a coup from a freshly shuffled shoe. The bets are taken when the deal
+   Pick a chip and tap Player, Banker or Tie to bet it, then Deal plays a coup from a freshly
+   shuffled shoe. The bets are taken when the deal
    starts and paid when the last card lands; if the app closes in between, the round is
    settled the next time it opens. */
 const BC_KEY = 'mini-casino.baccarat';
 const BC_SIDES = ['player', 'tie', 'banker'];
 const BC_NAME = { player: 'Player', banker: 'Banker', tie: 'Tie' };
-const bc = { amount: 0, picks: new Set(), bets: { player: 0, tie: 0, banker: 0 }, last: null, road: [], live: null, result: null, busy: false };
+const bc = { bets: { player: 0, tie: 0, banker: 0 }, hist: [], last: null, road: [], live: null, result: null, busy: false };
 const bcTotal = (bets = bc.bets) => BC_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
-const bcPending = () => bc.amount > 0 || bc.picks.size > 0;
+const bcLocked = () => bc.busy || !wallet.ready;
 const bcRoom = () => Math.max(0, (wallet.ready ? wallet.balance : 0) - bcTotal());
 function bcSave() {
   try { localStorage.setItem(BC_KEY, JSON.stringify({ last: bc.last, road: bc.road, live: bc.live })); } catch (e) { /* storage unavailable */ }
@@ -3933,70 +3917,21 @@ function bcSettle() {
   walletChange(live.payout, null, { log: { a: Math.round((live.payout - live.total) * 100) / 100, w: `Baccarat · ${live.winner === 'tie' ? 'Tie' : BC_NAME[live.winner] + ' won'}` } });
 }
 function buildBaccarat() {
-  for (const v of R_CHIPS) {
-    const c = document.createElement('button');
-    c.className = 'chip chipface';
-    c.style.setProperty('--c', R_CHIP_COLORS[v]);
-    c.dataset.v = String(v);
-    c.textContent = chipLabel(v);
-    c.setAttribute('aria-label', `Add ${moneyFull(v)}`);
-    c.addEventListener('click', () => bcAddAmount(v));
-    ui.bcChips.appendChild(c);
-  }
-  for (const spot of ui.bcSpots) spot.addEventListener('click', () => bcPick(spot.dataset.k));
+  buildChipRail(ui.bcChips);
+  for (const spot of ui.bcSpots) spot.addEventListener('click', () => bcBet(spot.dataset.k));
 }
 // Changing bets after a round clears its result (the cards stay until the next deal)
 function bcFresh() { bc.result = null; }
-function bcAddAmount(v) {
-  if (bc.busy || !wallet.ready) return;
-  if (bc.amount + v > bcRoom()) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
+function bcBet(k) {
+  if (bcLocked()) return;
   bcFresh();
-  bc.amount += v;
-  buzz(5);
+  betAdd(bc, k, bcRoom());
   render();
 }
-function bcPick(k) {
-  if (bc.busy || !wallet.ready) return;
-  bcFresh();
-  if (bc.picks.has(k)) bc.picks.delete(k); else bc.picks.add(k);
-  buzz();
-  render();
-}
-function bcPlace() {
-  if (bc.busy || !wallet.ready) return;
-  if (!bc.amount) { toast('Tap chips to choose how much to bet.'); return; }
-  if (!bc.picks.size) { toast('Tap Player, Banker or Tie to choose where it goes.'); return; }
-  if (bc.amount * bc.picks.size > bcRoom()) { toast('Your wallet can’t cover that many. The bank can.'); return; }
-  for (const k of bc.picks) bc.bets[k] += bc.amount;
-  bc.picks.clear();
-  bc.amount = 0;
-  buzz(15);
-  render();
-}
-function bcClear() {
-  if (bc.busy) return;
-  if (bcPending()) { bc.amount = 0; bc.picks.clear(); render(); return; }   // first clear what isn't placed yet
-  if (!bcTotal()) return;
-  bc.bets = { player: 0, tie: 0, banker: 0 };
-  bcFresh();
-  render();
-}
-function bcRebet() {
-  if (bc.busy || !bc.last || bcTotal()) return false;
-  if (bcTotal(bc.last) > (wallet.ready ? wallet.balance : 0)) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
-  bc.bets = { ...bc.last };
-  bcFresh();
-  render();
-  return true;
-}
-function bcDouble() {
-  const t = bcTotal();
-  if (bc.busy || !t) return;
-  if (t * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
-  for (const k of BC_SIDES) bc.bets[k] *= 2;
-  bcFresh();
-  render();
-}
+function bcUndo() { if (!bcLocked() && betUndo(bc)) render(); }
+function bcClear() { if (!bcLocked() && betClear(bc)) render(); }
+function bcRebet() { if (!bcLocked()) { bcFresh(); if (betRebet(bc)) render(); } }
+function bcDouble() { if (!bcLocked()) { bcFresh(); if (betRebet(bc, 2)) render(); } }
 function bcCard(code, third) {
   const e = document.createElement('div');
   e.className = 'card deal-in' + (/[HD]$/.test(code) ? ' red' : '') + (rankOf(code) === 'A' ? ' ace' : '');
@@ -4006,24 +3941,18 @@ function bcCard(code, third) {
   e.addEventListener('animationend', ev => { if (ev.animationName === 'dealIn') e.classList.remove('deal-in'); });
   return e;
 }
-// The main button: Place while you're choosing, Deal once bets are down
-function bcGo() {
-  if (bcPending()) bcPlace();
-  else bcDeal();
-}
 function bcDeal() {
-  if (bc.busy || !wallet.ready) return;
-  if (!bcTotal() && bc.last && !bcRebet()) return;
+  if (bcLocked()) return;
+  if (!bcTotal() && canRebetNow(bc)) { bcFresh(); betRebet(bc); }
   const total = bcTotal();
-  if (!total) { toast('Tap chips, pick Player, Banker or Tie, then Place.'); return; }
-  if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
+  if (!total) { toast('Pick a chip, then tap Player, Banker or Tie.'); return; }
+  if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
   bc.busy = true;
   if (!walletChange(-total, null)) { bc.busy = false; return; }
   const coup = bacCoup(bacShoe(randInt));
   const bets = { ...bc.bets };
   bc.live = { bets, total, winner: coup.winner, pt: coup.pt, bt: coup.bt, natural: coup.natural, payout: bacPayout(bets, coup.winner) };
-  bc.last = bets;
-  bc.bets = { player: 0, tie: 0, banker: 0 };   // settled with this coup; Rebet brings them back
+  betDone(bc);   // settled with this coup; Rebet brings them back
   bc.result = null;
   bcSave();
   buzz(10);
@@ -4064,15 +3993,13 @@ function renderBaccarat() {
   const bal = wallet.ready ? wallet.balance : 0;
   const total = bcTotal();
   const r = bc.result;
-  ui.bcBet.textContent = money(total);
-  ui.bcAmount.textContent = money(bc.amount);
+  ui.bcBet.textContent = money(bc.busy && bc.live ? bc.live.total : total);
   for (const spot of ui.bcSpots) {
     const k = spot.dataset.k;
     const live = bc.busy && bc.live ? bc.live.bets[k] : bc.bets[k];
     spot.querySelector('.bc-amt').textContent = live ? money(live) : '';
-    spot.classList.toggle('pick', bc.picks.has(k));
     spot.classList.toggle('win', !!r && r.winner === k);
-    spot.disabled = bc.busy;
+    spot.disabled = bcLocked();
   }
   ui.bcPlayerSide.classList.toggle('win', !!r && r.winner === 'player');
   ui.bcBankerSide.classList.toggle('win', !!r && r.winner === 'banker');
@@ -4085,32 +4012,22 @@ function renderBaccarat() {
     title = r.winner === 'tie' ? 'Tie' : `${BC_NAME[r.winner]} wins`;
     sub = (r.natural ? 'Natural ' : '') + score + (net > 0 ? ` · +${money(net)}` : net < 0 ? ` · −${money(-net)}` : ' · Bets back');
     cls = net > 0 ? 'win' : net < 0 ? 'lose' : '';
-  } else if (bcPending()) {
-    title = bc.picks.size ? 'Now tap Place' : 'Pick a spot';
-    sub = bc.picks.size ? `${money(bc.amount)} on each spot you picked` : 'Player, Banker or Tie';
   } else if (total) {
     title = 'Bets are down';
-    sub = 'Tap Deal';
+    sub = `Tap Deal, or a spot to add ${money(chipPick)}`;
   } else {
     title = 'Place your bets';
-    sub = 'Tap chips, pick a spot, then Place';
+    sub = `Tap Player, Banker or Tie to bet ${money(chipPick)}`;
   }
   ui.bcTitle.textContent = title;
   ui.bcSub.textContent = sub;
   ui.bcMsg.className = 'bc-msg' + (cls ? ' ' + cls : '');
 
-  const pending = bcPending();
-  const lastTotal = bc.last ? bcTotal(bc.last) : 0;
-  const canRebet = !bc.busy && !total && lastTotal > 0 && lastTotal <= bal;
-  ui.bcGo.textContent = pending ? 'Place' : 'Deal';
-  ui.bcGo.disabled = bc.busy || !wallet.ready || (!pending && !total && !canRebet);
-  ui.bcClear.disabled = bc.busy || (!pending && !total);
-  ui.bcRebet.hidden = total > 0;      // one slot: Rebet before you bet, ×2 once chips are down
-  ui.bcDouble.hidden = !total;
-  ui.bcRebet.disabled = !canRebet;
-  ui.bcDouble.disabled = bc.busy || !total || total * 2 > bal;
-  for (const c of ui.bcChips.children) c.disabled = bc.busy || !wallet.ready || bc.amount + Number(c.dataset.v) > bal - total;
-  ui.bcLow.hidden = bc.busy || !wallet.ready || bal - total >= 5;
+  ui.bcGo.disabled = bcLocked() || (!total && !canRebetNow(bc));
+  ui.bcGo.textContent = !total && canRebetNow(bc) && !bc.busy ? 'Rebet & deal' : 'Deal';
+  paintBetButtons({ undo: ui.bcUndo, clear: ui.bcClear, rebet: ui.bcRebet, double: ui.bcDouble }, bc, bcLocked());
+  paintChipRail(ui.bcChips, bal - total, bc.busy);
+  paintLow(ui.bcLow, !(bc.busy || !wallet.ready || bal - total >= 5));
 
   // Recent results, newest first
   const road = bc.road.slice(-24).reverse();
@@ -4128,7 +4045,7 @@ function renderBaccarat() {
 }
 
 /* ================= Casino War (solo, plays from the wallet) =================
-   Chips build an amount, Place puts it on War (or on Tie, if you tapped it), and Deal gives
+   Pick a chip and tap War (and Tie, if you like) to bet it, and Deal gives
    you and the dealer one card each. On a tie the round waits for you: surrender for half
    your bet back, or go to war with a raise the size of your bet. Bets are taken when the
    cards come out and paid when the round ends; a round the app closed during is paid the
@@ -4137,11 +4054,10 @@ const WR_KEY = 'mini-casino.war';
 const WR_SIDES = ['war', 'tie'];
 const WR_CARD = /^(10|[2-9JQKA])[SHDC]$/;
 const wr = {
-  amount: 0, picks: new Set(), bets: { war: 0, tie: 0 }, last: null, road: [], live: null, result: null,
+  bets: { war: 0, tie: 0 }, hist: [], last: null, road: [], live: null, result: null,
   busy: false, burning: false, table: { p: [], d: [], burn: 0 },
 };
 const wrTotal = (bets = wr.bets) => WR_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
-const wrPending = () => wr.amount > 0 || wr.picks.size > 0;
 const wrRoom = () => Math.max(0, (wallet.ready ? wallet.balance : 0) - wrTotal());
 const wrDeciding = () => !!wr.live && wr.live.phase === 'decide' && !wr.busy;
 const wrShort = c => rankOf(c);
@@ -4197,24 +4113,15 @@ function wrSettle() {
   walletChange(live.payout, null, { log: { a: o.net, w: `Casino War · ${o.words}` } });
 }
 function buildWar() {
-  for (const v of R_CHIPS) {
-    const c = document.createElement('button');
-    c.className = 'chip chipface';
-    c.style.setProperty('--c', R_CHIP_COLORS[v]);
-    c.dataset.v = String(v);
-    c.textContent = chipLabel(v);
-    c.setAttribute('aria-label', `Add ${moneyFull(v)}`);
-    c.addEventListener('click', () => wrAddAmount(v));
-    ui.wrChips.appendChild(c);
-  }
-  for (const spot of ui.wrSpots) spot.addEventListener('click', () => wrPick(spot.dataset.k));
-  ui.wrClear.addEventListener('click', wrClear);
-  ui.wrRebet.addEventListener('click', wrRebet);
-  ui.wrDouble.addEventListener('click', wrDouble);
+  buildChipRail(ui.wrChips);
+  for (const spot of ui.wrSpots) spot.addEventListener('click', () => wrBet(spot.dataset.k));
+  ui.wrUndo.addEventListener('click', () => { if (!wrLocked() && betUndo(wr)) render(); });
+  ui.wrClear.addEventListener('click', () => { if (!wrLocked() && betClear(wr)) render(); });
+  ui.wrRebet.addEventListener('click', () => wrRebet(1));
+  ui.wrDouble.addEventListener('click', () => wrRebet(2));
   ui.wrGo.addEventListener('click', wrGo);
   ui.wrWar.addEventListener('click', wrWar);
   ui.wrSurrender.addEventListener('click', wrSurrender);
-  ui.wrBank.addEventListener('click', () => go('bank'));
 }
 const wrLocked = () => wr.busy || !!wr.live || !wallet.ready;
 // Changing bets after a round clears its result and its cards
@@ -4223,70 +4130,30 @@ function wrFresh() {
   wr.result = null;
   wr.table = { p: [], d: [], burn: 0 };
 }
-function wrAddAmount(v) {
-  if (wrLocked()) return;
-  if (wr.amount + v > wrRoom()) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
-  wrFresh();
-  wr.amount += v;
-  buzz(5);
-  render();
-}
-function wrPick(k) {
+function wrBet(k) {
   if (wrLocked()) return;
   wrFresh();
-  if (wr.picks.has(k)) wr.picks.delete(k); else wr.picks.add(k);
-  buzz();
+  betAdd(wr, k, wrRoom());
   render();
 }
-function wrPlace() {
+function wrRebet(mult) {
   if (wrLocked()) return;
-  if (!wr.amount) { toast('Tap chips to choose how much to bet.'); return; }
-  const picks = wr.picks.size ? [...wr.picks] : ['war'];   // nothing tapped: it goes on War
-  if (wr.amount * picks.length > wrRoom()) { toast('Your wallet can’t cover that many. The bank can.'); return; }
-  for (const k of picks) wr.bets[k] += wr.amount;
-  wr.picks.clear();
-  wr.amount = 0;
-  buzz(15);
-  render();
-}
-function wrClear() {
-  if (wrLocked()) return;
-  if (wrPending()) { wr.amount = 0; wr.picks.clear(); render(); return; }   // first clear what isn't placed yet
-  if (!wrTotal()) return;
-  wr.bets = { war: 0, tie: 0 };
   wrFresh();
-  render();
+  if (betRebet(wr, mult)) render();
 }
-function wrRebet() {
-  if (wrLocked() || !wr.last || wrTotal()) return false;
-  if (wrTotal(wr.last) > wallet.balance) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
-  wr.bets = { ...wr.last };
-  wrFresh();
-  render();
-  return true;
-}
-function wrDouble() {
-  const t = wrTotal();
-  if (wrLocked() || !t) return;
-  if (t * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
-  for (const k of WR_SIDES) wr.bets[k] *= 2;
-  wrFresh();
-  render();
-}
-// The main button: Place while you're choosing, Deal once bets are down, Go to war on a tie
+// The main button: Deal, or Go to war on a tie
 function wrGo() {
   if (wrDeciding()) wrWar();
-  else if (wrPending()) wrPlace();
   else wrDeal();
 }
 const wrReduce = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function wrDeal() {
   if (wrLocked()) return;
-  if (!wrTotal() && wr.last && !wrRebet()) return;
+  if (!wrTotal() && canRebetNow(wr)) { wrFresh(); betRebet(wr); }
   const total = wrTotal();
-  if (!total) { toast('Tap chips, then Place to bet on War.'); return; }
+  if (!total) { toast('Pick a chip, then tap War to bet it.'); return; }
   if (!wr.bets.war) { toast('The Tie bet rides along with a War bet. Put something on War too.'); return; }
-  if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
+  if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
   wr.busy = true;
   if (!walletChange(-total, null)) { wr.busy = false; return; }
   const { player, dealer } = warDeal(randInt);
@@ -4294,8 +4161,7 @@ function wrDeal() {
   if (warRank(player) === warRank(dealer)) live.phase = 'decide';
   else live.payout = warPayout(live);
   wr.live = live;
-  wr.last = { ...wr.bets };
-  wr.bets = { war: 0, tie: 0 };   // settled with this round; Rebet brings them back
+  betDone(wr);   // settled with this round; Rebet brings them back
   wr.result = null;
   wr.table = { p: [], d: [], burn: 0 };
   wrSave();
@@ -4363,7 +4229,6 @@ function renderWar() {
   const live = wr.live, r = wr.result;
   const deciding = wrDeciding();
   ui.wrBet.textContent = money(live ? live.total : total);
-  ui.wrAmount.textContent = money(wr.amount);
 
   wrSyncCards(ui.wrPcards, wr.table.p);
   wrSyncCards(ui.wrDcards, wr.table.d);
@@ -4394,7 +4259,6 @@ function renderWar() {
     let text = amt ? money(amt) : '';
     if (live && k === 'war' && live.choice === 'war') text = `${money(live.bet)} + ${money(live.bet)}`;
     spot.querySelector('.bc-amt').textContent = text;
-    spot.classList.toggle('pick', wr.picks.has(k));
     const tieHit = (live || r) && warRank((live || r).player) === warRank((live || r).dealer);
     spot.classList.toggle('win', k === 'tie' ? !!tieHit && !!(live || r).tie : !!o && o.code !== 'S' && o.won);
     spot.disabled = wrLocked();
@@ -4413,15 +4277,12 @@ function renderWar() {
     const cards = o.code === 'S' ? 'Half your bet back' : `${wrShort(p)} ${warRank(p) === warRank(d) ? 'ties' : o.won ? 'beats' : 'loses to'} ${wrShort(d)}`;
     sub = cards + (o.net > 0 ? ` · +${money(o.net)}` : o.net < 0 ? ` · −${money(-o.net)}` : ' · Even');
     cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
-  } else if (wrPending()) {
-    title = 'Now tap Place';
-    sub = wr.picks.size ? `${money(wr.amount)} on each spot you picked` : `${money(wr.amount)} goes on War`;
   } else if (total) {
     title = wr.bets.war ? 'Bets are down' : 'Add a War bet';
-    sub = wr.bets.war ? 'Tap Deal' : 'The Tie bet rides along with one';
+    sub = wr.bets.war ? `Tap Deal, or a spot to add ${money(chipPick)}` : 'The Tie bet rides along with one';
   } else {
     title = 'High card wins';
-    sub = 'Tap chips, then Place';
+    sub = `Tap War to bet ${money(chipPick)}`;
   }
   ui.wrTitle.textContent = title;
   ui.wrSub.textContent = sub;
@@ -4433,18 +4294,11 @@ function renderWar() {
   ui.wrWar.disabled = !deciding;
   ui.wrSurrender.disabled = !deciding;
 
-  const pending = wrPending();
-  const lastTotal = wr.last ? wrTotal(wr.last) : 0;
-  const canRebet = !wrLocked() && !total && lastTotal > 0 && lastTotal <= bal;
-  ui.wrGo.textContent = pending ? 'Place' : 'Deal';
-  ui.wrGo.disabled = wrLocked() || (!pending && !wr.bets.war && !canRebet);
-  ui.wrClear.disabled = wrLocked() || (!pending && !total);
-  ui.wrRebet.hidden = total > 0;      // one slot: Rebet before you bet, ×2 once chips are down
-  ui.wrDouble.hidden = !total;
-  ui.wrRebet.disabled = !canRebet;
-  ui.wrDouble.disabled = wrLocked() || !total || total * 2 > bal;
-  for (const c of ui.wrChips.children) c.disabled = wrLocked() || wr.amount + Number(c.dataset.v) > bal - total;
-  ui.wrLow.hidden = wr.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal - total >= 5);
+  ui.wrGo.disabled = wrLocked() || (!wr.bets.war && !(!total && canRebetNow(wr)));
+  ui.wrGo.textContent = !total && canRebetNow(wr) && !live ? 'Rebet & deal' : 'Deal';
+  paintBetButtons({ undo: ui.wrUndo, clear: ui.wrClear, rebet: ui.wrRebet, double: ui.wrDouble }, wr, wrLocked());
+  paintChipRail(ui.wrChips, bal - total, wr.busy || !!live);
+  paintLow(ui.wrLow, !(wr.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal - total >= 5)));
 
   // Your recent results, newest first
   const road = wr.road.slice(-24).reverse();
@@ -4479,18 +4333,17 @@ const CARD_OK = /^(10|[2-9JQKA])[SHDC]$/;
 const cardsOk = (a, n) => Array.isArray(a) && a.length === n && a.every(c => typeof c === 'string' && CARD_OK.test(c));
 
 /* ================= Three Card Poker (solo, plays from the wallet) =================
-   Chips build an amount, Place puts it on the Ante (or on Pair Plus, if you tapped it), and
+   Pick a chip and tap Ante (and Pair Plus, if you like) to bet it, and
    Deal gives you three cards and the dealer three face down. With an Ante down you then
    Fold or Play; the dealer's cards turn over and everything is paid. A hand waiting on
    Fold or Play is kept if you leave, and one the app closed mid-reveal is paid next time. */
 const TC_KEY = 'mini-casino.threecard';
 const TC_SIDES = ['ante', 'pair'];
 const tc = {
-  amount: 0, picks: new Set(), bets: { ante: 0, pair: 0 }, last: null, live: null, result: null, busy: false,
+  bets: { ante: 0, pair: 0 }, hist: [], last: null, live: null, result: null, busy: false,
   table: { p: [], d: [], up: false },
 };
 const tcTotal = (bets = tc.bets) => TC_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
-const tcPending = () => tc.amount > 0 || tc.picks.size > 0;
 const tcRoom = () => Math.max(0, (wallet.ready ? wallet.balance : 0) - tcTotal());
 const tcDeciding = () => !!tc.live && tc.live.phase === 'decide' && !tc.busy;
 const tcLocked = () => tc.busy || !!tc.live || !wallet.ready;
@@ -4563,91 +4416,43 @@ function buildThreeCard() {
   for (const [k] of TC_PAY_ROWS) cell('v pp', String(TC_PAIR_PLUS[k]), k);
   cell('l', 'Ante bonus');
   for (const [k] of TC_PAY_ROWS) cell('v ab', TC_ANTE_BONUS[k] ? String(TC_ANTE_BONUS[k]) : '–', k);
-  for (const v of R_CHIPS) {
-    const c = document.createElement('button');
-    c.className = 'chip chipface';
-    c.style.setProperty('--c', R_CHIP_COLORS[v]);
-    c.dataset.v = String(v);
-    c.textContent = chipLabel(v);
-    c.setAttribute('aria-label', `Add ${moneyFull(v)}`);
-    c.addEventListener('click', () => tcAddAmount(v));
-    ui.tcChips.appendChild(c);
-  }
-  for (const spot of ui.tcSpots) spot.addEventListener('click', () => tcPick(spot.dataset.k));
-  ui.tcClear.addEventListener('click', tcClear);
-  ui.tcRebet.addEventListener('click', tcRebet);
-  ui.tcDouble.addEventListener('click', tcDouble);
+  buildChipRail(ui.tcChips);
+  for (const spot of ui.tcSpots) spot.addEventListener('click', () => tcBet(spot.dataset.k));
+  ui.tcUndo.addEventListener('click', () => { if (!tcLocked() && betUndo(tc)) render(); });
+  ui.tcClear.addEventListener('click', () => { if (!tcLocked() && betClear(tc)) render(); });
+  ui.tcRebet.addEventListener('click', () => tcRebet(1));
+  ui.tcDouble.addEventListener('click', () => tcRebet(2));
   ui.tcGo.addEventListener('click', tcGo);
   ui.tcPlay.addEventListener('click', tcPlay);
   ui.tcFold.addEventListener('click', tcFold);
-  ui.tcBank.addEventListener('click', () => go('bank'));
 }
 function tcFresh() {
   if (!tc.result) return;
   tc.result = null;
   tc.table = { p: [], d: [], up: false };
 }
-function tcAddAmount(v) {
-  if (tcLocked()) return;
-  if (tc.amount + v > tcRoom()) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
-  tcFresh();
-  tc.amount += v;
-  buzz(5);
-  render();
-}
-function tcPick(k) {
+function tcBet(k) {
   if (tcLocked()) return;
   tcFresh();
-  if (tc.picks.has(k)) tc.picks.delete(k); else tc.picks.add(k);
-  buzz();
+  betAdd(tc, k, tcRoom());
   render();
 }
-function tcPlace() {
+function tcRebet(mult) {
   if (tcLocked()) return;
-  if (!tc.amount) { toast('Tap chips to choose how much to bet.'); return; }
-  const picks = tc.picks.size ? [...tc.picks] : ['ante'];   // nothing tapped: it goes on the Ante
-  if (tc.amount * picks.length > tcRoom()) { toast('Your wallet can’t cover that many. The bank can.'); return; }
-  for (const k of picks) tc.bets[k] += tc.amount;
-  tc.picks.clear();
-  tc.amount = 0;
-  buzz(15);
-  render();
-}
-function tcClear() {
-  if (tcLocked()) return;
-  if (tcPending()) { tc.amount = 0; tc.picks.clear(); render(); return; }
-  if (!tcTotal()) return;
-  tc.bets = { ante: 0, pair: 0 };
   tcFresh();
-  render();
+  if (betRebet(tc, mult)) render();
 }
-function tcRebet() {
-  if (tcLocked() || !tc.last || tcTotal()) return false;
-  if (tcTotal(tc.last) > wallet.balance) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
-  tc.bets = { ...tc.last };
-  tcFresh();
-  render();
-  return true;
-}
-function tcDouble() {
-  const t = tcTotal();
-  if (tcLocked() || !t) return;
-  if (t * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
-  for (const k of TC_SIDES) tc.bets[k] *= 2;
-  tcFresh();
-  render();
-}
+// The main button: Deal, or Play once your cards are out
 function tcGo() {
   if (tcDeciding()) tcPlay();
-  else if (tcPending()) tcPlace();
   else tcDeal();
 }
 function tcDeal() {
   if (tcLocked()) return;
-  if (!tcTotal() && tc.last && !tcRebet()) return;
+  if (!tcTotal() && canRebetNow(tc)) { tcFresh(); betRebet(tc); }
   const total = tcTotal();
-  if (!total) { toast('Tap chips, then Place to put them on the Ante.'); return; }
-  if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
+  if (!total) { toast('Pick a chip, then tap Ante or Pair Plus.'); return; }
+  if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
   if (tc.bets.ante && tc.bets.ante * 2 + tc.bets.pair > wallet.balance) toast(`Heads up: playing the hand takes another ${money(tc.bets.ante)}.`);
   tc.busy = true;
   if (!walletChange(-total, null)) { tc.busy = false; return; }
@@ -4655,8 +4460,7 @@ function tcDeal() {
   const live = { ante: tc.bets.ante, pair: tc.bets.pair, total, player, dealer, choice: null, phase: tc.bets.ante ? 'decide' : 'settle' };
   if (live.phase === 'settle') live.payout = tcPayout(live);
   tc.live = live;
-  tc.last = { ...tc.bets };
-  tc.bets = { ante: 0, pair: 0 };
+  betDone(tc);
   tc.result = null;
   tc.table = { p: [], d: [], up: false };
   tcSave();
@@ -4728,7 +4532,6 @@ function renderThreeCard() {
   const live = tc.live, r = tc.result;
   const deciding = tcDeciding();
   ui.tcBet.textContent = money(live ? live.total : total);
-  ui.tcAmount.textContent = money(tc.amount);
   tcSyncCards(ui.tcPcards, tc.table.p, false);
   tcSyncCards(ui.tcDcards, tc.table.d, !tc.table.up);
 
@@ -4750,7 +4553,6 @@ function renderThreeCard() {
     const k = spot.dataset.k;
     const amt = live ? live[k] : tc.bets[k];
     spot.querySelector('.bc-amt').textContent = amt ? money(amt) : '';
-    spot.classList.toggle('pick', tc.picks.has(k));
     spot.classList.toggle('win', !!o && (k === 'pair' ? !!r.pair && !!TC_PAIR_PLUS[o.me.key] : !!r.ante && o.winner === 'player'));
     spot.disabled = tcLocked();
   }
@@ -4767,15 +4569,12 @@ function renderThreeCard() {
     const vs = r.ante && r.choice === 'play' ? `${tcHandName(r.player)} vs ${tcHandName(r.dealer)}` : tcHandName(r.player);
     sub = vs + (o.net > 0 ? ` · +${money(o.net)}` : o.net < 0 ? ` · −${money(-o.net)}` : ' · Even');
     cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
-  } else if (tcPending()) {
-    title = 'Now tap Place';
-    sub = tc.picks.size ? `${money(tc.amount)} on each spot you picked` : `${money(tc.amount)} goes on the Ante`;
   } else if (total) {
     title = 'Bets are down';
-    sub = 'Tap Deal';
+    sub = `Tap Deal, or a spot to add ${money(chipPick)}`;
   } else {
     title = 'Three Card Poker';
-    sub = 'Tap chips, then Place';
+    sub = `Tap Ante or Pair Plus to bet ${money(chipPick)}`;
   }
   ui.tcTitle.textContent = title;
   ui.tcSub.textContent = sub;
@@ -4784,18 +4583,11 @@ function renderThreeCard() {
   ui.tcActions.hidden = deciding;
   ui.tcDecide.hidden = !deciding;
   if (deciding) ui.tcPlay.textContent = `Play · ${money(live.ante)}`;
-  const pending = tcPending();
-  const lastTotal = tc.last ? tcTotal(tc.last) : 0;
-  const canRebet = !tcLocked() && !total && lastTotal > 0 && lastTotal <= bal;
-  ui.tcGo.textContent = pending ? 'Place' : 'Deal';
-  ui.tcGo.disabled = tcLocked() || (!pending && !total && !canRebet);
-  ui.tcClear.disabled = tcLocked() || (!pending && !total);
-  ui.tcRebet.hidden = total > 0;
-  ui.tcDouble.hidden = !total;
-  ui.tcRebet.disabled = !canRebet;
-  ui.tcDouble.disabled = tcLocked() || !total || total * 2 > bal;
-  for (const c of ui.tcChips.children) c.disabled = tcLocked() || tc.amount + Number(c.dataset.v) > bal - total;
-  ui.tcLow.hidden = tc.busy || !wallet.ready || (deciding ? bal >= live.ante : !!live || bal - total >= 5);
+  ui.tcGo.disabled = tcLocked() || (!total && !canRebetNow(tc));
+  ui.tcGo.textContent = !total && canRebetNow(tc) && !live ? 'Rebet & deal' : 'Deal';
+  paintBetButtons({ undo: ui.tcUndo, clear: ui.tcClear, rebet: ui.tcRebet, double: ui.tcDouble }, tc, tcLocked());
+  paintChipRail(ui.tcChips, bal - total, tc.busy || !!live);
+  paintLow(ui.tcLow, !(tc.busy || !wallet.ready || (deciding ? bal >= live.ante : !!live || bal - total >= 5)));
 }
 
 /* ================= Red Dog (solo, plays from the wallet) =================
@@ -4804,17 +4596,17 @@ function renderThreeCard() {
    raise by your bet before the third card. A hand waiting on that choice is kept if you
    leave, and one the app closed mid-reveal is paid next time. */
 const RD_KEY = 'mini-casino.reddog';
-const rd = { bet: 25, live: null, result: null, busy: false, table: [] };
+const rd = { bets: { main: 0 }, hist: [], last: null, live: null, result: null, busy: false, table: [] };
 const rdDeciding = () => !!rd.live && rd.live.phase === 'decide' && !rd.busy;
 const rdLocked = () => rd.busy || !!rd.live || !wallet.ready;
 function rdSave() {
-  try { localStorage.setItem(RD_KEY, JSON.stringify({ bet: rd.bet, live: rd.live })); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem(RD_KEY, JSON.stringify({ last: rd.last, live: rd.live })); } catch (e) { /* storage unavailable */ }
 }
 function rdLoad() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(RD_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
   if (!d) return;
-  if (Number.isFinite(d.bet) && d.bet >= 0) rd.bet = Math.floor(d.bet);
+  if (d.last && Number.isFinite(d.last.main) && d.last.main > 0) rd.last = { main: d.last.main };
   const l = d.live;
   if (!l || !Number.isFinite(l.bet) || l.bet <= 0 || !Number.isFinite(l.total)) return;
   if (l.phase === 'settle' && (cardsOk(l.cards, 3) || cardsOk(l.cards, 2)) && Number.isFinite(l.payout)) {
@@ -4853,52 +4645,31 @@ function buildRedDog() {
     e.innerHTML = `<span>${label}</span><b>${pays}</b>`;
     ui.rdPays.appendChild(e);
   }
-  for (const v of R_CHIPS) {
-    const c = document.createElement('button');
-    c.className = 'chip chipface';
-    c.style.setProperty('--c', R_CHIP_COLORS[v]);
-    c.dataset.v = String(v);
-    c.textContent = chipLabel(v);
-    c.setAttribute('aria-label', `Add ${moneyFull(v)} to your bet`);
-    c.addEventListener('click', () => rdAddChip(v));
-    ui.rdChips.appendChild(c);
-  }
-  ui.rdClear.addEventListener('click', rdClear);
-  ui.rdDouble.addEventListener('click', rdDouble);
+  buildChipRail(ui.rdChips);
+  ui.rdSpot.addEventListener('click', rdBet);
+  ui.rdUndo.addEventListener('click', () => { if (!rdLocked() && betUndo(rd)) render(); });
+  ui.rdClear.addEventListener('click', () => { if (!rdLocked() && betClear(rd)) render(); });
+  ui.rdRebet.addEventListener('click', () => rdRebet(1));
+  ui.rdDouble.addEventListener('click', () => rdRebet(2));
   ui.rdDeal.addEventListener('click', rdGo);
   ui.rdCall.addEventListener('click', () => rdThirdCard(false));
   ui.rdRaiseBtn.addEventListener('click', () => rdThirdCard(true));
-  ui.rdBank.addEventListener('click', () => go('bank'));
 }
 function rdFresh() {
   if (!rd.result) return;
   rd.result = null;
   rd.table = [];
 }
-function rdAddChip(v) {
+function rdBet() {
   if (rdLocked()) return;
-  if (rd.bet + v > wallet.balance) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
-  rd.bet += v;
   rdFresh();
-  rdSave();
-  buzz(5);
+  betAdd(rd, 'main', wallet.balance - rd.bets.main);
   render();
 }
-function rdClear() {
-  if (rdLocked() || !rd.bet) return;
-  rd.bet = 0;
+function rdRebet(mult) {
+  if (rdLocked()) return;
   rdFresh();
-  rdSave();
-  render();
-}
-function rdDouble() {
-  if (rdLocked() || !rd.bet) return;
-  if (rd.bet * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
-  rd.bet *= 2;
-  rdFresh();
-  rdSave();
-  buzz(5);
-  render();
+  if (betRebet(rd, mult)) render();
 }
 function rdGo() {
   if (rdDeciding()) rdThirdCard(true);
@@ -4906,13 +4677,16 @@ function rdGo() {
 }
 function rdDealHand() {
   if (rdLocked()) return;
-  if (!rd.bet) { toast('Tap chips to choose your bet.'); return; }
-  if (rd.bet > wallet.balance) { toast('Your wallet can’t cover that bet. The bank can.'); return; }
-  if (!walletChange(-rd.bet, null)) return;
+  if (!rd.bets.main && canRebetNow(rd)) { rdFresh(); betRebet(rd); }   // nothing down: Deal repeats the last bet
+  const bet = rd.bets.main;
+  if (!bet) { toast('Pick a chip, then tap Bet.'); return; }
+  if (bet > wallet.balance) { toast('Your wallet can’t cover that bet.'); return; }
+  if (!walletChange(-bet, null)) return;
   rd.busy = true;
+  betDone(rd);
   const [a, b] = rdDeal(randInt);
   const s = rdSpread(a, b);
-  const live = { bet: rd.bet, raise: 0, total: rd.bet, cards: [a, b], phase: 'decide' };
+  const live = { bet, raise: 0, total: bet, cards: [a, b], phase: 'decide' };
   if (s.kind !== 'spread') {
     if (s.kind === 'pair') live.cards.push(rdThird(a, b, randInt));   // back to back needs no third card
     live.phase = 'settle';
@@ -5006,23 +4780,26 @@ function renderRedDog() {
     cls = o.net > 0 ? 'win' : o.net < 0 ? 'lose' : '';
   } else {
     title = 'Red Dog';
-    sub = rd.bet ? 'Will the third card land in between?' : 'Tap chips to choose your bet';
+    sub = rd.bets.main ? 'Will the third card land in between?' : `Tap Bet to add ${money(chipPick)}`;
   }
   ui.rdTitle.textContent = title;
   ui.rdSub.textContent = sub;
   ui.rdMsg.className = 'bc-msg' + (cls ? ' ' + cls : '');
 
-  ui.rdBet.textContent = money(shown && (live || rd.busy) ? shown.bet : rd.bet);
+  ui.rdBet.textContent = money(live ? live.total : rd.bets.main);
   ui.rdRaiseWrap.hidden = !(live && live.raise);
   ui.rdRaise.textContent = money(live ? live.raise : 0);
   ui.rdActions.hidden = deciding;
   ui.rdDecide.hidden = !deciding;
   if (deciding) ui.rdRaiseBtn.textContent = `Raise · ${money(live.bet)}`;
-  ui.rdDeal.disabled = rdLocked() || !rd.bet;
-  ui.rdClear.disabled = rdLocked() || !rd.bet;
-  ui.rdDouble.disabled = rdLocked() || !rd.bet || rd.bet * 2 > bal;
-  for (const ch of ui.rdChips.children) ch.disabled = rdLocked() || rd.bet + Number(ch.dataset.v) > bal;
-  ui.rdLow.hidden = rd.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal >= Math.max(5, rd.bet));
+  ui.rdDeal.textContent = !rd.bets.main && canRebetNow(rd) ? 'Rebet & deal' : 'Deal';
+  ui.rdDeal.disabled = rdLocked() || (!rd.bets.main && !canRebetNow(rd));
+  paintBetButtons({ undo: ui.rdUndo, clear: ui.rdClear, rebet: ui.rdRebet, double: ui.rdDouble }, rd, rdLocked());
+  paintChipRail(ui.rdChips, bal - rd.bets.main, rd.busy || !!live);
+  ui.rdSpot.disabled = rdLocked();
+  ui.rdSpot.querySelector('.bc-amt').textContent = live ? (live.raise ? `${money(live.bet)} + ${money(live.raise)}` : money(live.bet)) : money(rd.bets.main);
+  ui.rdSpotHint.textContent = live ? 'In play' : `Tap to add ${money(chipPick)}`;
+  paintLow(ui.rdLow, !(rd.busy || !wallet.ready || (deciding ? bal >= live.bet : !!live || bal >= 5)));
 }
 
 /* ================= How to play ================= */
@@ -5099,7 +4876,8 @@ async function cloudInit() {
   done();
   if (verifier && cloud.user) toast(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
   else if (verifier || googleFailed) toast('Google sign-in didn’t finish. Try again.');
-  if (cloud.user) await cloudPull();
+  if (cloud.user) { await cloudPull(); claimDaily(); }
+  render();
 }
 
 /* ---------- Continue with Google ---------- */
@@ -5148,8 +4926,8 @@ function readSoloLocal() {
 }
 function cloudSnapshot() {
   return {
-    wallet: { balance: wallet.balance, withdrawn: wallet.withdrawn, count: wallet.count, log: wallet.log },
-    roulette: { history: rl.history, last: rl.last, chip: rl.chip },
+    wallet: walletBody(),
+    roulette: { history: rl.history, last: rl.last },
     solo: readSoloLocal(),
     stats,
   };
@@ -5159,7 +4937,10 @@ function cloudApply(data) {
   if (!data || typeof data !== 'object') return;
   cloud.applying = true;
   try {
-    if (data.wallet && typeof data.wallet === 'object') { walletLoad(data.wallet); walletSave(); }
+    if (data.daily && typeof data.daily.day === 'string' && data.daily.day > daily.day) daily.day = data.daily.day;
+    walletLoad(data.wallet && typeof data.wallet === 'object' ? data.wallet : null);
+    walletSave();
+    if (wallet.reset) setTimeout(cloudMarkDirty, 0);   // a wallet from before the daily bonus starts over; save that
     if (data.roulette && typeof data.roulette === 'object') {
       try { localStorage.setItem('mini-casino.roulette', JSON.stringify(data.roulette)); } catch (e) { /* storage unavailable */ }
       rl.history = [];
@@ -5173,9 +4954,11 @@ function cloudApply(data) {
     const s = data.solo;
     const midHand = app.view === 'table' && app.solo && app.T && roundLive(app.T);
     if (s && typeof s === 'object' && Array.isArray(s.seats) && s.players && s.players[SOLO_ID] && !midHand) {
+      migrateTable(s);
       soloT = s;
       try { localStorage.setItem('bj.rooms.solo', JSON.stringify(s)); } catch (e) { /* storage unavailable */ }
       if (app.view === 'table' && app.solo) app.T = soloT;
+      syncCashed(soloT);
     }
   } finally {
     cloud.applying = false;
@@ -5525,7 +5308,6 @@ function totalText(cards, showSoft) {
 function render() {
   const v = app.view;
   ui.home.hidden = v !== 'home';
-  ui.bankView.hidden = v !== 'bank';
   ui.rouletteView.hidden = v !== 'roulette';
   ui.lobby.hidden = v !== 'lobby';
   ui.tableView.hidden = v !== 'table';
@@ -5556,7 +5338,6 @@ function render() {
   ui.barTitle.hidden = v !== 'table';
   ui.tableTools.hidden = v !== 'table';
   ui.balanceBtn.hidden = v === 'table' || v === 'home';
-  ui.balanceBtn.disabled = v === 'bank';
   const bal = wallet.ready ? money(wallet.balance) : '—';
   ui.walletAmt.textContent = bal;
   ui.homeWallet.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
@@ -5564,10 +5345,9 @@ function render() {
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
   renderAccount();
-  if (v === 'home') renderHomeStats();
+  if (v === 'home') { renderHomeStats(); renderDaily(); }
   if (v === 'lobby') renderLobby();
   else if (v === 'stats') renderStats();
-  else if (v === 'bank') renderBank();
   else if (v === 'roulette') renderRoulette();
   else if (v === 'table') renderTable();
   else if (v === 'poker') renderPoker();
@@ -5689,11 +5469,7 @@ function renderStats() {
   ui.rdBiggest.textContent = money(ds.biggest);
   ui.rdLine.textContent = !ds.hands ? 'No hands yet' : `Raised ${ds.raises} time${ds.raises === 1 ? '' : 's'} · Three of a kind ${ds.trips} time${ds.trips === 1 ? '' : 's'}`;
 
-  ui.bkWithdrawn.textContent = money(wallet.withdrawn);
-  ui.bkCount.textContent = wallet.count.toLocaleString('en-US');
-  ui.bkLine.textContent = !wallet.withdrawn ? 'You haven’t borrowed a cent. Impressive.'
-    : t.net >= wallet.withdrawn ? 'You’ve won more than you’ve taken. The bank is nervous.'
-    : `You’d need to win ${money(wallet.withdrawn - Math.max(0, t.net))} more to cover what you’ve taken.`;
+  renderLedger();
   ui.stWhere.textContent = cloud.user && !cloud.user.dev ? 'Saved to your account, so your stats follow you to any device.'
     : 'Saved on this device. Sign in to keep your stats on every device.';
 }
@@ -5729,9 +5505,9 @@ function renderChipsPanel() {
     if (b.dataset.a === 'all') { b.disabled = bal < 1; b.textContent = bal >= 1 ? `All ${money(bal)}` : 'All'; }
     else b.disabled = bal < Number(b.dataset.a);
   });
-  ui.cpHelp.textContent = bal < 500
-    ? 'Your wallet is nearly empty. The bank will happily give you more.'
-    : 'Chips stay with this table when you leave.';
+  ui.cpHelp.textContent = bal < 5 ? `Your wallet is empty. ${dailyText(true)}` : '';
+  const P = myP();
+  ui.cpCashout.disabled = !P || !(P.bank > 0) || app.T.phase !== 'betting';
 }
 
 function renderTable() {
@@ -5804,8 +5580,8 @@ function renderTable() {
 
   // Chips at this table (minus your bet and whatever is in your hand)
   const P = myP();
-  app.pending = canBetNow() ? Math.min(app.pending, pendingRoom()) : 0;
-  if (P) ui.bank.textContent = money(P.bank - (T.phase === 'betting' ? viewBet() + app.pending : 0));
+  if (!canBetNow()) app.bjHist = [];
+  if (P) ui.bank.textContent = money(P.bank - (T.phase === 'betting' ? viewBet() : 0));
   renderChipsPanel();
 
   renderMessage(T, R, ctx);
@@ -5878,7 +5654,7 @@ function renderSeats(T, R, ctx, anim) {
     hc.classList.toggle('multi', hands.length > 1);
     hc.classList.toggle('many', hands.length > 2);
     hands.forEach((h, i) => hc.children[i].firstElementChild.classList.toggle('long', h.cards.length > 5));
-    if (big) { const b = viewBet(); hc.dataset.bet = b ? money(b) : app.pending ? `+${money(app.pending)}` : 'BET'; }
+    if (big) { const b = viewBet(); hc.dataset.bet = b ? money(b) : 'BET'; }
 
     if (!uid || !P) { q('.timer').hidden = true; continue; }
 
@@ -6008,24 +5784,29 @@ function renderControls(T, R, ctx) {
     ui.betPanel.hidden = false;
     const bet = viewBet();
     const status = viewStatus();
-    const broke = P.bank < MIN_BET;
-    const room = pendingRoom();
-    const hand = app.pending;
-    ui.chips.forEach(c => { c.disabled = broke || hand + Number(c.dataset.v) > room; });
-    ui.x2.disabled = broke || !room || (!hand && !bet) || hand >= room;
-    ui.max.disabled = broke || !room || hand >= room;
-    ui.betAmt.innerHTML = `Bet<b>${money(bet)}</b>`;
-    ui.clear.disabled = !bet && !hand;
-    ui.out.hidden = app.solo || broke || hand > 0;
+    const broke = P.bank < MIN_BET && !bet;
+    const ready = status === 'ready';
+    const canRebet = !bet && P.lastBet >= MIN_BET && P.lastBet <= P.bank;
+    paintChipRail(ui.bjChips, P.bank - bet, ready);
+    ui.bjSpot.disabled = ready || broke;
+    ui.bjSpot.querySelector('.bc-amt').textContent = money(bet);
+    ui.bjSpotHint.textContent = broke ? 'Bring chips to bet' : ready ? 'Locked in' : `Tap to add ${money(chipPick)}`;
+    ui.betAmt.innerHTML = '';
+    // Undo and Clear while chips are down; Rebet and Rebet ×2 before the first one
+    ui.bjUndo.hidden = ui.clear.hidden = !bet;
+    ui.bjRebet.hidden = ui.bjDouble.hidden = !!bet;
+    ui.bjUndo.disabled = ready || !app.bjHist.length;
+    ui.clear.disabled = ready;
+    ui.bjRebet.disabled = ready || !canRebet;
+    ui.bjDouble.disabled = ready || !(P.lastBet >= MIN_BET && P.lastBet * 2 <= P.bank);
+    ui.out.hidden = app.solo || broke;
     ui.out.textContent = status === 'out' ? 'Sitting out' : 'Sit out';
     ui.out.classList.toggle('pressed', status === 'out');
-    // One main button: Place bet while chips are in your hand, then Deal (or Ready with friends)
-    ui.place.hidden = broke || !hand;
-    ui.place.innerHTML = `Place bet ${money(hand)} <kbd>Space</kbd>`;
-    ui.ready.hidden = broke || hand > 0;
-    ui.ready.disabled = bet < MIN_BET && status !== 'ready';
-    ui.ready.classList.toggle('pressed', status === 'ready');
-    ui.ready.innerHTML = app.solo ? 'Deal <kbd>Space</kbd>' : status === 'ready' ? 'Not ready <kbd>Space</kbd>' : 'Ready <kbd>Space</kbd>';
+    ui.ready.hidden = broke;
+    ui.ready.disabled = bet < MIN_BET && !ready && !canRebet;
+    ui.ready.classList.toggle('pressed', ready);
+    const go = app.solo ? (!bet && canRebet ? 'Rebet & deal' : 'Deal') : ready ? 'Not ready' : !bet && canRebet ? 'Rebet & ready' : 'Ready';
+    ui.ready.innerHTML = `${go} <kbd>Space</kbd>`;
     ui.rebuy.hidden = !broke;
     return;
   }
@@ -6081,16 +5862,13 @@ ui.homeBtn.addEventListener('click', () => {
 ui.helpBtn.addEventListener('click', openHelp);
 ui.homeLearn.addEventListener('click', () => go('learn'));
 ui.vpDeal.addEventListener('click', vpDeal);
-ui.vpClear.addEventListener('click', vpClear);
-ui.vpDouble.addEventListener('click', vpDouble);
-ui.vpBank.addEventListener('click', () => go('bank'));
-ui.bcGo.addEventListener('click', bcGo);
+ui.bcGo.addEventListener('click', bcDeal);
+ui.bcUndo.addEventListener('click', bcUndo);
 ui.bcClear.addEventListener('click', bcClear);
 ui.bcRebet.addEventListener('click', bcRebet);
 ui.bcDouble.addEventListener('click', bcDouble);
-ui.bcBank.addEventListener('click', () => go('bank'));
-ui.balanceBtn.addEventListener('click', () => go('bank'));
-ui.homeBank.addEventListener('click', () => go('bank'));
+ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
+ui.dailyBtn.addEventListener('click', () => { app.acctOpen = true; render(); });
 ui.homeStats.addEventListener('click', () => go('stats'));
 ui.stReset.addEventListener('click', resetStats);
 ui.authForm.addEventListener('submit', authSubmit);
@@ -6123,22 +5901,15 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && cloud.timer) cloudPush(true); });
 ui.rSpin.addEventListener('click', rlSpin);
-ui.rPlace.addEventListener('click', rlPlace);
 ui.rUndo.addEventListener('click', rlUndo);
 ui.rClear.addEventListener('click', rlClear);
 ui.rRebet.addEventListener('click', rlRebet);
 ui.rDouble.addEventListener('click', rlDouble);
-ui.rBank.addEventListener('click', () => go('bank'));
 window.addEventListener('resize', () => { if (app.view === 'roulette' && !rl.anim) rlDraw(); });
 ui.inviteBtn.addEventListener('click', () => { app.inviteOpen = !app.inviteOpen; app.chipsOpen = false; render(); });
 ui.bankPill.addEventListener('click', () => { app.chipsOpen = !app.chipsOpen; app.inviteOpen = false; render(); });
 ui.cpButtons.forEach(b => b.addEventListener('click', () => addTableChips(b.dataset.a === 'all' ? wallet.balance : Number(b.dataset.a))));
-ui.cpBank.addEventListener('click', () => go('bank'));
-ui.wdBtn.addEventListener('click', () => withdraw());
-ui.wdAmount.addEventListener('keydown', e => { if (e.key === 'Enter') withdraw(); });
-ui.quick.forEach(b => b.addEventListener('click', () => withdraw(Number(b.dataset.a))));
-ui.x2.addEventListener('click', doubleBet);
-ui.max.addEventListener('click', maxBet);
+ui.cpCashout.addEventListener('click', cashOutTable);
 ui.hintToggle.addEventListener('click', () => { app.hints = !app.hints; prefsSave(); render(); });
 function copyInvite() {
   const text = ui.inviteLink.value;
@@ -6155,9 +5926,12 @@ ui.shareBtn.addEventListener('click', async () => {
     if (!e || e.name !== 'AbortError') copyInvite();
   }
 });
-ui.chips.forEach(c => c.addEventListener('click', () => addChip(Number(c.dataset.v))));
+buildChipRail(ui.bjChips);
+ui.bjSpot.addEventListener('click', bjBet);
+ui.bjUndo.addEventListener('click', bjUndo);
+ui.bjRebet.addEventListener('click', () => bjRebet(1));
+ui.bjDouble.addEventListener('click', () => bjRebet(2));
 ui.clear.addEventListener('click', clearBet);
-ui.place.addEventListener('click', placeBet);
 ui.ready.addEventListener('click', toggleReady);
 ui.out.addEventListener('click', sitOut);
 ui.rebuy.addEventListener('click', rebuy);
@@ -6182,8 +5956,8 @@ document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (app.view === 'roulette') {
     let used = true;
-    if (k === ' ' || k === 'enter') { if (rlPending()) rlPlace(); else rlSpin(); }
-    else if (k >= '1' && k <= '6') rlAddAmount(R_CHIPS[Number(k) - 1]);
+    if (k === ' ' || k === 'enter') rlSpin();
+    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
     else if (k === 'u' || k === 'backspace') rlUndo();
     else if (k === 'c') rlClear();
     else if (k === 'r') rlRebet();
@@ -6194,11 +5968,12 @@ document.addEventListener('keydown', e => {
   }
   if (app.view === 'baccarat') {
     let used = true;
-    if (k === ' ' || k === 'enter') bcGo();
-    else if (k >= '1' && k <= '6') bcAddAmount(R_CHIPS[Number(k) - 1]);
-    else if (k === 'p') bcPick('player');
-    else if (k === 'b') bcPick('banker');
-    else if (k === 't') bcPick('tie');
+    if (k === ' ' || k === 'enter') bcDeal();
+    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'u') bcUndo();
+    else if (k === 'p') bcBet('player');
+    else if (k === 'b') bcBet('banker');
+    else if (k === 't') bcBet('tie');
     else if (k === 'c' || k === 'backspace') bcClear();
     else if (k === 'r') bcRebet();
     else if (k === 'x') bcDouble();
@@ -6209,13 +5984,14 @@ document.addEventListener('keydown', e => {
   if (app.view === 'threecard') {
     let used = true;
     if (k === ' ' || k === 'enter') tcGo();
-    else if (k >= '1' && k <= '6') tcAddAmount(R_CHIPS[Number(k) - 1]);
-    else if (k === 'a') tcPick('ante');
-    else if (k === 'p') tcPick('pair');
+    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'a') tcBet('ante');
+    else if (k === 'p') tcBet('pair');
     else if (k === 'f') tcFold();
-    else if (k === 'c' || k === 'backspace') tcClear();
-    else if (k === 'r') tcRebet();
-    else if (k === 'x') tcDouble();
+    else if (k === 'u' || k === 'backspace') ui.tcUndo.click();
+    else if (k === 'c') ui.tcClear.click();
+    else if (k === 'r') tcRebet(1);
+    else if (k === 'x') tcRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6223,10 +5999,13 @@ document.addEventListener('keydown', e => {
   if (app.view === 'reddog') {
     let used = true;
     if (k === ' ' || k === 'enter') rdGo();
-    else if (k >= '1' && k <= '6') rdAddChip(R_CHIPS[Number(k) - 1]);
+    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'b') rdBet();
+    else if (k === 'u') ui.rdUndo.click();
+    else if (k === 'r') rdRebet(1);
     else if (k === 'n') rdThirdCard(false);
-    else if (k === 'c' || k === 'backspace') rdClear();
-    else if (k === 'x') rdDouble();
+    else if (k === 'c' || k === 'backspace') ui.rdClear.click();
+    else if (k === 'x') rdRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6234,13 +6013,14 @@ document.addEventListener('keydown', e => {
   if (app.view === 'war') {
     let used = true;
     if (k === ' ' || k === 'enter') wrGo();
-    else if (k >= '1' && k <= '6') wrAddAmount(R_CHIPS[Number(k) - 1]);
-    else if (k === 'w') wrPick('war');
-    else if (k === 't') wrPick('tie');
+    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'w') wrBet('war');
+    else if (k === 't') wrBet('tie');
     else if (k === 's') wrSurrender();
-    else if (k === 'c' || k === 'backspace') wrClear();
-    else if (k === 'r') wrRebet();
-    else if (k === 'x') wrDouble();
+    else if (k === 'u' || k === 'backspace') ui.wrUndo.click();
+    else if (k === 'c') ui.wrClear.click();
+    else if (k === 'r') wrRebet(1);
+    else if (k === 'x') wrRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6250,8 +6030,11 @@ document.addEventListener('keydown', e => {
     if (k === ' ' || k === 'enter') vpDeal();
     else if (k >= '1' && k <= '5') vpToggle(Number(k) - 1);
     else if (k === 'g') vpSwitch();
-    else if (k === 'c' || k === 'backspace') vpClear();
-    else if (k === 'x') vpDouble();
+    else if (k === 'u' || k === 'backspace') ui.vpUndo.click();
+    else if (k === 'c') ui.vpClear.click();
+    else if (k === 'b') vpBet();
+    else if (k === 'r') vpRebet(1);
+    else if (k === 'x') vpRebet(2);
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -6269,11 +6052,13 @@ document.addEventListener('keydown', e => {
     else if (k === 'n') insure(false);
     else handled = false;
   } else if (phase === 'betting') {
-    if (k === ' ' || k === 'enter') { if (app.pending) placeBet(); else toggleReady(); }
-    else if (k >= '1' && k <= '4') addChip([5, 25, 100, 500][Number(k) - 1]);
-    else if (k === '5') doubleBet();
-    else if (k === '6') maxBet();
-    else if (k === 'backspace' || k === 'c') clearBet();
+    if (k === ' ' || k === 'enter') toggleReady();
+    else if (k >= '1' && k <= '5') pickChip(R_CHIPS[Number(k) - 1]);
+    else if (k === 'b') bjBet();
+    else if (k === 'u' || k === 'backspace') bjUndo();
+    else if (k === 'c') clearBet();
+    else if (k === 'r') bjRebet(1);
+    else if (k === 'x') bjRebet(2);
     else handled = false;
   } else handled = false;
   if (handled) e.preventDefault();

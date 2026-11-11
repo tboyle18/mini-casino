@@ -10,7 +10,7 @@ export const DECKS = 6;
 export const SHOE = DECKS * 52;
 export const CUT = 78;                 // reshuffle when a quarter of the shoe is left
 export const MIN_BET = 5;
-export const START_BANK = 1000;
+export const TABLE_VERSION = 2;      // tables from before chips came out of the wallet start over
 export const MAX_HANDS = 4;            // per player, after splits
 export const TURN_MS = 30000;          // time to act when other players are waiting
 export const BET_MS = 15000;           // countdown once someone is ready
@@ -69,13 +69,32 @@ export const isBJ = h => !h.split && h.cards.length === 2 && score(h.cards).tota
 
 export function newTable(code, name, seed, now) {
   return {
-    v: 1, code, name, seed, created: now, updated: now, rev: 0,
+    v: TABLE_VERSION, code, name, seed, created: now, updated: now, rev: 0,
     shoeNo: 0, pos: 0, n: 0, turn: 0, readyAt: 0, turnAt: 0,
     seats: [null, null, null, null], players: {}, phase: 'betting', round: null, processed: {},
   };
 }
+/* A seat starts with no chips: players bring them from their wallet ('chips'), and cash
+   them out again ('cashout', or by leaving). `cashed` counts everything cashed out so far,
+   so the page can pay the difference into the wallet exactly once. */
 export function newPlayer() {
-  return { bank: START_BANK, bet: 0, lastBet: 0, status: 'betting', leaving: false, stats: { w: 0, l: 0, p: 0, bj: 0 } };
+  return { bank: 0, bet: 0, lastBet: 0, cashed: 0, status: 'betting', leaving: false, stats: { w: 0, l: 0, p: 0, bj: 0 } };
+}
+export function cashOut(P) {
+  P.cashed = (P.cashed || 0) + P.bank;
+  P.bank = 0;
+  P.bet = 0;
+}
+/* Tables saved before chips came from the wallet: everyone's chips were free, so they go. */
+export function migrateTable(T) {
+  if (!T || (T.v || 1) >= TABLE_VERSION) return false;
+  for (const P of Object.values(T.players || {})) { P.bank = 0; P.bet = 0; P.cashed = 0; P.status = 'betting'; P.leaving = false; }
+  T.round = null;
+  T.phase = 'betting';
+  T.readyAt = 0;
+  T.turnAt = 0;
+  T.v = TABLE_VERSION;
+  return true;
 }
 export function newHand(R, seat, uid, bet) {
   return { id: R.nextId++, seat, uid, bet, cards: [], done: false, doubled: false, split: false, splitAces: false, result: null };
@@ -121,11 +140,11 @@ export function applyIntent(T, uid, m, ctx) {
     case 'leave': {
       if (seat < 0) return;
       if (roundLive(T) && T.round.hands.some(h => h.uid === uid)) P.leaving = true;
-      else { T.seats[seat] = null; P.status = 'betting'; P.leaving = false; }
+      else { T.seats[seat] = null; P.status = 'betting'; P.leaving = false; cashOut(P); }
       return;
     }
-    case 'rebuy':
-      if (seat >= 0 && T.phase === 'betting' && P.bank < MIN_BET) { P.bank += START_BANK; P.status = 'betting'; }
+    case 'cashout':
+      if (seat >= 0 && T.phase === 'betting') { cashOut(P); P.status = 'betting'; }
       return;
     case 'chips': {
       const a = Math.floor(Number(m.a) || 0);
@@ -317,10 +336,10 @@ export function finish(T, ctx, how) {
     const uid = T.seats[s];
     if (!uid) continue;
     const P = T.players[uid];
-    if (P.leaving) { T.seats[s] = null; P.leaving = false; P.status = 'betting'; continue; }
+    if (P.leaving) { T.seats[s] = null; P.leaving = false; P.status = 'betting'; cashOut(P); continue; }
     P.status = 'betting';
-    const cap = Math.floor(P.bank / 5) * 5;
-    P.bet = Math.min(uid in R.start ? P.lastBet : P.bet, cap);
+    if (uid in R.start) P.bet = 0;   // every round starts with no bet; Rebet brings back lastBet
+    else P.bet = Math.min(P.bet, Math.floor(P.bank / 5) * 5);
   }
 }
 
@@ -330,7 +349,7 @@ export function step(T, ctx) {
     if (ctx.longAway && ctx.longAway.size) {
       for (let s = 0; s < SEATS; s++) {
         const u = T.seats[s];
-        if (u && ctx.longAway.has(u)) { T.seats[s] = null; T.players[u].status = 'betting'; }
+        if (u && ctx.longAway.has(u)) { T.seats[s] = null; T.players[u].status = 'betting'; cashOut(T.players[u]); }
       }
     }
     const sp = seatedPresent(T, ctx);

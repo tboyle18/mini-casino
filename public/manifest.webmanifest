@@ -105,17 +105,6 @@
       ]
     },
     {
-      "name": "The Bottomless Bank",
-      "short_name": "Bank",
-      "url": "/#bank",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
       "name": "Your stats",
       "short_name": "Stats",
       "url": "/#stats",

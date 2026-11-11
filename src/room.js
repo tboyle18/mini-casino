@@ -7,10 +7,10 @@
 // The rules themselves are the same code the page uses for the solo table.
 
 import { DurableObject } from 'cloudflare:workers';
-import { newTable, newPlayer, applyMove, autoAdvance, nextDeadline, AWAY_MS, AWAY_SEAT_MS } from './rules.js';
+import { newTable, newPlayer, migrateTable, applyMove, autoAdvance, nextDeadline, AWAY_MS, AWAY_SEAT_MS } from './rules.js';
 
 const MAX_MESSAGE = 2048;
-const MOVES = new Set(['sit', 'leave', 'rebuy', 'chips', 'bet', 'ready', 'unready', 'out', 'ins', 'hit', 'stand', 'double', 'split']);
+const MOVES = new Set(['sit', 'leave', 'cashout', 'chips', 'bet', 'ready', 'unready', 'out', 'ins', 'hit', 'stand', 'double', 'split']);
 const OPEN = 1;
 
 export class TableRoom extends DurableObject {
@@ -22,6 +22,7 @@ export class TableRoom extends DurableObject {
     ctx.blockConcurrencyWhile(async () => {
       const got = await ctx.storage.get(['T', 'away', 'names']);
       this.T = got.get('T') || null;
+      if (migrateTable(this.T)) await ctx.storage.put('T', this.T);
       this.away = got.get('away') || {};
       this.names = got.get('names') || {};
     });
