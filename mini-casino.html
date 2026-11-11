@@ -1029,6 +1029,62 @@
   .vp-held { font: 800 11px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; padding: 6px 8px; border-radius: 7px; background: var(--gold); color: var(--on-gold); visibility: hidden; }
   .vp-card.held .vp-held { visibility: visible; }
 
+  /* ---------- Baccarat ----------
+     Recent results on top, the Player and Banker hands side by side, the three betting spots,
+     and the chip dock. Cards size themselves to the felt (cqw and cqh are 1% of it). */
+  html.bac body::before { background: radial-gradient(ellipse 130% 85% at 50% 35%, #6e1424 0%, #3d0a14 55%, #1d050a 100%); }
+  html.bac .dock { background: rgba(26, 6, 10, .92); }
+  .bc-road { flex: none; display: flex; gap: 4px; overflow: hidden; padding: 10px 0 0; min-height: 34px; }
+  .bc-road:empty::before { content: "Results show up here"; color: var(--ink-3); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; line-height: 24px; }
+  .bc-bead { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; }
+  .bc-bead.P { background: #2f6fd0; }
+  .bc-bead.B { background: #c8303c; }
+  .bc-bead.T { background: #1f8a52; }
+  .bc-bead:first-child { box-shadow: 0 0 0 2px var(--gold); }
+  .bc-felt { flex: 1; min-height: 0; container-type: size; display: flex; flex-direction: column; gap: 10px; padding: 10px 0 12px; }
+  /* Player above Banker: on a tall phone that leaves room for bigger cards than side by side */
+  .bc-hands { flex: 1; min-height: 0; display: grid; grid-template-rows: 1fr 1fr; gap: 8px; }
+  .bc-side {
+    display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 6px; min-height: 0;
+    padding: 6px 10px; border-radius: 16px; background: rgba(0, 0, 0, .2); border: 1.5px solid rgba(255, 255, 255, .08);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .bc-side.win { border-color: var(--gold); box-shadow: 0 0 20px rgba(233, 196, 106, .4); }
+  .bc-head { display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 800; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+  .bc-side.player .bc-head span { color: #9cc0ff; }
+  .bc-side.banker .bc-head span { color: #ff9c9c; }
+  .bc-num { min-width: 50px; padding: 6px 8px; border-radius: 10px; background: rgba(0, 0, 0, .5); font: 800 26px/1 var(--font-display); letter-spacing: 0; text-align: center; font-variant-numeric: tabular-nums; }
+  .bc-num:empty { visibility: hidden; }
+  .bc-side.win .bc-num { background: var(--gold); color: var(--on-gold); }
+  .bc-cards {
+    --ch: min(calc((100cqh - 176px) / 2 - 22px), calc((100cqw - 112px) / 2.4 / .714)); --cw: calc(var(--ch) * .714);
+    display: flex; justify-content: center; min-height: var(--ch);
+  }
+  .bc-cards .card + .card { margin-left: calc(var(--cw) * -0.3); }
+  .bc-msg { flex: none; min-height: 48px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+  .bc-title { font: 800 24px/1.15 var(--font-display); letter-spacing: -.01em; }
+  .bc-sub { margin-top: 3px; font-weight: 700; font-size: 15px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .bc-msg.win .bc-title { color: var(--gold); }
+  .bc-msg.win .bc-sub { color: var(--win); }
+  .bc-msg.lose .bc-sub { color: var(--lose); }
+  .bc-spots { flex: none; display: grid; grid-template-columns: 1fr .82fr 1fr; gap: 8px; }
+  .bc-spot {
+    appearance: none; position: relative; min-height: 82px; padding: 8px 4px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    border-radius: 16px; border: 2px solid rgba(255, 255, 255, .22); background: rgba(0, 0, 0, .22);
+    color: var(--ink); font: inherit; transition: box-shadow .15s, background .15s;
+  }
+  .bc-spot.player { border-color: rgba(130, 170, 255, .6); }
+  .bc-spot.banker { border-color: rgba(255, 130, 130, .6); }
+  .bc-spot.tie { border-color: rgba(120, 220, 160, .55); }
+  .bc-spot:active:not(:disabled) { background: rgba(255, 255, 255, .08); }
+  .bc-spot:disabled { cursor: default; }
+  .bc-spot.pick { box-shadow: inset 0 0 0 3px var(--gold), 0 0 14px rgba(233, 196, 106, .45); }
+  .bc-spot.win { background: rgba(233, 196, 106, .18); box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(233, 196, 106, .55); }
+  .bc-name { font: 800 16px/1.1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+  .bc-odds { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+  .bc-amt { min-height: 20px; font-size: 16px; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+
   /* ---------- How to play ---------- */
   .learn-index { display: flex; flex-direction: column; gap: 12px; }
   .kb { display: flex; flex-direction: column; gap: 12px; }
@@ -1054,13 +1110,15 @@
   .tile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 14px; }
   .tile.wide .tile-art { width: 112px; height: 86px; margin: 0; }
   .tile.wide .tile-body { align-self: stretch; }
-  .tile-art.fan .card { --cw: 38px; --ch: 53px; position: absolute; left: 37px; top: 22px; transform-origin: 50% 115%; }
-  .tile-art.fan .card:nth-child(1) { left: 37px; top: 22px; transform: rotate(-26deg); }
-  .tile-art.fan .card:nth-child(2) { left: 37px; top: 22px; transform: rotate(-13deg); }
+  .tile-art.fan .card { --cw: 38px; --ch: 53px; position: absolute; left: calc(50% - 19px); top: 22px; transform-origin: 50% 115%; }
+  .tile-art.fan .card:nth-child(1) { left: calc(50% - 19px); top: 22px; transform: rotate(-26deg); }
+  .tile-art.fan .card:nth-child(2) { left: calc(50% - 19px); top: 22px; transform: rotate(-13deg); }
   .tile-art.fan .card:nth-child(4) { transform: rotate(13deg); }
   .tile-art.fan .card:nth-child(5) { transform: rotate(26deg); }
 
   @media (max-height: 700px) {
+    .bc-title { font-size: 21px; }
+    .bc-spot { min-height: 70px; }
     .vp-title { font-size: 21px; }
     .vp-msg { min-height: 44px; }
     .msg { min-height: 50px; }
@@ -1181,6 +1239,16 @@
       <p class="fine" id="vp-best">Best hand: none yet</p>
     </div>
     <div class="lcard stat-card">
+      <div class="sc-head"><h2>Baccarat</h2><span class="sc-net" id="bc-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Rounds</dt><dd id="bc-rounds">0</dd></div>
+        <div><dt>Winning rounds</dt><dd id="bc-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="bc-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="bc-biggest">$0</dd></div>
+      </dl>
+      <p class="fine" id="bc-results">No rounds yet</p>
+    </div>
+    <div class="lcard stat-card">
       <div class="sc-head"><h2>The Bottomless Bank</h2></div>
       <dl class="sc-grid">
         <div><dt>Withdrawn</dt><dd id="bk-withdrawn">$0</dd></div>
@@ -1213,6 +1281,11 @@
       <button class="stats-link" data-learn="poker">
         <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="8" height="12" rx="1.6" transform="rotate(-14 6.5 12.5)"/><rect x="8" y="5" width="8" height="12" rx="1.6"/><rect x="13.5" y="6.5" width="8" height="12" rx="1.6" transform="rotate(14 17.5 12.5)"/></svg></span>
         <span class="sl-text"><b>Video poker</b><span>Hold, draw and make a hand</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <button class="stats-link" data-learn="baccarat">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="5"/><circle cx="16" cy="12" r="5"/></svg></span>
+        <span class="sl-text"><b>Baccarat</b><span>Player or Banker, closest to 9</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
       <div class="section-label">3D lab · experimental</div>
@@ -1362,6 +1435,57 @@
       <button class="btn primary block kb-cta" data-go="poker">Play video poker</button>
     </article>
 
+    <article class="kb" data-kb="baccarat" hidden>
+      <h1>Baccarat</h1>
+      <p class="kb-lead">Bet on which hand finishes closer to 9: the Player's or the Banker's. You don't play either hand. The cards are dealt by fixed rules, so all you choose is your bet.</p>
+      <h2>How a round goes</h2>
+      <ol>
+        <li>Tap chips to choose an amount. It shows as <b>In hand</b>.</li>
+        <li>Tap <b>Player</b>, <b>Banker</b> or <b>Tie</b>. You can pick more than one.</li>
+        <li>Tap <b>Place</b> to put that amount on each spot you picked.</li>
+        <li>Tap <b>Deal</b>. Each hand gets two cards, sometimes a third, and the one closer to 9 wins.</li>
+      </ol>
+      <p><b>Clear</b> takes bets back, <b>Rebet</b> repeats your last round's bets, and <b>×2</b> doubles what's down.</p>
+      <h2>Counting</h2>
+      <p>Aces are worth 1, 2 to 9 are worth their number, and 10s and picture cards are worth 0. Only the last digit of the total counts, so a 7 and an 8 make 15, which is 5. The best hand is 9.</p>
+      <h2>Payouts</h2>
+      <table class="kb-table">
+        <thead><tr><th>Bet</th><th>Pays</th></tr></thead>
+        <tbody>
+          <tr><td>Player</td><td class="pay">1 to 1</td></tr>
+          <tr><td>Banker: 1 to 1, less a 5% commission</td><td class="pay">0.95 to 1</td></tr>
+          <tr><td>Tie</td><td class="pay">8 to 1</td></tr>
+        </tbody>
+      </table>
+      <p>On a tie, Player and Banker bets come back. A $20 Banker bet that wins returns $39.</p>
+      <h2>When a third card comes</h2>
+      <ul>
+        <li>If either hand has 8 or 9 from its first two cards (a <b>natural</b>), nobody draws.</li>
+        <li>Otherwise the Player draws on 0 to 5 and stands on 6 or 7.</li>
+        <li>If the Player stood, the Banker draws on 0 to 5. If the Player drew, the Banker follows this table:</li>
+      </ul>
+      <table class="kb-table">
+        <thead><tr><th>Banker has</th><th>Draws if the Player's third card is</th></tr></thead>
+        <tbody>
+          <tr><td>0, 1 or 2</td><td>Anything</td></tr>
+          <tr><td>3</td><td>Anything but 8</td></tr>
+          <tr><td>4</td><td>2 to 7</td></tr>
+          <tr><td>5</td><td>4 to 7</td></tr>
+          <tr><td>6</td><td>6 or 7</td></tr>
+          <tr><td>7</td><td>Never</td></tr>
+        </tbody>
+      </table>
+      <h2>The odds</h2>
+      <p>The Banker wins about 45.9% of rounds, the Player 44.6%, and they tie 9.5% of the time. Over time the house keeps about 1.06% of Banker bets, 1.24% of Player bets and 14.4% of Tie bets.</p>
+      <h2>Tips</h2>
+      <ul>
+        <li>Banker is the best bet in the game, even after the commission.</li>
+        <li>Tie pays big, but it's the worst bet on the table.</li>
+        <li>The row of results at the top shows what's come up, newest first. It doesn't predict the next round: every round here is dealt from a freshly shuffled 8-deck shoe.</li>
+      </ul>
+      <button class="btn primary block kb-cta" data-go="baccarat">Play baccarat</button>
+    </article>
+
     <article class="kb" data-kb="slots" hidden>
       <h1>Lucky Duck slots</h1>
       <p class="kb-lead">A deliberately ridiculous 3D slot machine in the graphics lab. It's experimental, and it plays with lab credits, not your wallet.</p>
@@ -1414,13 +1538,13 @@
       <h1>Wallet and bank</h1>
       <p class="kb-lead">Everything here is play money. Nothing costs anything, and nothing can be cashed out.</p>
       <h2>Your wallet</h2>
-      <p>One wallet pays for every casino game. Roulette and video poker bets come straight out of it, and at blackjack you bring chips from it to the table.</p>
+      <p>One wallet pays for every casino game. Roulette, video poker and baccarat bets come straight out of it, and at blackjack you bring chips from it to the table.</p>
       <h2>The Bottomless Bank</h2>
       <p>Out of money? Tap your balance at the top of a game, or <b>Get money</b> on the home screen, and withdraw any amount, as often as you like. No interest, no credit check.</p>
       <h2>Saving your progress</h2>
       <p>Sign in from the top right of the home screen with Google, or with an email and password. Your wallet, stats and solo blackjack table then save to your account and follow you to any device. You also need to be signed in to sit at a table with friends. Signed out, everything stays in this browser.</p>
       <h2>Your stats</h2>
-      <p><b>Your stats</b> on the home screen tracks every hand, spin and draw: net winnings, biggest wins, streaks and more. It also remembers how much you've borrowed from the Bank.</p>
+      <p><b>Your stats</b> on the home screen tracks every hand, spin, draw and coup: net winnings, biggest wins, streaks and more. It also remembers how much you've borrowed from the Bank.</p>
       <h2>3D lab credits</h2>
       <p>The games in the 3D lab use their own credits, separate from your wallet, so you can go wild there without touching your balance.</p>
     </article>
@@ -1512,6 +1636,43 @@
         <button class="btn" id="vp-clear">Clear</button>
         <button class="btn" id="vp-double">×2</button>
         <button class="btn primary wide" id="vp-deal">Deal</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Baccarat ================= -->
+  <section class="view has-dock" id="baccarat-view" hidden>
+    <div class="bc-road" id="bc-road" aria-label="Recent results, newest first"></div>
+    <div class="bc-felt">
+      <div class="bc-hands">
+        <div class="bc-side player" id="bc-player-side">
+          <div class="bc-head"><span>Player</span><b class="bc-num" id="bc-pt"></b></div>
+          <div class="bc-cards" id="bc-pcards" aria-label="Player's cards"></div>
+        </div>
+        <div class="bc-side banker" id="bc-banker-side">
+          <div class="bc-head"><span>Banker</span><b class="bc-num" id="bc-bt"></b></div>
+          <div class="bc-cards" id="bc-bcards" aria-label="Banker's cards"></div>
+        </div>
+      </div>
+      <div class="bc-msg" id="bc-msg" role="status" aria-live="polite"><div class="bc-title" id="bc-title"></div><div class="bc-sub" id="bc-sub"></div></div>
+      <div class="bc-spots" id="bc-spots">
+        <button class="bc-spot player" data-k="player"><span class="bc-name">Player</span><span class="bc-odds">1 to 1</span><span class="bc-amt"></span></button>
+        <button class="bc-spot tie" data-k="tie"><span class="bc-name">Tie</span><span class="bc-odds">8 to 1</span><span class="bc-amt"></span></button>
+        <button class="bc-spot banker" data-k="banker"><span class="bc-name">Banker</span><span class="bc-odds">0.95 to 1</span><span class="bc-amt"></span></button>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="dock-top">
+        <span class="dt-item">Bet<b id="bc-bet">$0</b></span>
+        <span class="dt-item">In hand<b id="bc-amount">$0</b></span>
+      </div>
+      <div class="rlow" id="bc-low" hidden>Running low? <button class="linkbtn" id="bc-bank">Get more from the Bank</button></div>
+      <div class="chips" id="bc-chips" aria-label="Chip value"></div>
+      <div class="row actions">
+        <button class="btn" id="bc-clear">Clear</button>
+        <button class="btn" id="bc-rebet">Rebet</button>
+        <button class="btn" id="bc-double" hidden>×2</button>
+        <button class="btn primary wide" id="bc-go">Deal</button>
       </div>
     </div>
   </section>
@@ -1747,9 +1908,10 @@ const SOLO_ID = 'solo';
 const WALLET_MAX = 1e15;              // the vault's idea of infinity
 const WITHDRAW_MAX = 999999999999;
 const GAMES = [
-  { go: 'blackjack', name: 'Blackjack', blurb: 'Solo, or a room for up to four friends.', cta: 'Play', art: 'cards' },
+  { go: 'blackjack', name: 'Blackjack', blurb: 'Solo, or a room for up to four friends.', cta: 'Play', art: 'cards', cards: ['AS', 'KH'] },
   { go: 'roulette', name: 'Roulette', blurb: 'Single zero. Bets straight from your wallet.', cta: 'Play', art: 'wheel' },
-  { go: 'poker', name: 'Video Poker', blurb: 'Jacks or Better. Hold your keepers, draw the rest.', cta: 'Play', art: 'fan', wide: true },
+  { go: 'poker', name: 'Video Poker', blurb: 'Jacks or Better. Hold your keepers, draw the rest.', cta: 'Play', art: 'fan' },
+  { go: 'baccarat', name: 'Baccarat', blurb: 'Player or Banker. Closest to 9 wins.', cta: 'Play', art: 'cards', cards: ['9D', 'KC'] },
 ];
 const QUIPS = [
   'Approved. We didn’t check.',
@@ -1766,6 +1928,7 @@ const QUIPS = [
    Shared with the room server: src/rules.js is inlined here by scripts/build.mjs. */
 /* @@RULES@@ */
 /* @@POKER@@ */
+/* @@BACCARAT@@ */
 
 /* ================= App state ================= */
 const app = {
@@ -1793,6 +1956,10 @@ const ui = {
   vpNet: $('vp-net'), vpHands: $('vp-hands'), vpRate: $('vp-rate'), vpWagered: $('vp-wagered'), vpBiggest: $('vp-biggest'), vpBest: $('vp-best'),
   pokerView: $('poker-view'), vpPays: $('vp-pays'), vpMsg: $('vp-msg'), vpTitle: $('vp-title'), vpSub: $('vp-sub'), vpHand: $('vp-hand'),
   vpBet: $('vp-bet'), vpLow: $('vp-low'), vpBank: $('vp-bank'), vpChips: $('vp-chips'), vpClear: $('vp-clear'), vpDouble: $('vp-double'), vpDeal: $('vp-deal'),
+  baccaratView: $('baccarat-view'), bcRoad: $('bc-road'), bcPlayerSide: $('bc-player-side'), bcBankerSide: $('bc-banker-side'), bcPt: $('bc-pt'), bcBt: $('bc-bt'),
+  bcPcards: $('bc-pcards'), bcBcards: $('bc-bcards'), bcMsg: $('bc-msg'), bcTitle: $('bc-title'), bcSub: $('bc-sub'), bcSpots: [...document.querySelectorAll('.bc-spot')],
+  bcBet: $('bc-bet'), bcAmount: $('bc-amount'), bcLow: $('bc-low'), bcBank: $('bc-bank'), bcChips: $('bc-chips'), bcClear: $('bc-clear'), bcRebet: $('bc-rebet'), bcDouble: $('bc-double'), bcGo: $('bc-go'),
+  bcNet: $('bc-net'), bcRounds: $('bc-rounds'), bcRate: $('bc-rate'), bcWagered: $('bc-wagered'), bcBiggest: $('bc-biggest'), bcResults: $('bc-results'),
   learnView: $('learn-view'), learnIndex: $('learn-index'), kbArticles: [...document.querySelectorAll('.kb')], kbPokerPays: $('kb-poker-pays'),
   helpBtn: $('help-btn'), homeLearn: $('home-learn'),
   rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
@@ -1913,6 +2080,7 @@ function route() {
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
   else if (h === 'stats') target = { view: 'stats', code: '' };
   else if (h === 'poker') target = { view: 'poker', code: '' };
+  else if (h === 'baccarat') target = { view: 'baccarat', code: '' };
   else if (h === 'learn') target = { view: 'learn', code: '' };
   else if (/^learn-[a-z]+$/.test(h)) target = { view: 'learn', code: h.slice(6) };
   else if (/^table-[a-z0-9]{4,12}$/.test(h)) target = { view: 'table', code: h.slice(6) };
@@ -2375,21 +2543,20 @@ function renderBank() {
 }
 
 function buildTiles() {
-  for (const g of GAMES) {
+  GAMES.forEach((g, i) => {
     const b = document.createElement('button');
     b.className = 'tile';
     const art = document.createElement('div');
     art.className = 'tile-art';
     art.setAttribute('aria-hidden', 'true');
-    if (g.wide) b.classList.add('wide');
+    if (GAMES.length % 2 && i === GAMES.length - 1) b.classList.add('wide');   // an odd one out gets the full width
     if (g.art === 'fan') {
       art.classList.add('fan');
       art.innerHTML = ['10S', 'JS', 'QS', 'KS', 'AS'].map(c =>
         `<div class="card${c === 'AS' ? ' ace' : ''}"><div class="inner"><div class="face">${faceHTML(c)}</div></div></div>`).join('');
     } else if (g.art === 'cards') {
-      art.innerHTML =
-        `<div class="card ace"><div class="inner"><div class="face">${faceHTML('AS')}</div></div></div>` +
-        `<div class="card red"><div class="inner"><div class="face">${faceHTML('KH')}</div></div></div>`;
+      art.innerHTML = g.cards.map(c =>
+        `<div class="card${rankOf(c) === 'A' ? ' ace' : ''}${/[HD]$/.test(c) ? ' red' : ''}"><div class="inner"><div class="face">${faceHTML(c)}</div></div></div>`).join('');
     } else {
       art.innerHTML = '<div class="mini-wheel"></div>';
     }
@@ -2406,11 +2573,11 @@ function buildTiles() {
     b.append(art, body);
     b.addEventListener('click', () => go(g.go));
     ui.tiles.appendChild(b);
-  }
+  });
 }
 
 /* ================= Stats =================
-   A running record of every blackjack hand, roulette spin and video poker hand you play, kept in this
+   A running record of every blackjack hand, roulette spin, video poker hand and baccarat round you play, kept in this
    browser and synced with your account alongside the wallet. Each blackjack round is
    counted once (by table and round number), so reloading or reconnecting never counts
    it twice. */
@@ -2421,6 +2588,7 @@ function freshStats() {
     bj: { hands: 0, won: 0, lost: 0, pushed: 0, blackjacks: 0, wagered: 0, net: 0, biggest: 0 },
     rl: { spins: 0, hits: 0, wagered: 0, net: 0, biggest: 0, landed: {}, paid: {} },
     vp: { hands: 0, wins: 0, wagered: 0, net: 0, biggest: 0, made: {} },
+    bc: { rounds: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, P: 0, B: 0, T: 0 },
     streak: 0, best: 0,
     seen: [],
   };
@@ -2442,6 +2610,7 @@ function statsLoad(d) {
   for (const k of ['hands', 'wins', 'wagered', 'net', 'biggest']) f.vp[k] = finite(d.vp && d.vp[k]);
   const made = d.vp && d.vp.made;
   if (made && typeof made === 'object') for (const p of POKER_PAYS) if (Number.isFinite(made[p.key]) && made[p.key] > 0) f.vp.made[p.key] = made[p.key];
+  for (const k of Object.keys(f.bc)) f.bc[k] = finite(d.bc && d.bc[k]);
   f.streak = finite(d.streak);
   f.best = finite(d.best);
   if (Array.isArray(d.seen)) f.seen = d.seen.filter(x => typeof x === 'string').slice(-200);
@@ -2478,6 +2647,19 @@ function recordPoker(rank, wagered, payout) {
   if (net > 0) p.wins++;
   p.biggest = Math.max(p.biggest, net);
   if (rank) p.made[rank.key] = (p.made[rank.key] || 0) + 1;
+  statsStreak(net);
+  statsSave();
+}
+function recordBaccarat(live) {
+  const b = stats.bc;
+  const net = live.payout - live.total;
+  b.rounds++;
+  b.wagered += live.total;
+  b.net = Math.round((b.net + net) * 100) / 100;
+  if (net > 0) b.won++;
+  else if (net < 0) b.lost++;
+  b.biggest = Math.max(b.biggest, net);
+  b[live.winner === 'player' ? 'P' : live.winner === 'banker' ? 'B' : 'T']++;
   statsStreak(net);
   statsSave();
 }
@@ -3174,10 +3356,250 @@ function renderPoker() {
   ui.vpLow.hidden = hold || vp.busy || !wallet.ready || bal >= Math.max(5, vp.bet);
 }
 
+/* ================= Baccarat (punto banco, solo, plays from the wallet) =================
+   Chips build an amount, taps on Player, Banker or Tie pick spots, Place puts the amount on
+   each, and Deal plays a coup from a freshly shuffled shoe. The bets are taken when the deal
+   starts and paid when the last card lands; if the app closes in between, the round is
+   settled the next time it opens. */
+const BC_KEY = 'mini-casino.baccarat';
+const BC_SIDES = ['player', 'tie', 'banker'];
+const BC_NAME = { player: 'Player', banker: 'Banker', tie: 'Tie' };
+const bc = { amount: 0, picks: new Set(), bets: { player: 0, tie: 0, banker: 0 }, last: null, road: [], live: null, result: null, busy: false };
+const bcTotal = (bets = bc.bets) => BC_SIDES.reduce((a, k) => a + (bets[k] || 0), 0);
+const bcPending = () => bc.amount > 0 || bc.picks.size > 0;
+const bcRoom = () => Math.max(0, (wallet.ready ? wallet.balance : 0) - bcTotal());
+function bcSave() {
+  try { localStorage.setItem(BC_KEY, JSON.stringify({ last: bc.last, road: bc.road, live: bc.live })); } catch (e) { /* storage unavailable */ }
+}
+function bcCleanBets(o) {
+  const out = { player: 0, tie: 0, banker: 0 };
+  if (o && typeof o === 'object') for (const k of BC_SIDES) if (Number.isFinite(o[k]) && o[k] > 0) out[k] = o[k];
+  return out;
+}
+function bcLoad() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(BC_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
+  if (!d) return;
+  if (d.last) { const l = bcCleanBets(d.last); if (bcTotal(l)) bc.last = l; }
+  if (Array.isArray(d.road)) bc.road = d.road.filter(x => x === 'P' || x === 'B' || x === 'T').slice(-60);
+  const l = d.live;
+  if (l && BC_SIDES.includes(l.winner) && Number.isFinite(l.payout) && Number.isFinite(l.total) && l.total > 0) {
+    bc.live = { bets: bcCleanBets(l.bets), total: l.total, winner: l.winner, pt: l.pt, bt: l.bt, natural: !!l.natural, payout: l.payout };
+  }
+}
+// A round the app closed during: pay it out now (call once the wallet and stats are loaded)
+function bcRecover() {
+  if (bc.live) bcSettle();
+}
+function bcSettle() {
+  const live = bc.live;
+  if (!live) return;
+  bc.live = null;
+  bc.road.push(live.winner === 'player' ? 'P' : live.winner === 'banker' ? 'B' : 'T');
+  if (bc.road.length > 60) bc.road.splice(0, bc.road.length - 60);
+  bcSave();
+  recordBaccarat(live);
+  walletChange(live.payout, null, { log: { a: Math.round((live.payout - live.total) * 100) / 100, w: `Baccarat · ${live.winner === 'tie' ? 'Tie' : BC_NAME[live.winner] + ' won'}` } });
+}
+function buildBaccarat() {
+  for (const v of R_CHIPS) {
+    const c = document.createElement('button');
+    c.className = 'chip chipface';
+    c.style.setProperty('--c', R_CHIP_COLORS[v]);
+    c.dataset.v = String(v);
+    c.textContent = chipLabel(v);
+    c.setAttribute('aria-label', `Add ${moneyFull(v)}`);
+    c.addEventListener('click', () => bcAddAmount(v));
+    ui.bcChips.appendChild(c);
+  }
+  for (const spot of ui.bcSpots) spot.addEventListener('click', () => bcPick(spot.dataset.k));
+}
+// Changing bets after a round clears its result (the cards stay until the next deal)
+function bcFresh() { bc.result = null; }
+function bcAddAmount(v) {
+  if (bc.busy || !wallet.ready) return;
+  if (bc.amount + v > bcRoom()) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
+  bcFresh();
+  bc.amount += v;
+  buzz(5);
+  render();
+}
+function bcPick(k) {
+  if (bc.busy || !wallet.ready) return;
+  bcFresh();
+  if (bc.picks.has(k)) bc.picks.delete(k); else bc.picks.add(k);
+  buzz();
+  render();
+}
+function bcPlace() {
+  if (bc.busy || !wallet.ready) return;
+  if (!bc.amount) { toast('Tap chips to choose how much to bet.'); return; }
+  if (!bc.picks.size) { toast('Tap Player, Banker or Tie to choose where it goes.'); return; }
+  if (bc.amount * bc.picks.size > bcRoom()) { toast('Your wallet can’t cover that many. The bank can.'); return; }
+  for (const k of bc.picks) bc.bets[k] += bc.amount;
+  bc.picks.clear();
+  bc.amount = 0;
+  buzz(15);
+  render();
+}
+function bcClear() {
+  if (bc.busy) return;
+  if (bcPending()) { bc.amount = 0; bc.picks.clear(); render(); return; }   // first clear what isn't placed yet
+  if (!bcTotal()) return;
+  bc.bets = { player: 0, tie: 0, banker: 0 };
+  bcFresh();
+  render();
+}
+function bcRebet() {
+  if (bc.busy || !bc.last || bcTotal()) return false;
+  if (bcTotal(bc.last) > (wallet.ready ? wallet.balance : 0)) { toast('Your wallet can’t cover your last bets. The bank can.'); return false; }
+  bc.bets = { ...bc.last };
+  bcFresh();
+  render();
+  return true;
+}
+function bcDouble() {
+  const t = bcTotal();
+  if (bc.busy || !t) return;
+  if (t * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
+  for (const k of BC_SIDES) bc.bets[k] *= 2;
+  bcFresh();
+  render();
+}
+function bcCard(code, third) {
+  const e = document.createElement('div');
+  e.className = 'card deal-in' + (/[HD]$/.test(code) ? ' red' : '') + (rankOf(code) === 'A' ? ' ace' : '');
+  e.setAttribute('role', 'img');
+  e.setAttribute('aria-label', cardLabel(code) + (third ? ', third card' : ''));
+  e.innerHTML = `<div class="inner"><div class="face">${faceHTML(code)}</div><div class="back cardback"></div></div>`;
+  e.addEventListener('animationend', ev => { if (ev.animationName === 'dealIn') e.classList.remove('deal-in'); });
+  return e;
+}
+// The main button: Place while you're choosing, Deal once bets are down
+function bcGo() {
+  if (bcPending()) bcPlace();
+  else bcDeal();
+}
+function bcDeal() {
+  if (bc.busy || !wallet.ready) return;
+  if (!bcTotal() && bc.last && !bcRebet()) return;
+  const total = bcTotal();
+  if (!total) { toast('Tap chips, pick Player, Banker or Tie, then Place.'); return; }
+  if (total > wallet.balance) { toast('Your wallet can’t cover these bets. The bank can.'); return; }
+  bc.busy = true;
+  if (!walletChange(-total, null)) { bc.busy = false; return; }
+  const coup = bacCoup(bacShoe(randInt));
+  const bets = { ...bc.bets };
+  bc.live = { bets, total, winner: coup.winner, pt: coup.pt, bt: coup.bt, natural: coup.natural, payout: bacPayout(bets, coup.winner) };
+  bc.last = bets;
+  bc.bets = { player: 0, tie: 0, banker: 0 };   // settled with this coup; Rebet brings them back
+  bc.result = null;
+  bcSave();
+  buzz(10);
+
+  // Deal the cards one at a time, Player first, totals ticking up as they land
+  ui.bcPcards.textContent = '';
+  ui.bcBcards.textContent = '';
+  const shown = { player: [], banker: [] };
+  ui.bcPt.textContent = '';
+  ui.bcBt.textContent = '';
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const step = reduce ? 60 : 520, pause = reduce ? 0 : 450, land = reduce ? 0 : 340;
+  let t = 0;
+  coup.order.forEach(([side, card], i) => {
+    if (i === 4) t += pause;   // a beat before any third card
+    setTimeout(() => {
+      (side === 'player' ? ui.bcPcards : ui.bcBcards).appendChild(bcCard(card, i >= 4));
+      buzz(4);
+    }, t);
+    setTimeout(() => {
+      shown[side].push(card);
+      (side === 'player' ? ui.bcPt : ui.bcBt).textContent = String(bacTotal(shown[side]));
+    }, t + land);
+    t += step;
+  });
+  setTimeout(() => {
+    const live = bc.live;
+    bc.busy = false;
+    bc.result = live;
+    bcSettle();
+    const net = live.payout - live.total;
+    if (net > 0) buzz([15, 50, 25]);
+    render();
+  }, t + land + (reduce ? 0 : 250));
+  render();
+}
+function renderBaccarat() {
+  const bal = wallet.ready ? wallet.balance : 0;
+  const total = bcTotal();
+  const r = bc.result;
+  ui.bcBet.textContent = money(total);
+  ui.bcAmount.textContent = money(bc.amount);
+  for (const spot of ui.bcSpots) {
+    const k = spot.dataset.k;
+    const live = bc.busy && bc.live ? bc.live.bets[k] : bc.bets[k];
+    spot.querySelector('.bc-amt').textContent = live ? money(live) : '';
+    spot.classList.toggle('pick', bc.picks.has(k));
+    spot.classList.toggle('win', !!r && r.winner === k);
+    spot.disabled = bc.busy;
+  }
+  ui.bcPlayerSide.classList.toggle('win', !!r && r.winner === 'player');
+  ui.bcBankerSide.classList.toggle('win', !!r && r.winner === 'banker');
+
+  let title, sub = '', cls = '';
+  if (bc.busy) title = 'Dealing…';
+  else if (r) {
+    const net = Math.round((r.payout - r.total) * 100) / 100;
+    const score = r.winner === 'banker' ? `${r.bt} to ${r.pt}` : `${r.pt} to ${r.bt}`;
+    title = r.winner === 'tie' ? 'Tie' : `${BC_NAME[r.winner]} wins`;
+    sub = (r.natural ? 'Natural ' : '') + score + (net > 0 ? ` · +${money(net)}` : net < 0 ? ` · −${money(-net)}` : ' · Bets back');
+    cls = net > 0 ? 'win' : net < 0 ? 'lose' : '';
+  } else if (bcPending()) {
+    title = bc.picks.size ? 'Now tap Place' : 'Pick a spot';
+    sub = bc.picks.size ? `${money(bc.amount)} on each spot you picked` : 'Player, Banker or Tie';
+  } else if (total) {
+    title = 'Bets are down';
+    sub = 'Tap Deal';
+  } else {
+    title = 'Place your bets';
+    sub = 'Tap chips, pick a spot, then Place';
+  }
+  ui.bcTitle.textContent = title;
+  ui.bcSub.textContent = sub;
+  ui.bcMsg.className = 'bc-msg' + (cls ? ' ' + cls : '');
+
+  const pending = bcPending();
+  const lastTotal = bc.last ? bcTotal(bc.last) : 0;
+  const canRebet = !bc.busy && !total && lastTotal > 0 && lastTotal <= bal;
+  ui.bcGo.textContent = pending ? 'Place' : 'Deal';
+  ui.bcGo.disabled = bc.busy || !wallet.ready || (!pending && !total && !canRebet);
+  ui.bcClear.disabled = bc.busy || (!pending && !total);
+  ui.bcRebet.hidden = total > 0;      // one slot: Rebet before you bet, ×2 once chips are down
+  ui.bcDouble.hidden = !total;
+  ui.bcRebet.disabled = !canRebet;
+  ui.bcDouble.disabled = bc.busy || !total || total * 2 > bal;
+  for (const c of ui.bcChips.children) c.disabled = bc.busy || !wallet.ready || bc.amount + Number(c.dataset.v) > bal - total;
+  ui.bcLow.hidden = bc.busy || !wallet.ready || bal - total >= 5;
+
+  // Recent results, newest first
+  const road = bc.road.slice(-24).reverse();
+  if (ui.bcRoad.childElementCount !== road.length || ui.bcRoad.dataset.n !== String(bc.road.length)) {
+    ui.bcRoad.textContent = '';
+    for (const x of road) {
+      const b = document.createElement('span');
+      b.className = 'bc-bead ' + x;
+      b.textContent = x;
+      b.setAttribute('aria-label', x === 'P' ? 'Player' : x === 'B' ? 'Banker' : 'Tie');
+      ui.bcRoad.appendChild(b);
+    }
+    ui.bcRoad.dataset.n = String(bc.road.length);
+  }
+}
+
 /* ================= How to play ================= */
-const LEARN = ['blackjack', 'roulette', 'poker', 'slots', 'plinko', 'wallet'];
+const LEARN = ['blackjack', 'roulette', 'poker', 'baccarat', 'slots', 'plinko', 'wallet'];
 // Game screens with a ? button: the article it opens, and what its back button says
-const HELP_FOR = { lobby: ['blackjack', 'Blackjack'], table: ['blackjack', 'Table'], roulette: ['roulette', 'Roulette'], poker: ['poker', 'Video poker'] };
+const HELP_FOR = { lobby: ['blackjack', 'Blackjack'], table: ['blackjack', 'Table'], roulette: ['roulette', 'Roulette'], poker: ['poker', 'Video poker'], baccarat: ['baccarat', 'Baccarat'] };
 function buildLearn() {
   for (const p of POKER_PAYS) {
     const tr = document.createElement('tr');
@@ -3678,9 +4100,11 @@ function render() {
   ui.tableView.hidden = v !== 'table';
   ui.statsView.hidden = v !== 'stats';
   ui.pokerView.hidden = v !== 'poker';
+  ui.baccaratView.hidden = v !== 'baccarat';
   ui.learnView.hidden = v !== 'learn';
   // Game screens fill the screen exactly and never scroll
-  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker');
+  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat');
+  document.documentElement.classList.toggle('bac', v === 'baccarat');
   document.documentElement.classList.toggle('bj', v === 'table');
   document.documentElement.classList.toggle('vp', v === 'poker');
 
@@ -3710,6 +4134,7 @@ function render() {
   else if (v === 'roulette') renderRoulette();
   else if (v === 'table') renderTable();
   else if (v === 'poker') renderPoker();
+  else if (v === 'baccarat') renderBaccarat();
   else if (v === 'learn') renderLearn();
   syncLock();
 }
@@ -3719,8 +4144,8 @@ const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n));
 const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');
 const tone = (el, n) => { el.classList.toggle('up', n > 0); el.classList.toggle('down', n < 0); };
 function statsTotals() {
-  const b = stats.bj, r = stats.rl, p = stats.vp;
-  return { net: b.net + r.net + p.net, rounds: b.hands + r.spins + p.hands, biggest: Math.max(b.biggest, r.biggest, p.biggest, 0) };
+  const b = stats.bj, r = stats.rl, p = stats.vp, c = stats.bc;
+  return { net: b.net + r.net + p.net + c.net, rounds: b.hands + r.spins + p.hands + c.rounds, biggest: Math.max(b.biggest, r.biggest, p.biggest, c.biggest, 0) };
 }
 function renderHomeStats() {
   const t = statsTotals();
@@ -3781,6 +4206,15 @@ function renderStats() {
   ui.vpBiggest.textContent = money(vs.biggest);
   const best = POKER_PAYS.find(x => vs.made[x.key]);
   ui.vpBest.textContent = best ? `Best hand: ${best.name}${vs.made[best.key] > 1 ? `, made ${vs.made[best.key]} times` : ''}` : 'Best hand: none yet';
+
+  const cs = stats.bc;
+  ui.bcNet.textContent = cs.rounds ? signed(cs.net) : '';
+  tone(ui.bcNet, cs.net);
+  ui.bcRounds.textContent = cs.rounds.toLocaleString('en-US');
+  ui.bcRate.textContent = pct(cs.won, cs.rounds);
+  ui.bcWagered.textContent = money(cs.wagered);
+  ui.bcBiggest.textContent = money(cs.biggest);
+  ui.bcResults.textContent = cs.rounds ? `Banker won ${cs.B}, Player ${cs.P}, tied ${cs.T}` : 'No rounds yet';
 
   ui.bkWithdrawn.textContent = money(wallet.withdrawn);
   ui.bkCount.textContent = wallet.count.toLocaleString('en-US');
@@ -4177,6 +4611,11 @@ ui.vpDeal.addEventListener('click', vpDeal);
 ui.vpClear.addEventListener('click', vpClear);
 ui.vpDouble.addEventListener('click', vpDouble);
 ui.vpBank.addEventListener('click', () => go('bank'));
+ui.bcGo.addEventListener('click', bcGo);
+ui.bcClear.addEventListener('click', bcClear);
+ui.bcRebet.addEventListener('click', bcRebet);
+ui.bcDouble.addEventListener('click', bcDouble);
+ui.bcBank.addEventListener('click', () => go('bank'));
 ui.balanceBtn.addEventListener('click', () => go('bank'));
 ui.homeBank.addEventListener('click', () => go('bank'));
 ui.homeStats.addEventListener('click', () => go('stats'));
@@ -4258,7 +4697,7 @@ ui.insNo.addEventListener('click', () => insure(false));
 ui.leave.addEventListener('click', leaveSeat);
 
 document.addEventListener('keydown', e => {
-  if (app.view !== 'roulette' && app.view !== 'poker' && (app.view !== 'table' || !app.T)) return;
+  if (app.view !== 'roulette' && app.view !== 'poker' && app.view !== 'baccarat' && (app.view !== 'table' || !app.T)) return;
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   const t = e.target;
   if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
@@ -4276,6 +4715,20 @@ document.addEventListener('keydown', e => {
     else if (k === 'c') rlClear();
     else if (k === 'r') rlRebet();
     else if (k === 'x') rlDouble();
+    else used = false;
+    if (used) e.preventDefault();
+    return;
+  }
+  if (app.view === 'baccarat') {
+    let used = true;
+    if (k === ' ' || k === 'enter') bcGo();
+    else if (k >= '1' && k <= '6') bcAddAmount(R_CHIPS[Number(k) - 1]);
+    else if (k === 'p') bcPick('player');
+    else if (k === 'b') bcPick('banker');
+    else if (k === 't') bcPick('tie');
+    else if (k === 'c' || k === 'backspace') bcClear();
+    else if (k === 'r') bcRebet();
+    else if (k === 'x') bcDouble();
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -4321,10 +4774,13 @@ async function boot() {
   buildRoulette();
   vpLoad();
   buildPoker();
+  bcLoad();
+  buildBaccarat();
   buildLearn();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
   walletInit();
   try { statsLoad(JSON.parse(localStorage.getItem(STATS_KEY) || 'null')); } catch (e) { /* storage unavailable */ }
+  bcRecover();
   route();
   cloudInit();
   // The wheel's numbers are painted once per size; repaint them in Manrope when it arrives
