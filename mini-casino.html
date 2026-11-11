@@ -516,6 +516,29 @@
   .ag-controls .lab-btn.primary { flex-grow: 2; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); box-shadow: 0 2px 0 #8a6522; }
   .ag-controls .lab-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
   .ag-controls .lab-btn:disabled { opacity: .35; }
+  /* ---------- Leaderboard ---------- */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(0, 0, 0, .28); }
+  .seg button { appearance: none; border: 0; border-radius: 9px; padding: 9px 6px; cursor: pointer; background: none; color: var(--ink-2); font: 700 14px/1 var(--font-body); }
+  .seg button[aria-selected="true"] { background: var(--gold); color: var(--on-gold); }
+  .lb-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; }
+  .lb-list li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .lb-list li:last-child { border-bottom: 0; }
+  .lb-list .rk { font: 800 15px/1 var(--font-display); color: var(--ink-3); text-align: center; font-variant-numeric: tabular-nums; }
+  .lb-list li:nth-child(1) .rk { color: #f5c542; } .lb-list li:nth-child(2) .rk { color: #cfd6de; } .lb-list li:nth-child(3) .rk { color: #d9915a; }
+  .lb-list .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .lb-list .vl { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--gold); }
+  .lb-list .vl.down { color: var(--lose); }
+  .lb-list li.me { background: rgba(233, 196, 106, .12); border-radius: 10px; }
+  .lb-list .empty { display: block; color: var(--ink-3); text-align: center; padding: 16px 0; border: 0; }
+  .lb-podium { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+  .lb-podium .fine b { color: var(--ink); }
+  /* ---------- Sign in to play ---------- */
+  .gate { justify-content: center; }
+  .gate-card { display: flex; flex-direction: column; gap: 14px; padding: 26px 20px; border-radius: 24px; text-align: center; background: var(--panel); border: 1px solid rgba(233, 196, 106, .3); }
+  .gate-art { font-size: 54px; line-height: 1; }
+  .gate-card h1 { margin: 0; font: 800 28px/1.15 var(--font-display); color: var(--gold); }
+  .gate-card p { margin: 0; color: var(--ink-2); font-size: 15px; line-height: 1.5; }
+  .gate-card b { color: var(--ink); }
   .home-foot { margin-top: auto; padding-top: 6px; text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
 
   /* ---------- Stats ---------- */
@@ -1336,6 +1359,21 @@
     </div>
   </section>
 
+  <!-- ================= Sign in to play (any game, signed out) ================= -->
+  <section class="view gate" id="gate-view" hidden>
+    <div class="gate-card">
+      <div class="gate-art" aria-hidden="true">🎟️</div>
+      <h1>Sign in to play</h1>
+      <p>Your wallet lives in your account: you start with <b>$1,000</b>, get another <b>$1,000 every day</b>, and your winnings count on the leaderboard.</p>
+      <button class="btn google-btn" id="gate-google"></button>
+      <div class="acct-actions">
+        <button class="btn" id="gate-in">Sign in</button>
+        <button class="btn primary" id="gate-up">Create account</button>
+      </div>
+      <button class="linkbtn" id="gate-learn">How to play this game</button>
+    </div>
+  </section>
+
   <!-- ================= Profile tab ================= -->
   <section class="view" id="profile-view" hidden>
     <div class="tab-head"><h1>Profile</h1></div>
@@ -1370,6 +1408,16 @@
   <!-- ================= Stats ================= -->
   <section class="view" id="stats-view" hidden>
     <div class="tab-head"><h1>Stats</h1><p id="st-since">Since today</p></div>
+    <div class="lcard lb">
+      <div class="sc-head"><h2>Leaderboard</h2><span class="fine" id="lb-when"></span></div>
+      <div class="seg" role="tablist" aria-label="Leaderboard">
+        <button role="tab" data-board="week" aria-selected="true">This week</button>
+        <button role="tab" data-board="balance" aria-selected="false">All-time balance</button>
+      </div>
+      <ol class="lb-list" id="lb-list"></ol>
+      <p class="fine" id="lb-me"></p>
+      <div class="lb-podium" id="lb-podium" hidden></div>
+    </div>
     <div class="stat-hero">
       <div class="sh-label">Net winnings</div>
       <div class="sh-amt" id="st-net">$0</div>
@@ -1943,13 +1991,16 @@
       <p>One wallet pays for every casino game. Roulette, video poker, baccarat, Three Card Poker, Casino War and Red Dog bets come straight out of it, blackjack included.</p>
       <h2>Getting money</h2>
       <ul>
-        <li>Everyone starts with <b>$1,000</b>.</li>
-        <li>Signed in, you get another <b>$1,000 every day</b> the first time you open the casino. It resets at midnight, your time.</li>
+        <li>You need an account to play. Your wallet lives in it, so it's the same on every device.</li>
+        <li>New accounts start with <b>$1,000</b>, and you get another <b>$1,000 every day</b> the first time you open the casino. It resets at midnight, your time.</li>
         <li>That's the only free money. Run out, and you wait for tomorrow's $1,000, so bet like it matters.</li>
         <li>Every game takes bets straight from your wallet and pays straight back into it. Nothing stays behind in a game when you leave.</li>
+        <li>The casino's server deals every card, spins every wheel and drops every duck, so nobody can fake a win.</li>
       </ul>
-      <h2>Saving your progress</h2>
-      <p>Sign in from the top right of the home screen with Google, or with an email and password. Your wallet, stats and solo blackjack table then save to your account and follow you to any device. You also need to be signed in to sit at a table with friends. Signed out, everything stays in this browser.</p>
+      <h2>Your account</h2>
+      <p>Sign in from the Profile tab with Google, or with an email and password. Your wallet, stats, solo blackjack table and any hand in progress follow you to any device.</p>
+      <h2>Leaderboard</h2>
+      <p>The Stats tab ranks everyone by <b>this week's winnings</b> (wins minus losses, Monday to Sunday) or by <b>all-time balance</b>. Daily bonuses don't count toward the weekly board. Last week's top three stay on show.</p>
       <h2>Your stats</h2>
       <p><b>Your stats</b> on the home screen tracks every hand, spin, draw and coup: net winnings, biggest wins, streaks and more. The stats page also shows your wallet statement: bonuses, chips and recent wins and losses.</p>
       <h2>3D lab credits</h2>
@@ -2379,6 +2430,7 @@ const WALLET_MAX = 1e15;              // the vault's idea of infinity
 // Which tab each screen belongs to (games have none: they hide the nav bar), and the tabs themselves
 const TAB_OF = { home: 'casino', lobby: 'casino', arcade: 'arcade', stats: 'stats', profile: 'profile', learn: 'profile' };
 const TAB_HOME = new Set(['home', 'arcade', 'stats', 'profile']);
+const GAME_VIEWS = new Set(['table', 'roulette', 'poker', 'baccarat', 'war', 'threecard', 'reddog', 'arcadegame']);
 const ARCADE = [
   { go: 'arcade-plinko', name: 'Duck Drop', blurb: 'Drop rubber ducks down a 3D peg board. The edges pay big.', art: 'plinko', emoji: '🦆' },
   { go: 'arcade-crash', name: 'Duck Rocket', blurb: 'The multiplier climbs until the rocket blows. Cash out first.', art: 'crash', emoji: '🚀' },
@@ -2421,6 +2473,7 @@ const ui = {
   casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
+  gateView: $('gate-view'), gateGoogle: $('gate-google'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
   pfDaily: $('pf-daily'), pfLearn: $('pf-learn'), pfVibe: $('pf-vibe'), pfHints: $('pf-hints'),
@@ -2453,6 +2506,7 @@ const ui = {
   learnView: $('learn-view'), learnIndex: $('learn-index'), kbArticles: [...document.querySelectorAll('.kb')], kbPokerPays: $('kb-poker-pays'),
   helpBtn: $('help-btn'),
   rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
+  lbWhen: $('lb-when'), lbList: $('lb-list'), lbMe: $('lb-me'), lbPodium: $('lb-podium'), lbTabs: [...document.querySelectorAll('.lb .seg button')],
   ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
   rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
@@ -2712,46 +2766,43 @@ function ago(ms) {
   return `active ${Math.round(m / 60)} h ago`;
 }
 
-/* ================= Solo table (local only) ================= */
+/* ================= Solo table =================
+   The solo table runs on the server (src/play.js), straight from the wallet. Moves go out
+   one at a time, in order, and the table comes back after each; the page shows your bet
+   right away while it waits. */
 let soloT = null;
+const solo = { queue: Promise.resolve(), seq: 0 };
+function soloTake(T) {
+  if (!T || !Array.isArray(T.seats) || !T.players || !T.players[SOLO_ID]) return;
+  if (soloT && (T.rev || 0) < (soloT.rev || 0)) return;
+  soloT = T;
+  const seen = (T.processed && T.processed[SOLO_ID]) || 0;
+  if (seen > solo.seq) solo.seq = seen;
+  if (app.view === 'table' && app.solo) { app.T = T; app.confirmed = true; }
+}
 function enterSolo() {
   app.view = 'table';
   app.solo = true;
   app.code = SOLO_ID;
-  if (!soloT) {
-    try {
-      const saved = JSON.parse(localStorage.getItem('bj.rooms.solo') || 'null');
-      if (saved && Array.isArray(saved.seats) && saved.players && saved.players[SOLO_ID]) soloT = saved;
-    } catch (e) { /* storage unavailable */ }
-  }
-  if (!soloT) {
-    soloT = newTable(SOLO_ID, 'Solo table', makeSeed(), Date.now());
-    soloT.seats[0] = SOLO_ID;
-    soloT.players[SOLO_ID] = newPlayer();
-  }
-  if (migrateTable(soloT)) {
-    try { localStorage.setItem('bj.rooms.solo', JSON.stringify(soloT)); } catch (e) { /* storage unavailable */ }
-  }
-  if (!soloT.seats.includes(SOLO_ID)) soloT.seats[0] = SOLO_ID;   // leaving the solo table cashes out; sit back down
   app.T = soloT;
-  app.confirmed = true;
+  app.confirmed = !!soloT;
+  if (soloT) app.seq = solo.seq;
   render();
+  if (!signedIn()) return;
+  solo.queue = solo.queue.then(async () => {
+    const r = await api('blackjack', 'state', {});
+    if (r && r.T) { soloTake(r.T); app.seq = solo.seq; render(); }
+  });
 }
-function soloApply(m) {
-  const T = clone(app.T);
-  m.s = (T.processed[SOLO_ID] || 0) + 1;
-  const ctx = ctxNow();
-  applyIntent(T, SOLO_ID, m, ctx);
-  T.processed[SOLO_ID] = m.s;
-  autoAdvance(T, ctx);
-  T.rev = (T.rev || 0) + 1;
-  T.updated = ctx.now;
-  soloT = T;
-  app.T = T;
-  syncCashed(T);
-  try { localStorage.setItem('bj.rooms.solo', JSON.stringify(T)); } catch (e) { /* storage unavailable */ }
-  cloudMarkDirty();
-  render();
+function soloSend(m) {
+  m.s = ++solo.seq;
+  app.seq = solo.seq;
+  solo.queue = solo.queue.then(async () => {
+    const r = await api('blackjack', 'move', { m });
+    if (r && r.T) soloTake(r.T);
+    else if (soloT) { app.opt = null; }   // the server said no: show the table as it is
+    render();
+  });
   return m.s;
 }
 
@@ -2800,9 +2851,10 @@ function roomConnect(code) {
     if (app.ws !== ws || e.data === 'pong') return;
     let msg;
     try { msg = JSON.parse(e.data); } catch (err) { return; }
+    if (msg && msg.type === 'wallet' && Number.isFinite(msg.balance)) { wallet.real = msg.balance; walletShow(); render(); return; }
+    if (msg && msg.type === 'error') { toast(msg.error === 'funds' ? 'Not enough in your wallet for that.' : 'The table said no to that.'); return; }
     if (!msg || msg.type !== 'state' || !msg.T || !Array.isArray(msg.T.seats)) return;
     app.T = msg.T;
-    syncCashed(msg.T);
     app.present = new Set(msg.present || []);
     app.names = msg.names || {};
     app.confirmed = true;
@@ -2840,7 +2892,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function send(m) {
-  if (app.solo) return soloApply(m);
+  if (app.solo) return signedIn() ? soloSend(m) : 0;
   if (!canPlayHere() || !app.ws) { toast('Reconnecting to the room…'); return 0; }
   m.s = ++app.seq;
   try { app.ws.send(JSON.stringify(m)); } catch (e) { return 0; }
@@ -2862,7 +2914,7 @@ function setBet(nb, covered) {
   const T = app.T, P = myP();
   if (!T || !P || T.phase !== 'betting' || mySeat() < 0) return;
   nb = Math.max(0, Math.floor(nb / 5) * 5);
-  if (!covered) nb = Math.min(nb, Math.floor(P.bank / 5) * 5);
+  if (!covered) nb = Math.min(nb, Math.floor((P.bank + (app.solo && wallet.ready ? wallet.balance : 0)) / 5) * 5);   // solo bets come straight from the wallet
   if (nb === viewBet()) return;
   const s = send({ t: 'bet', a: nb });
   if (s) app.opt = { s, bet: nb, status: 'betting' };
@@ -2920,7 +2972,7 @@ function bjLeaveTable() {
   if (P.bank > 0) send({ t: 'cashout' });
 }
 /* When a hand is over, chips left at the table go back to the wallet (they're counted in
-   `cashed` and paid by syncCashed). Runs on every render of the table. */
+   `cashed` and the room pays them into the wallet). Runs on every render of the table. */
 function bjSweep() {
   const T = app.T, P = myP();
   if (!T || !P || app.bjPlacing || !canBetNow() || !(P.bank > 0) || viewBet() || viewStatus() === 'ready' || optLive()) return;
@@ -2966,58 +3018,80 @@ function rebuy() {
 }
 
 /* ================= Wallet and the daily bonus =================
-   One wallet per person for the whole casino, kept in this browser and, signed in, synced
-   with the account. Everyone starts with $1,000. Signed in, the server adds $1,000 the first
-   time you open the casino each day (/api/daily); that and winning are the only ways in.
-   Wallets from before the daily bonus (no `v: 2`) start over at $1,000. */
-const WALLET_VERSION = 2;
-const START_BALANCE = 1000;
+   The wallet lives on the server, one per signed-in player (src/wallet.js), and every bet
+   goes through /api/play: the server deals, decides and pays, and the page shows it. You
+   need an account to play. Everyone starts with $1,000, and the first visit each day adds
+   another $1,000 (/api/daily); that and winning are the only ways in.
+   wallet.real is the server's balance. wallet.balance is what the page shows: winnings the
+   game hasn't revealed yet (the wheel still spinning, a duck still falling) are held back
+   (wallet.held) until it does. */
 const DAILY_BONUS = 1000;
-const wallet = { balance: 0, log: [], cashed: {}, ready: false, local: true, reset: false };
+const wallet = { balance: 0, real: 0, held: 0, log: [], ready: false, loading: false };
 const daily = { day: '', claiming: false };   // the last day the bonus was claimed, as YYYY-MM-DD
-function walletInit() {
-  let d = null;
-  try { d = JSON.parse(localStorage.getItem('mini-casino.wallet') || 'null'); } catch (e) { /* storage unavailable */ }
-  walletLoad(d);
+const serverRounds = { data: null };          // rounds the server says are waiting on you, from the last wallet load
+function walletShow() {
+  wallet.balance = Math.max(0, Math.round((wallet.real - wallet.held) * 100) / 100);
+}
+function walletFrom(d) {
+  if (!d || !Number.isFinite(d.balance)) return;
+  wallet.real = d.balance;
+  if (Array.isArray(d.log)) wallet.log = d.log.filter(e => e && Number.isFinite(e.a)).slice(0, 12);
+  if (typeof d.daily === 'string' && d.daily > daily.day) daily.day = d.daily;
   wallet.ready = true;
-  if (wallet.reset) walletSave();
+  walletShow();
 }
-function walletLoad(d) {
-  wallet.reset = false;
-  if (!d || d.v !== WALLET_VERSION || !Number.isFinite(d.balance) || d.balance < 0) {
-    wallet.balance = START_BALANCE;
-    wallet.log = [{ a: START_BALANCE, w: 'Fresh start', at: Date.now() }];
-    wallet.cashed = {};
-    wallet.reset = true;
-    return;
+// Keep winnings off the shown balance until the game reveals them
+function holdBack(a) { wallet.held = Math.max(0, wallet.held + (a || 0)); walletShow(); }
+function release(a) { wallet.held = Math.max(0, wallet.held - (a || 0)); walletShow(); render(); }
+async function walletFetch() {
+  if (!signedIn()) return;
+  wallet.loading = true;
+  try {
+    const res = await fetch('/api/wallet', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (res.status === 401) { cloud.user = null; return; }
+    if (!res.ok) throw new Error('wallet ' + res.status);
+    const d = await res.json();
+    wallet.held = 0;
+    walletFrom(d);
+    serverRounds.data = d.rounds || {};
+    resumeRounds(serverRounds.data);
+  } catch (e) {
+    toast('Couldn’t reach your wallet. Pull down to retry.');
+  } finally {
+    wallet.loading = false;
+    render();
   }
-  wallet.balance = d.balance;
-  wallet.log = Array.isArray(d.log) ? d.log.filter(e => e && Number.isFinite(e.a)).slice(0, 12) : [];
-  wallet.cashed = {};
-  if (d.cashed && typeof d.cashed === 'object') for (const [k, v] of Object.entries(d.cashed)) if (Number.isFinite(v) && v >= 0) wallet.cashed[k] = v;
 }
-const walletBody = () => ({ v: WALLET_VERSION, balance: wallet.balance, log: wallet.log, cashed: wallet.cashed });
-function walletSave() {
-  try { localStorage.setItem('mini-casino.wallet', JSON.stringify(walletBody())); } catch (e) { /* storage unavailable */ }
-  cloudMarkDirty();
-}
-// A line on the statement without moving any money (blackjack's money moves through the table)
-function walletNote(a, w) {
-  wallet.log = [{ a, w: String(w).slice(0, 60), at: Date.now() }, ...wallet.log].slice(0, 12);
-  walletSave();
-}
-/* opts.log replaces the default statement line. */
-function walletChange(delta, what, opts = {}) {
-  if (!wallet.ready) return false;
-  let next = Math.round((wallet.balance + delta) * 100) / 100;
-  if (next < 0) return false;
-  if (next > WALLET_MAX) next = WALLET_MAX;
-  wallet.balance = next;
-  const entry = opts.log || (what ? { a: delta, w: what } : null);
-  if (entry) wallet.log = [{ a: entry.a, w: String(entry.w).slice(0, 60), at: Date.now() }, ...wallet.log].slice(0, 12);
-  walletSave();
-  render();
-  return true;
+/* Every bet: ask the server, which takes the stake, decides and pays. Resolves to the
+   result, or null if it said no (with a toast saying why). `hold(result)` is how much of
+   the payout to keep off the shown balance until the game shows it. */
+async function api(game, action, args, hold) {
+  if (!signedIn()) { toast('Sign in to play.'); return null; }
+  let res, d;
+  try {
+    res = await fetch('/api/play', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ game, action, args }),
+    });
+    d = await res.json().catch(() => null);
+  } catch (e) {
+    toast('Couldn’t reach the casino. Check your connection.');
+    return null;
+  }
+  if (res.status === 401) { cloud.user = null; wallet.ready = false; toast('You were signed out. Sign in to keep playing.'); render(); return null; }
+  if (!d) { toast('Something went wrong. Try again.'); return null; }
+  if (Number.isFinite(d.balance)) { wallet.real = d.balance; if (Array.isArray(d.log)) wallet.log = d.log; }
+  if (!res.ok) {
+    walletShow();
+    toast(d.message && d.error !== 'bad_request' ? d.message : 'That didn’t go through. Try again.');
+    render();
+    return null;
+  }
+  if (hold) wallet.held = Math.max(0, wallet.held + (hold(d.result) || 0));
+  walletShow();
+  return d.result;
 }
 
 // Today's date where the player is, as YYYY-MM-DD
@@ -3040,13 +3114,12 @@ function dailyText(long) {
   if (dailyClaimed()) return `Next $1,000 in ${untilMidnight()}`;
   return daily.claiming ? 'Collecting today’s $1,000…' : 'Today’s $1,000 is on its way.';
 }
-/* Claim today's bonus, once we know who's signed in and their save has loaded. The server
-   decides; the reply carries the whole save with the money already in it. */
+/* Claim today's bonus, once we know who's signed in. The server decides, and the reply
+   carries the wallet with the money already in it. */
 async function claimDaily() {
   if (!cloud.on || !signedIn() || daily.claiming || dailyClaimed()) return;
   daily.claiming = true;
   try {
-    if (cloud.timer || cloud.saving) await cloudPush();   // send anything unsaved first, so the reply doesn't undo it
     const res = await fetch('/api/daily', {
       method: 'POST',
       credentials: 'same-origin',
@@ -3056,12 +3129,7 @@ async function claimDaily() {
     const d = await res.json().catch(() => null);
     if (!res.ok && !(d && d.claimed)) throw new Error('daily ' + res.status);
     if (d.day) daily.day = d.day;
-    if (d.local) {
-      if (d.ok) walletChange(DAILY_BONUS, 'Daily bonus');   // local test players have no saved data
-    } else if (d.data) {
-      cloud.version = d.version || cloud.version;
-      cloudApply(d.data);
-    }
+    if (d.wallet) walletFrom(d.wallet);
     if (d.ok) { toast('Daily bonus: +$1,000. See you tomorrow.'); buzz([15, 50, 25]); }
   } catch (e) {
     /* tried again next time the app comes back to the front */
@@ -3074,7 +3142,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 function renderDaily() {
   ui.dailyLine.textContent = !cloud.ready ? ''
-    : !signedIn() ? 'Sign in to get $1,000 every day.'
+    : !signedIn() ? 'Sign in to play: you start with $1,000 and get another $1,000 every day.'
     : dailyClaimed() ? `Today’s $1,000 is in. Next one in ${untilMidnight()}.`
     : dailyText();
   ui.dailyBtn.hidden = !cloud.ready || !cloud.on || signedIn();
@@ -3107,17 +3175,18 @@ function renderLedger() {
 }
 
 /* ---------- Blackjack chips ----------
-   Chips at a blackjack table come out of the wallet, and the table counts everything each
-   player has cashed out (`cashed`). The wallet remembers how much of that it has already
-   paid in for each table, so cashing out pays exactly once, even across devices. */
+   The solo table plays straight from the wallet on the server. In a room, chips at the
+   table come out of the wallet: the room takes them from the wallet before it puts them on
+   the table, pays back whatever you cash out, and tells this page your new balance. */
 function addTableChips(amount, quiet) {
   const T = app.T;
   if (!T || mySeat() < 0 || !canPlayHere()) return false;
+  if (app.solo) return true;   // the solo table uses the wallet directly
   const a = Math.ceil(Math.min(amount, wallet.balance));
   if (!(a > 0)) return false;
-  const where = app.solo ? 'Solo table' : (T.name || 'Blackjack table');
-  if (!walletChange(-a, quiet ? null : `Chips · ${where}`)) return false;
-  if (!send({ t: 'chips', a })) { walletChange(a, null); return false; }   // couldn't reach the table: keep the money
+  if (!send({ t: 'chips', a })) return false;
+  wallet.real = Math.max(0, wallet.real - a);   // the room confirms with the real balance
+  walletShow();
   if (!quiet) { app.chipsOpen = false; toast(`${moneyFull(a)} in chips added`); render(); }
   return true;
 }
@@ -3129,19 +3198,6 @@ function cashOutTable() {
   send({ t: 'cashout' });
   app.chipsOpen = false;
   render();
-}
-const cashKey = T => `${T.code}:${T.seed}:${T.v || 1}`;
-function syncCashed(T) {
-  const P = T && T.players && T.players[myId()];
-  if (!P || !wallet.ready || (T.v || 1) < 2) return;
-  const key = cashKey(T);
-  const seen = wallet.cashed[key] || 0;
-  const total = Number.isFinite(P.cashed) ? P.cashed : 0;
-  if (total <= seen) return;
-  wallet.cashed[key] = total;
-  const keys = Object.keys(wallet.cashed);
-  if (keys.length > 40) delete wallet.cashed[keys[0]];
-  walletChange(total - seen, null);   // the hand's result goes on the statement (recordBlackjackRound)
 }
 
 function buildArcade() {
@@ -3335,7 +3391,7 @@ function recordBlackjackRound(T) {
   const R = T && T.round;
   const me = myId();
   if (!R || !R.over || !me || !(me in R.net)) return;
-  const key = `${T.seed}:${R.n}`;
+  const key = `${T.sid || T.code + ':' + T.created}:${R.n}`;
   if (stats.seen.includes(key)) return;
   stats.seen.push(key);
   if (stats.seen.length > 200) stats.seen.splice(0, stats.seen.length - 200);
@@ -3353,7 +3409,6 @@ function recordBlackjackRound(T) {
   b.biggest = Math.max(b.biggest, net);
   statsStreak(net);
   statsSave();
-  walletNote(net, `Blackjack · ${net > 0 ? 'Won' : net < 0 ? 'Lost' : 'Push'}`);
 }
 
 /* ================= Roulette (single zero, solo, plays from the wallet) ================= */
@@ -3531,7 +3586,7 @@ function rlSave() {
 
 function rlFresh() { if (rl.showResult) { rl.showResult = false; rl.wins = new Set(); } }
 function rlRoom() { return Math.max(0, (wallet.ready ? wallet.balance : 0) - rlTotal()); }
-const rlLocked = () => rl.spinning || !wallet.ready;
+const rlLocked = () => rl.spinning || rl.asking || !wallet.ready;
 // Tap a spot to highlight it; chips then go on it
 function rlSpot(key) {
   if (rlLocked()) return;
@@ -3556,15 +3611,19 @@ function rlRemove(key) {
 function rlUndo() { if (!rlLocked() && betUndo(rl)) render(); }
 function rlClear() { if (!rlLocked() && betClear(rl)) render(); }
 
-function rlSpin() {
-  if (rlLocked()) return;
+async function rlSpin() {
+  if (rlLocked() || rl.asking) return;
   if (!rlTotal() && canRebetNow(rl)) { rlFresh(); betRebet(rl); }   // nothing down: Spin repeats the last bets
   const total = rlTotal();
   if (!total) { toast('Pick a chip, then tap the board to bet.'); return; }
   if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
-  if (!walletChange(-total, null)) return;
-  const result = randInt(37);
-  rl.live = { bets: { ...rl.bets }, total, result };
+  const bets = Object.fromEntries(Object.entries(rl.bets).filter(([, v]) => v > 0));
+  rl.asking = true;
+  render();
+  const r = await api('roulette', 'spin', { bets }, r => r.payout);   // the win shows when the ball lands
+  rl.asking = false;
+  if (!r) { render(); return; }
+  rl.live = { bets, total, result: r.result, payout: r.payout };
   betDone(rl);
   rl.spinning = true;
   rl.showResult = false;
@@ -3572,7 +3631,7 @@ function rlSpin() {
   rlSave();
   buzz(20);
   rlStageOpen();
-  rlAnimate(result);
+  rlAnimate(r.result);
   render();
 }
 /* The wheel lives in the header as a thumbnail. Spinning moves the same canvas into a full-screen stage. */
@@ -3601,6 +3660,7 @@ function rlSettle() {
   for (const [k, a] of Object.entries(live.bets)) {
     if (coversOf(k).has(live.result)) { payout += a * (oddsOf(k) + 1); wins.add(k); }
   }
+  payout = live.payout;   // what the server paid
   const net = payout - live.total;
   rl.live = null;
   rl.spinning = false;
@@ -3613,7 +3673,7 @@ function rlSettle() {
   rl.history = [live.result, ...rl.history].slice(0, 14);
   rlSave();
   recordRoulette(live.result, live.total, payout);
-  walletChange(payout, null, { log: { a: net, w: `Roulette · ${live.result} ${colorName(live.result)}` } });
+  release(payout);
   if (net > 0) buzz([15, 60, 25]);
   if (rl.stage) {
     rl.stage = 'result';
@@ -3886,15 +3946,7 @@ function vpLoad() {
   if (!d) return;
   if (d.last && Number.isFinite(d.last.main) && d.last.main > 0) vp.last = { main: d.last.main };
   if (d.game in VP_GAMES) vp.game = d.game;
-  const deck = new Set(pokerDeck());
-  const hand = Array.isArray(d.hand) ? d.hand.filter(c => deck.has(c)) : [];
-  const stake = Number.isFinite(d.stake) && d.stake > 0 ? d.stake : 0;
-  if (hand.length !== 5 || new Set(hand).size !== 5 || !stake || (d.phase !== 'hold' && d.phase !== 'done')) return;
-  vp.hand = hand;
-  vp.held = [0, 1, 2, 3, 4].map(i => !!(Array.isArray(d.held) && d.held[i]));
-  vp.phase = d.phase;
-  vp.stake = stake;
-  if (vp.phase === 'done') vp.result = vpGame().rank(vp.hand);
+  // A hand waiting to be drawn comes from the server (resumeRounds), not from here
 }
 function vpPaintCard(i, code) {
   const card = vpCards[i].card;
@@ -3979,17 +4031,22 @@ function vpReveal(which, done) {
   }, turn + k * step));
   setTimeout(() => { vp.busy = false; done(); render(); }, turn + idx.length * step + (reduce ? 0 : 380));
 }
-function vpDeal() {
+async function vpDeal() {
   if (vp.busy || !wallet.ready) return;
   if (vp.phase === 'hold') { vpDraw(); return; }
   if (!vp.bets.main && canRebetNow(vp)) betRebet(vp);   // nothing down: Deal repeats the last bet
   const bet = vp.bets.main;
-  if (!bet) { toast('Pick a chip, then tap Bet.'); return; }
+  if (!bet) { toast('Tap chips to bet.'); return; }
   if (bet > wallet.balance) { toast('Your wallet can’t cover that bet.'); render(); return; }
-  if (!walletChange(-bet, null)) return;
-  vp.stake = bet;
+  vp.busy = true;
+  render();
+  const r = await api('poker', 'deal', { bet, machine: vp.game });
+  vp.busy = false;
+  if (!r) { render(); return; }
+  if (r.machine && r.machine !== vp.game) { vp.game = r.machine; vpBuildRows(); }
+  vp.stake = r.bet;
   betDone(vp);
-  vp.hand = pokerDeal(randInt);
+  vp.hand = r.hand;
   vp.held = [false, false, false, false, false];
   vp.phase = 'hold';
   vp.result = null;
@@ -3997,23 +4054,24 @@ function vpDeal() {
   buzz(10);
   vpReveal([true, true, true, true, true], () => {});
 }
-function vpDraw() {
+async function vpDraw() {
   if (vp.busy || vp.phase !== 'hold') return;
   const swap = vp.held.map(h => !h);
-  vp.hand = pokerDraw(vp.hand, vp.held, randInt);
-  const r = vpGame().rank(vp.hand);
-  const payout = r ? vp.stake * r.pays : 0;
-  const net = payout - vp.stake;
-  vp.result = r;
+  vp.busy = true;
+  render();
+  const r = await api('poker', 'draw', { held: vp.held }, r => r.payout);   // shown once the cards turn
+  vp.busy = false;
+  if (!r) { render(); return; }
+  vp.hand = r.hand;
+  vp.result = r.rank;
   vp.phase = 'done';
   vpSave();
   vpReveal(swap, () => {
-    if (r && r.pays >= 25) buzz([30, 40, 60]);
-    else if (net > 0) buzz([15, 50, 25]);
+    release(r.payout);
+    if (r.rank && r.rank.pays >= 25) buzz([30, 40, 60]);
+    else if (r.net > 0) buzz([15, 50, 25]);
   });
-  // Paid as soon as the hand is decided, so closing the app mid-flip can't lose a win
-  recordPoker(r, vp.stake, payout);
-  walletChange(payout, null, { log: { a: net, w: `Video poker · ${r ? r.name : 'No win'}` } });
+  recordPoker(r.rank, r.stake, r.payout);
 }
 function renderPoker() {
   const bal = wallet.ready ? wallet.balance : 0;
@@ -4090,15 +4148,9 @@ function bcLoad() {
   if (!d) return;
   if (d.last) { const l = bcCleanBets(d.last); if (bcTotal(l)) bc.last = l; }
   if (Array.isArray(d.road)) bc.road = d.road.filter(x => x === 'P' || x === 'B' || x === 'T').slice(-60);
-  const l = d.live;
-  if (l && BC_SIDES.includes(l.winner) && Number.isFinite(l.payout) && Number.isFinite(l.total) && l.total > 0) {
-    bc.live = { bets: bcCleanBets(l.bets), total: l.total, winner: l.winner, pt: l.pt, bt: l.bt, natural: !!l.natural, payout: l.payout };
-  }
 }
-// A round the app closed during: pay it out now (call once the wallet and stats are loaded)
-function bcRecover() {
-  if (bc.live) bcSettle();
-}
+// The server pays each coup when it's dealt, so there's nothing to recover
+function bcRecover() {}
 function bcSettle() {
   const live = bc.live;
   if (!live) return;
@@ -4107,7 +4159,7 @@ function bcSettle() {
   if (bc.road.length > 60) bc.road.splice(0, bc.road.length - 60);
   bcSave();
   recordBaccarat(live);
-  walletChange(live.payout, null, { log: { a: Math.round((live.payout - live.total) * 100) / 100, w: `Baccarat · ${live.winner === 'tie' ? 'Tie' : BC_NAME[live.winner] + ' won'}` } });
+  release(live.payout);
 }
 function buildBaccarat() {
   buildChipRail(ui.bcChips, bcChip);
@@ -4140,17 +4192,19 @@ function bcCard(code, third) {
   e.addEventListener('animationend', ev => { if (ev.animationName === 'dealIn') e.classList.remove('deal-in'); });
   return e;
 }
-function bcDeal() {
+async function bcDeal() {
   if (bcLocked()) return;
   if (!bcTotal() && canRebetNow(bc)) { bcFresh(); betRebet(bc); }
   const total = bcTotal();
-  if (!total) { toast('Pick a chip, then tap Player, Banker or Tie.'); return; }
+  if (!total) { toast('Tap chips to bet on Player, Banker or Tie.'); return; }
   if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
   bc.busy = true;
-  if (!walletChange(-total, null)) { bc.busy = false; return; }
-  const coup = bacCoup(bacShoe(randInt));
-  const bets = { ...bc.bets };
-  bc.live = { bets, total, winner: coup.winner, pt: coup.pt, bt: coup.bt, natural: coup.natural, payout: bacPayout(bets, coup.winner) };
+  render();
+  const bets = Object.fromEntries(Object.entries(bc.bets).filter(([, v]) => v > 0));
+  const r = await api('baccarat', 'deal', { bets }, r => r.payout);
+  if (!r) { bc.busy = false; render(); return; }
+  const coup = r.coup;
+  bc.live = { bets: { ...bc.bets }, total, winner: coup.winner, pt: coup.pt, bt: coup.bt, natural: coup.natural, payout: r.payout };
   betDone(bc);   // settled with this coup; "Deal again" brings them back
   bc.result = null;
   bcSave();
@@ -4276,23 +4330,9 @@ function wrLoad() {
   if (!d) return;
   if (d.last) { const l = wrCleanBets(d.last); if (l.war) wr.last = l; }
   if (Array.isArray(d.road)) wr.road = d.road.filter(x => /^[WLSwl]$/.test(x)).slice(-60);
-  const l = d.live;
-  const card = c => typeof c === 'string' && WR_CARD.test(c);
-  if (!l || !Number.isFinite(l.bet) || l.bet <= 0 || !Number.isFinite(l.total) || !card(l.player) || !card(l.dealer)) return;
-  const live = { bet: l.bet, tie: Number.isFinite(l.tie) && l.tie > 0 ? l.tie : 0, total: l.total, player: l.player, dealer: l.dealer, choice: null, phase: 'decide' };
-  if (l.phase === 'settle' && Number.isFinite(l.payout)) {
-    live.phase = 'settle';
-    live.payout = l.payout;
-    if (l.choice === 'war' && card(l.player2) && card(l.dealer2)) Object.assign(live, { choice: 'war', player2: l.player2, dealer2: l.dealer2 });
-    else if (l.choice === 'surrender') live.choice = 'surrender';
-  } else if (warRank(live.player) !== warRank(live.dealer)) return;   // only a tie can be waiting on you
-  wr.live = live;
-  if (live.phase === 'decide') wr.table = { p: [live.player], d: [live.dealer], burn: 0 };
 }
-// A round the app closed during: pay it out now (call once the wallet and stats are loaded)
-function wrRecover() {
-  if (wr.live && wr.live.phase === 'settle') wrSettle();
-}
+// A tie waiting on war or surrender comes from the server (resumeRounds)
+function wrRecover() {}
 function wrOutcome(live) {
   const net = Math.round((live.payout - live.total) * 100) / 100;
   if (live.choice === 'surrender') return { code: 'S', net, words: 'Surrendered' };
@@ -4311,7 +4351,7 @@ function wrSettle() {
   if (wr.road.length > 60) wr.road.splice(0, wr.road.length - 60);
   wrSave();
   recordWar(live, o);
-  walletChange(live.payout, null, { log: { a: o.net, w: `Casino War · ${o.words}` } });
+  release(live.payout);
 }
 function buildWar() {
   buildChipRail(ui.wrChips, wrChip);
@@ -4348,19 +4388,21 @@ function wrGo() {
   else wrDeal();
 }
 const wrReduce = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-function wrDeal() {
+// The server's round, in the shape this page keeps it
+const wrLive = (r, phase) => ({ ...r, phase: phase === 'decide' ? 'decide' : 'settle' });
+async function wrDeal() {
   if (wrLocked()) return;
   if (!wrTotal() && canRebetNow(wr)) { wrFresh(); betRebet(wr); }
   const total = wrTotal();
-  if (!total) { toast('Pick a chip, then tap War to bet it.'); return; }
+  if (!total) { toast('Tap chips to bet on War.'); return; }
   if (!wr.bets.war) { toast('The Tie bet rides along with a War bet. Put something on War too.'); return; }
   if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
   wr.busy = true;
-  if (!walletChange(-total, null)) { wr.busy = false; return; }
-  const { player, dealer } = warDeal(randInt);
-  const live = { bet: wr.bets.war, tie: wr.bets.tie, total, player, dealer, choice: null, phase: 'settle' };
-  if (warRank(player) === warRank(dealer)) live.phase = 'decide';
-  else live.payout = warPayout(live);
+  render();
+  const bets = { war: wr.bets.war, tie: wr.bets.tie || 0 };
+  const r = await api('war', 'deal', { bets }, r => (r.phase === 'done' ? r.round.payout : 0));
+  if (!r) { wr.busy = false; render(); return; }
+  const live = wrLive(r.round, r.phase);
   wr.live = live;
   betDone(wr);   // settled with this round; "Deal again" brings them back
   wr.result = null;
@@ -4368,8 +4410,8 @@ function wrDeal() {
   wrSave();
   buzz(10);
   const step = wrReduce() ? 60 : 560;
-  setTimeout(() => { wr.table.p = [player]; buzz(4); render(); }, 0);
-  setTimeout(() => { wr.table.d = [dealer]; buzz(4); render(); }, step);
+  setTimeout(() => { wr.table.p = [live.player]; buzz(4); render(); }, 0);
+  setTimeout(() => { wr.table.d = [live.dealer]; buzz(4); render(); }, step);
   setTimeout(() => {
     wr.busy = false;
     if (live.phase === 'decide') buzz([20, 60, 20]);
@@ -4384,25 +4426,28 @@ function wrFinish() {
   wrSettle();
   if (live.payout > live.total) buzz([15, 50, 25]);
 }
-function wrSurrender() {
+async function wrSurrender() {
   if (!wrDeciding()) return;
-  const live = wr.live;
-  live.choice = 'surrender';
-  live.phase = 'settle';
-  live.payout = warPayout(live);
+  wr.busy = true;
+  render();
+  const r = await api('war', 'surrender', {}, r => r.round.payout);
+  wr.busy = false;
+  if (!r) { render(); return; }
+  wr.live = wrLive(r.round, 'done');
   wrSave();
   wrFinish();
   render();
 }
-function wrWar() {
+async function wrWar() {
   if (!wrDeciding()) return;
-  const live = wr.live;
-  if (live.bet > wallet.balance) { toast(`Going to war takes another ${money(live.bet)}. The bank can cover it.`); return; }
+  const bet = wr.live.bet;
+  if (bet > wallet.balance) { toast(`Going to war takes another ${money(bet)}, more than your wallet has.`); return; }
   wr.busy = true;
-  if (!walletChange(-live.bet, null)) { wr.busy = false; return; }
-  const battle = warBattle(live.player, live.dealer, randInt);
-  Object.assign(live, { choice: 'war', player2: battle.player, dealer2: battle.dealer, total: live.total + live.bet, phase: 'settle' });
-  live.payout = warPayout(live);
+  render();
+  const r = await api('war', 'war', {}, r => r.round.payout);
+  if (!r) { wr.busy = false; render(); return; }
+  const live = wrLive(r.round, 'done');
+  wr.live = live;
   wrSave();
   wr.burning = true;
   buzz(10);
@@ -4563,21 +4608,9 @@ function tcLoad() {
   try { d = JSON.parse(localStorage.getItem(TC_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
   if (!d) return;
   if (d.last) { const l = tcCleanBets(d.last); if (tcTotal(l)) tc.last = l; }
-  const l = d.live;
-  if (!l || !Number.isFinite(l.total) || l.total <= 0 || !cardsOk(l.player, 3) || !cardsOk(l.dealer, 3)) return;
-  const b = tcCleanBets({ ante: l.ante, pair: l.pair });
-  const live = { ante: b.ante, pair: b.pair, total: l.total, player: l.player, dealer: l.dealer, choice: null, phase: 'decide' };
-  if (l.phase === 'settle' && Number.isFinite(l.payout)) {
-    live.phase = 'settle';
-    live.payout = l.payout;
-    live.choice = l.choice === 'play' || l.choice === 'fold' ? l.choice : null;
-  } else if (!live.ante) return;
-  tc.live = live;
-  if (live.phase === 'decide') tc.table = { p: live.player.slice(), d: live.dealer.slice(), up: false };
 }
-function tcRecover() {
-  if (tc.live && tc.live.phase === 'settle') tcSettle();
-}
+// A hand waiting on Fold or Play comes from the server (resumeRounds)
+function tcRecover() {}
 // What happened, in words, for the message and the wallet's log
 function tcOutcome(h) {
   const net = Math.round((h.payout - h.total) * 100) / 100;
@@ -4598,7 +4631,7 @@ function tcSettle() {
   tcSave();
   const o = tcOutcome(live);
   recordThreeCard(live, o);
-  walletChange(live.payout, null, { log: { a: o.net, w: `Three Card Poker · ${o.words}` } });
+  release(live.payout);
 }
 function tcHandName(cards) {
   const r = tcRank(cards);
@@ -4650,18 +4683,23 @@ function tcGo() {
   if (tcDeciding()) tcPlay();
   else tcDeal();
 }
-function tcDeal() {
+// The dealer's cards stay face down, and unknown to this page, until you play or fold
+const TC_HIDDEN = ['2C', '3C', '4C'];
+async function tcDeal() {
   if (tcLocked()) return;
   if (!tcTotal() && canRebetNow(tc)) { tcFresh(); betRebet(tc); }
   const total = tcTotal();
-  if (!total) { toast('Pick a chip, then tap Ante or Pair Plus.'); return; }
+  if (!total) { toast('Tap chips to bet on the Ante or Pair Plus.'); return; }
   if (total > wallet.balance) { toast('Your wallet can’t cover these bets.'); return; }
   if (tc.bets.ante && tc.bets.ante * 2 + tc.bets.pair > wallet.balance) toast(`Heads up: playing the hand takes another ${money(tc.bets.ante)}.`);
   tc.busy = true;
-  if (!walletChange(-total, null)) { tc.busy = false; return; }
-  const { player, dealer } = tcDealCards(randInt);
-  const live = { ante: tc.bets.ante, pair: tc.bets.pair, total, player, dealer, choice: null, phase: tc.bets.ante ? 'decide' : 'settle' };
-  if (live.phase === 'settle') live.payout = tcPayout(live);
+  render();
+  const bets = Object.fromEntries(Object.entries(tc.bets).filter(([, v]) => v > 0));
+  const r = await api('threecard', 'deal', { bets }, r => (r.phase === 'done' ? r.round.payout : 0));
+  if (!r) { tc.busy = false; render(); return; }
+  const player = r.round.player;
+  const dealer = r.round.dealer || TC_HIDDEN;
+  const live = { ante: r.round.ante, pair: r.round.pair, total: r.round.total, player, dealer, choice: null, phase: r.phase === 'decide' ? 'decide' : 'settle', payout: r.round.payout };
   tc.live = live;
   betDone(tc);
   tc.result = null;
@@ -4685,6 +4723,7 @@ function tcDeal() {
 // Turn the dealer's cards over, then pay
 function tcReveal() {
   tc.busy = true;
+  tc.table.d = tc.live.dealer.slice();
   tc.table.up = true;
   render();
   setTimeout(() => {
@@ -4696,32 +4735,35 @@ function tcReveal() {
     render();
   }, reduceMotion() ? 0 : 800);
 }
-function tcPlay() {
+async function tcChoose(choice) {
   if (!tcDeciding()) return;
   const live = tc.live;
-  if (live.ante > wallet.balance) { toast(`Playing takes another ${money(live.ante)}. The bank can cover it.`); return; }
-  if (!walletChange(-live.ante, null)) return;
-  live.choice = 'play';
-  live.total += live.ante;
-  live.phase = 'settle';
-  live.payout = tcPayout(live);
+  if (choice === 'play' && live.ante > wallet.balance) { toast(`Playing takes another ${money(live.ante)}, more than your wallet has.`); return; }
+  tc.busy = true;
+  render();
+  const r = await api('threecard', choice, {}, r => r.round.payout);
+  tc.busy = false;
+  if (!r) { render(); return; }
+  Object.assign(live, { choice, total: r.round.total, dealer: r.round.dealer, payout: r.round.payout, phase: 'settle' });
   tcSave();
   buzz(10);
   tcReveal();
 }
-function tcFold() {
-  if (!tcDeciding()) return;
-  const live = tc.live;
-  live.choice = 'fold';
-  live.phase = 'settle';
-  live.payout = tcPayout(live);
-  tcSave();
-  tcReveal();
-}
+const tcPlay = () => tcChoose('play');
+const tcFold = () => tcChoose('fold');
+// Keep the cards on the felt in step with tc.table. A face-down card takes its real face
+// when it's known, so it can flip over in place.
 function tcSyncCards(el, cards, down) {
-  const have = [...el.children].map(c => c.dataset.c);
-  if (have.length > cards.length || have.join() !== cards.slice(0, have.length).join()) { el.textContent = ''; have.length = 0; }
-  for (let i = have.length; i < cards.length; i++) el.appendChild(feltCard(cards[i], down));
+  let kids = [...el.children];
+  if (kids.length > cards.length || kids.some((c, i) => c.dataset.c !== cards[i] && !c.classList.contains('down'))) { el.textContent = ''; kids = []; }
+  kids.forEach((c, i) => {
+    if (c.dataset.c === cards[i]) return;
+    c.dataset.c = cards[i];
+    c.classList.toggle('red', /[HD]$/.test(cards[i]));
+    c.classList.toggle('ace', rankOf(cards[i]) === 'A');
+    c.querySelector('.face').innerHTML = faceHTML(cards[i]);
+  });
+  for (let i = kids.length; i < cards.length; i++) el.appendChild(feltCard(cards[i], down));
   [...el.children].forEach((c, i) => {
     if (c.classList.contains('down') !== down) {
       if (down) c.classList.add('down');
@@ -4812,18 +4854,9 @@ function rdLoad() {
   try { d = JSON.parse(localStorage.getItem(RD_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
   if (!d) return;
   if (d.last && Number.isFinite(d.last.main) && d.last.main > 0) rd.last = { main: d.last.main };
-  const l = d.live;
-  if (!l || !Number.isFinite(l.bet) || l.bet <= 0 || !Number.isFinite(l.total)) return;
-  if (l.phase === 'settle' && (cardsOk(l.cards, 3) || cardsOk(l.cards, 2)) && Number.isFinite(l.payout)) {
-    rd.live = { bet: l.bet, raise: Number.isFinite(l.raise) && l.raise > 0 ? l.raise : 0, total: l.total, cards: l.cards, payout: l.payout, phase: 'settle' };
-  } else if (l.phase === 'decide' && cardsOk(l.cards, 2) && rdSpread(l.cards[0], l.cards[1]).kind === 'spread') {
-    rd.live = { bet: l.bet, raise: 0, total: l.total, cards: l.cards, phase: 'decide' };
-    rd.table = l.cards.slice();
-  }
 }
-function rdRecover() {
-  if (rd.live && rd.live.phase === 'settle') rdSettle();
-}
+// A hand waiting on a raise comes from the server (resumeRounds)
+function rdRecover() {}
 function rdOutcome(h) {
   const net = Math.round((h.payout - h.total) * 100) / 100;
   const s = rdSpread(h.cards[0], h.cards[1]);
@@ -4840,7 +4873,7 @@ function rdSettle() {
   rdSave();
   const o = rdOutcome(live);
   recordRedDog(live, o);
-  walletChange(live.payout, null, { log: { a: o.net, w: `Red Dog · ${o.words}` } });
+  release(live.payout);
 }
 function buildRedDog() {
   const cells = [['Spread 1', '5 to 1', 1], ['Spread 2', '4 to 1', 2], ['Spread 3', '2 to 1', 3], ['4 or more', '1 to 1', 4], ['Pair', 'Trips 11:1', 'pair']];
@@ -4873,23 +4906,20 @@ function rdGo() {
   if (rdDeciding()) rdThirdCard(true);
   else rdDealHand();
 }
-function rdDealHand() {
+async function rdDealHand() {
   if (rdLocked()) return;
   if (!rd.bets.main && canRebetNow(rd)) { rdFresh(); betRebet(rd); }   // nothing down: Deal repeats the last bet
   const bet = rd.bets.main;
-  if (!bet) { toast('Pick a chip, then tap Bet.'); return; }
+  if (!bet) { toast('Tap chips to bet.'); return; }
   if (bet > wallet.balance) { toast('Your wallet can’t cover that bet.'); return; }
-  if (!walletChange(-bet, null)) return;
   rd.busy = true;
+  render();
+  const r = await api('reddog', 'deal', { bet }, r => (r.phase === 'done' ? r.round.payout : 0));
+  if (!r) { rd.busy = false; render(); return; }
   betDone(rd);
-  const [a, b] = rdDeal(randInt);
-  const s = rdSpread(a, b);
-  const live = { bet, raise: 0, total: bet, cards: [a, b], phase: 'decide' };
-  if (s.kind !== 'spread') {
-    if (s.kind === 'pair') live.cards.push(rdThird(a, b, randInt));   // back to back needs no third card
-    live.phase = 'settle';
-    live.payout = rdPayout({ bet: live.bet, cards: s.kind === 'pair' ? live.cards : [a, b, a] });
-  }
+  const [a, b] = r.round.cards;
+  const live = { ...r.round, phase: r.phase === 'decide' ? 'decide' : 'settle' };
+  const pair = r.round.cards.length === 3;
   rd.live = live;
   rd.result = null;
   rd.table = [];
@@ -4899,7 +4929,7 @@ function rdDealHand() {
   setTimeout(() => { rd.table = [a]; buzz(3); render(); }, 0);
   setTimeout(() => { rd.table = [a, b]; buzz(3); render(); }, step);
   let t = step * 2;
-  if (s.kind === 'pair') {
+  if (pair) {
     t += reduce ? 0 : 500;
     setTimeout(() => { rd.table = live.cards.slice(); buzz(4); render(); }, t);
     t += reduce ? 0 : 450;
@@ -4917,20 +4947,16 @@ function rdFinish() {
   rdSettle();
   if (live.payout > live.total) buzz(rdVal(live.cards[2] || '2S') === rdVal(live.cards[0]) ? [30, 40, 60] : [15, 50, 25]);
 }
-function rdThirdCard(raise) {
+async function rdThirdCard(raise) {
   if (!rdDeciding()) return;
   const live = rd.live;
-  if (raise) {
-    if (live.bet > wallet.balance) { toast(`Raising takes another ${money(live.bet)}. The bank can cover it.`); return; }
-    if (!walletChange(-live.bet, null)) return;
-    live.raise = live.bet;
-    live.total += live.bet;
-  }
-  live.cards = [live.cards[0], live.cards[1], rdThird(live.cards[0], live.cards[1], randInt)];
-  live.phase = 'settle';
-  live.payout = rdPayout(live);
-  rdSave();
+  if (raise && live.bet > wallet.balance) { toast(`Raising takes another ${money(live.bet)}, more than your wallet has.`); return; }
   rd.busy = true;
+  render();
+  const r = await api('reddog', 'third', { raise: !!raise }, r => r.round.payout);
+  if (!r) { rd.busy = false; render(); return; }
+  Object.assign(live, r.round, { phase: 'settle' });
+  rdSave();
   buzz(10);
   render();
   const reduce = reduceMotion();
@@ -5002,52 +5028,38 @@ function renderRedDog() {
 
 /* ================= Arcade: Duck Drop and Duck Rocket, on the wallet =================
    The 3D games live in the lab's code (lab/plinko.js, lab/crash.js), loaded through
-   /lab/embed.js only when one is opened. The page hands each game a `bank` backed by the
-   wallet. Every bet's result is known when it's made (where the duck lands, or what the
-   rocket pays if the app closes mid-flight), so it's saved as pending until the game pays
-   it out; anything still pending when the app next opens is paid then. */
-const ARC_KEY = 'mini-casino.arcade-live';
+   /lab/embed.js only when one is opened. The page hands each game a `bank` that plays
+   through the server: it drops the ducks (picking each one's seed and paying it at once)
+   and flies the rocket (drawing the crash point and keeping it secret). Winnings stay off
+   the shown balance until the game reveals them. */
 const ARC_NAME = { plinko: 'Duck Drop', crash: 'Duck Rocket' };
-const arc = { live: {}, game: '', inst: null, token: 0 };
-function arcSave() {
-  try { localStorage.setItem(ARC_KEY, JSON.stringify(arc.live)); } catch (e) { /* storage unavailable */ }
-}
-function arcLoad() {
-  let d = null;
-  try { d = JSON.parse(localStorage.getItem(ARC_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
-  if (!d || typeof d !== 'object') return;
-  for (const [id, l] of Object.entries(d)) {
-    if (l && ARC_NAME[l.game] && Number.isFinite(l.stake) && l.stake > 0 && Number.isFinite(l.payout) && l.payout >= 0) arc.live[id] = l;
+const arc = { game: '', inst: null, token: 0, stake: 0 };
+function arcCrashDone(r) {
+  if (r && (r.cashed || r.at != null || r.refunded) && arc.stake) {
+    if (!r.refunded) recordArcade('crash', arc.stake, r.payout || 0);
+    arc.stake = 0;
   }
-}
-function arcSettle(id, payout) {
-  const l = arc.live[id];
-  if (!l) return;
-  delete arc.live[id];
-  arcSave();
-  const p = Math.max(0, Math.round(payout == null ? l.payout : payout));
-  recordArcade(l.game, l.stake, p);
-  const net = p - l.stake;
-  // Plinko drops come fast, so only the big ones go on the statement
-  const log = l.game === 'crash' || p >= l.stake * 10
-    ? { log: { a: net, w: `${ARC_NAME[l.game]} · ${p ? `${(Math.round((p / l.stake) * 100) / 100)}×` : 'Crashed'}` } } : {};
-  walletChange(p, null, log);
-}
-// Bets the app closed on: pay them what they were going to get
-function arcRecover() {
-  for (const id of Object.keys(arc.live)) arcSettle(id);
+  return r;
 }
 const arcadeBank = {
+  server: true,
   balance: () => (wallet.ready ? wallet.balance : 0),
   chip: () => chipPick,
-  bet(amount, payout, info) {
-    if (!wallet.ready || !(amount > 0) || !walletChange(-amount, null)) return null;
-    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    arc.live[id] = { game: info && info.game, stake: amount, payout: Math.max(0, payout || 0), at: Date.now() };
-    arcSave();
-    return id;
+  async drop(n, bet, risk) {
+    const r = await api('plinko', 'drop', { n, bet, risk }, r => r.drops.reduce((a, d) => a + d.payout, 0));
+    if (!r) return null;
+    for (const d of r.drops) recordArcade('plinko', bet, d.payout);
+    return r.drops;
   },
-  settle: (id, payout) => arcSettle(id, payout),
+  reveal: a => release(a),
+  async launch(bet, auto) {
+    const r = await api('crash', 'launch', { bet, auto });
+    if (r) arc.stake = bet;
+    return r;
+  },
+  peek: async () => arcCrashDone(await api('crash', 'peek', {}, r => r.payout || 0)),
+  // Leaving the game cashes out at once: nothing to hold back for a reveal then
+  cashout: async leaving => arcCrashDone(await api('crash', 'cashout', {}, leaving ? null : r => (r.refunded ? 0 : r.payout || 0))),
   broke: () => `Out of money. ${dailyText(true)}`,
 };
 async function arcOpen(name) {
@@ -5078,6 +5090,111 @@ function renderArcadeGame() {
   const bal = wallet.ready ? wallet.balance : 0;
   paintChipRail(ui.agChips, bal, false);
   paintLow(ui.agLow, wallet.ready && bal < chipPick);
+}
+
+/* Rounds the server says are waiting on you, from another device or before the app
+   closed: show them where you left off. A rocket still in the air is cashed out. */
+function resumeRounds(r) {
+  if (!r) return;
+  if (r.poker && Array.isArray(r.poker.hand) && !vp.busy && vp.phase !== 'hold') {
+    if (r.poker.machine in VP_GAMES && r.poker.machine !== vp.game) { vp.game = r.poker.machine; vpBuildRows(); }
+    vp.hand = r.poker.hand;
+    vp.stake = r.poker.bet;
+    vp.held = [false, false, false, false, false];
+    vp.phase = 'hold';
+    vp.result = null;
+    vp.hand.forEach((c, i) => { vpPaintCard(i, c); vpCards[i].card.classList.remove('down'); });
+  }
+  if (r.war && !wr.busy && !wr.live) {
+    wr.live = { ...r.war, phase: 'decide' };
+    wr.result = null;
+    wr.table = { p: [r.war.player], d: [r.war.dealer], burn: 0 };
+  }
+  if (r.threecard && !tc.busy && !tc.live) {
+    tc.live = { ...r.threecard, dealer: TC_HIDDEN, choice: null, phase: 'decide' };
+    tc.result = null;
+    tc.table = { p: r.threecard.player.slice(), d: TC_HIDDEN.slice(), up: false };
+  }
+  if (r.reddog && !rd.busy && !rd.live) {
+    rd.live = { ...r.reddog, phase: 'decide' };
+    rd.result = null;
+    rd.table = r.reddog.cards.slice();
+  }
+  if (r.bj) soloTake(r.bj);
+  if (r.crash && app.view !== 'arcadegame') {
+    api('crash', 'cashout', {}).then(x => {
+      if (!x) return;
+      toast(x.refunded ? 'Your Duck Rocket bet came back.' : x.cashed ? `Your Duck Rocket flight cashed out at ${x.cashed}×.` : 'Your last Duck Rocket flight blew up.');
+      render();
+    });
+  }
+}
+
+/* ================= Leaderboard =================
+   From the server (/api/leaderboard): this week's net winnings (Monday to Sunday, UTC), or
+   everyone's balance. Fetched when the Stats tab opens, at most every 20 seconds. */
+const lb = { board: 'week', data: {}, at: {}, loading: false };
+async function lbLoad(force) {
+  const board = lb.board;
+  if (lb.loading || (!force && Date.now() - (lb.at[board] || 0) < 20000)) return;
+  lb.loading = true;
+  try {
+    const res = await fetch(`/api/leaderboard?board=${board}`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (!res.ok) throw new Error('board ' + res.status);
+    lb.data[board] = await res.json();
+    lb.at[board] = Date.now();
+  } catch (e) {
+    if (!lb.data[board]) lb.data[board] = { error: true };
+  } finally {
+    lb.loading = false;
+    if (app.view === 'stats') renderBoard();
+  }
+}
+function renderBoard() {
+  for (const b of ui.lbTabs) b.setAttribute('aria-selected', String(b.dataset.board === lb.board));
+  const d = lb.data[lb.board];
+  const week = lb.board === 'week';
+  ui.lbWhen.textContent = week ? 'Resets Monday' : '';
+  ui.lbList.textContent = '';
+  const fmt = v => (week ? signed(v) : money(v));
+  if (!d) { ui.lbList.innerHTML = '<li class="empty">Loading…</li>'; ui.lbMe.textContent = ''; ui.lbPodium.hidden = true; return; }
+  if (d.error) { ui.lbList.innerHTML = '<li class="empty">Couldn’t load the leaderboard.</li>'; ui.lbMe.textContent = ''; ui.lbPodium.hidden = true; return; }
+  if (!d.rows.length) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = week ? 'Nobody has played this week yet. Be the first.' : 'Nobody here yet.';
+    ui.lbList.appendChild(li);
+  }
+  for (const r of d.rows) {
+    const li = document.createElement('li');
+    li.classList.toggle('me', !!r.me);
+    const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = String(r.rank);
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.me ? `${r.name} (you)` : r.name;
+    const vl = document.createElement('span'); vl.className = 'vl' + (r.value < 0 ? ' down' : ''); vl.textContent = fmt(r.value);
+    li.append(rk, nm, vl);
+    ui.lbList.appendChild(li);
+  }
+  const mine = d.rows.some(r => r.me);
+  ui.lbMe.textContent = !signedIn() ? 'Sign in to get on the board.'
+    : mine ? ''
+    : d.me && d.me.rank ? `You’re #${d.me.rank} with ${fmt(d.me.value)}.`
+    : week ? 'Play a round this week to get on the board.' : '';
+  ui.lbPodium.hidden = !week || !(d.podium && d.podium.length);
+  if (!ui.lbPodium.hidden) {
+    ui.lbPodium.textContent = '';
+    const head = document.createElement('div');
+    head.className = 'section-label';
+    head.textContent = 'Last week';
+    ui.lbPodium.appendChild(head);
+    d.podium.forEach((p, i) => {
+      const line = document.createElement('p');
+      line.className = 'fine';
+      line.innerHTML = `${['🥇', '🥈', '🥉'][i]} <b></b> · `;
+      line.querySelector('b').textContent = p.name;
+      line.append(signed(p.value));
+      ui.lbPodium.appendChild(line);
+    });
+  }
 }
 
 /* ================= How to play ================= */
@@ -5154,7 +5271,7 @@ async function cloudInit() {
   done();
   if (verifier && cloud.user) toast(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
   else if (verifier || googleFailed) toast('Google sign-in didn’t finish. Try again.');
-  if (cloud.user) { await cloudPull(); claimDaily(); }
+  if (cloud.user) { await walletFetch(); claimDaily(); cloudPull(); }
   render();
 }
 
@@ -5195,30 +5312,14 @@ async function googleSignIn() {
   }
 }
 
-function readSoloLocal() {
-  if (soloT) return soloT;
-  try {
-    const s = JSON.parse(localStorage.getItem('bj.rooms.solo') || 'null');
-    return s && Array.isArray(s.seats) && s.players ? s : null;
-  } catch (e) { return null; }
-}
 function cloudSnapshot() {
-  return {
-    wallet: walletBody(),
-    roulette: { history: rl.history, last: rl.last },
-    solo: readSoloLocal(),
-    stats,
-  };
+  return { roulette: { history: rl.history, last: rl.last }, stats };
 }
 /* Load a save from the account into this browser, validating it like a local load. */
 function cloudApply(data) {
   if (!data || typeof data !== 'object') return;
   cloud.applying = true;
   try {
-    if (data.daily && typeof data.daily.day === 'string' && data.daily.day > daily.day) daily.day = data.daily.day;
-    walletLoad(data.wallet && typeof data.wallet === 'object' ? data.wallet : null);
-    walletSave();
-    if (wallet.reset) setTimeout(cloudMarkDirty, 0);   // a wallet from before the daily bonus starts over; save that
     if (data.roulette && typeof data.roulette === 'object') {
       try { localStorage.setItem('mini-casino.roulette', JSON.stringify(data.roulette)); } catch (e) { /* storage unavailable */ }
       rl.history = [];
@@ -5228,15 +5329,6 @@ function cloudApply(data) {
     if (data.stats && typeof data.stats === 'object') {
       statsLoad(data.stats);
       try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* storage unavailable */ }
-    }
-    const s = data.solo;
-    const midHand = app.view === 'table' && app.solo && app.T && roundLive(app.T);
-    if (s && typeof s === 'object' && Array.isArray(s.seats) && s.players && s.players[SOLO_ID] && !midHand) {
-      migrateTable(s);
-      soloT = s;
-      try { localStorage.setItem('bj.rooms.solo', JSON.stringify(s)); } catch (e) { /* storage unavailable */ }
-      if (app.view === 'table' && app.solo) app.T = soloT;
-      syncCashed(soloT);
     }
   } finally {
     cloud.applying = false;
@@ -5423,8 +5515,10 @@ async function authSubmit(e) {
     cloud.version = 0;
     closeAuth();
     route();
-    toast(up ? 'Account created. Your progress now saves to it.' : `Signed in as ${cloud.user.name || cloud.user.email}`);
-    await cloudPull();
+    toast(up ? 'Account created. You start with $1,000.' : `Signed in as ${cloud.user.name || cloud.user.email}`);
+    await walletFetch();
+    claimDaily();
+    cloudPull();
   } catch (err) {
     ui.authError.textContent = 'Couldn’t reach the sign-in service. Check your connection and try again.';
   } finally {
@@ -5439,7 +5533,11 @@ async function signOut() {
   cloud.user = null;
   cloud.version = 0;
   cloud.state = '';
-  toast('Signed out. This browser keeps a copy of your progress.');
+  wallet.ready = false;
+  wallet.real = wallet.held = wallet.balance = 0;
+  wallet.log = [];
+  soloT = null;
+  toast('Signed out. Your wallet is safe in your account.');
   route();
 }
 function myTurnHand() {
@@ -5610,6 +5708,10 @@ function render() {
   ui.tcpView.hidden = v !== 'threecard';
   ui.reddogView.hidden = v !== 'reddog';
   ui.learnView.hidden = v !== 'learn';
+  // Signed out, a game shows the sign-in card instead
+  const gated = GAME_VIEWS.has(v) && cloud.ready && !signedIn();
+  ui.gateView.hidden = !gated;
+  if (gated) for (const el of [ui.rouletteView, ui.tableView, ui.pokerView, ui.baccaratView, ui.warView, ui.tcpView, ui.reddogView, ui.arcadeGameView]) el.hidden = true;
   // Game screens fill the screen exactly and never scroll
   document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog' || v === 'arcadegame');
   document.documentElement.classList.toggle('arc', v === 'arcadegame');
@@ -5643,8 +5745,9 @@ function render() {
   if (v !== 'roulette' && rl.stage) rlStageClose();
   if (v === 'home') renderDaily();
   else if (v === 'profile') renderProfile();
-  if (v === 'lobby') renderLobby();
-  else if (v === 'stats') renderStats();
+  if (gated) { /* the sign-in card is all there is */ }
+  else if (v === 'lobby') renderLobby();
+  else if (v === 'stats') { renderStats(); renderBoard(); lbLoad(); }
   else if (v === 'roulette') renderRoulette();
   else if (v === 'table') renderTable();
   else if (v === 'poker') renderPoker();
@@ -5972,12 +6075,13 @@ function renderSeats(T, R, ctx, anim) {
     q('.dot').title = here ? 'In the room' : 'Away';
     const bet = uid === me ? viewBet() : P.bet;
     const status = uid === me ? viewStatus() : P.status;
-    q('.sbank').textContent = money(P.bank - (T.phase === 'betting' ? bet : 0));
+    const chips = P.bank + (uid === me && wallet.ready ? wallet.balance : 0);   // your seat shows what you can bet, wallet included
+    q('.sbank').textContent = money(chips - (T.phase === 'betting' ? bet : 0));
     let st = '';
     if (!here) st = 'Away';
     else if (T.phase === 'betting') {
       st = status === 'ready' ? `Ready · ${money(bet)}` : status === 'out' ? 'Sitting out' : bet ? `Betting ${money(bet)}` : 'Choosing a bet';
-      if (P.bank < MIN_BET && !bet) st = 'Out of chips';
+      if (chips < MIN_BET && !bet) st = 'Out of chips';
     } else if (!hands.length) st = 'Sitting out this hand';
     else if (T.phase === 'insurance' && hands.some(h => R.ins[h.id] === null)) st = 'Deciding on insurance';
     else if (P.leaving) st = 'Leaving after this hand';
@@ -6175,10 +6279,15 @@ ui.bcGo.addEventListener('click', bcDeal);
 ui.bcUndo.addEventListener('click', bcUndo);
 ui.bcClear.addEventListener('click', bcClear);
 ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
-ui.dailyBtn.addEventListener('click', () => go('profile'));
+ui.dailyBtn.addEventListener('click', () => openAuth('in'));
 ui.stReset.addEventListener('click', resetStats);
+ui.lbTabs.forEach(b => b.addEventListener('click', () => { lb.board = b.dataset.board; buzz(4); renderBoard(); lbLoad(); }));
 ui.authForm.addEventListener('submit', authSubmit);
 googleButton(ui.authGoogle);
+googleButton(ui.gateGoogle);
+ui.gateIn.addEventListener('click', () => openAuth('in'));
+ui.gateUp.addEventListener('click', () => openAuth('up'));
+ui.gateLearn.addEventListener('click', openHelp);
 googleButton(ui.lobbyGoogle);
 googleButton(ui.tGoogle);
 ui.lobbyEmail.addEventListener('click', () => openAuth('in'));
@@ -6364,15 +6473,12 @@ async function boot() {
   buildThreeCard();
   rdLoad();
   buildRedDog();
-  arcLoad();
   buildChipRail(ui.agChips);
   buildLearn();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
-  walletInit();
   try { statsLoad(JSON.parse(localStorage.getItem(STATS_KEY) || 'null')); } catch (e) { /* storage unavailable */ }
   bcRecover();
   wrRecover();
-  arcRecover();
   tcRecover();
   rdRecover();
   route();

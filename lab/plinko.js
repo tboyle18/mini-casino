@@ -278,22 +278,11 @@ export async function mount({ stage, controls, info, bank }) {
   }
 
   // ---- Dropping ducks ----
-  function releaseOne() {
-    if (ducks.length >= MAX_DUCKS) return false;
-    const b = betSize();
-    if (wallet.balance() < b) return false;
-    // Work out where this duck lands before it falls, then replay the same bounces on screen
-    const seed = randomSeed();
-    const pays = RISKS[risk].pays;
-    const trial = seeded(seed);
-    const ghost = makeBall(trial);
-    for (let s = 0; !ghost.done && s < 240 * 30; s++) stepBall(ghost, rows, trial);
-    const bucket = ghost.done ? ghost.bucket : (BUCKETS - 1) / 2;
-    const id = wallet.bet(b, Math.round(b * pays[bucket]), { game: 'plinko', mult: pays[bucket], risk });
-    if (id == null) return false;
-    const rng = seeded(seed);
+  // A duck whose landing is already decided: { seed, bucket, payout } plus, in the lab, its bet's id
+  function launchDuck(d) {
+    const rng = seeded(d.seed);
     const ball = makeBall(rng);
-    ducks.push({ ball, rng, id, bucket, bet: b, pays, rot: rand() * TAU, spin: (rand() - 0.5) * 6, landed: 0, restY: 0, x0: 0 });
+    ducks.push({ ball, rng, id: d.id, bucket: d.bucket, payout: d.payout, bet: d.bet, pays: d.pays, rot: rand() * TAU, spin: (rand() - 0.5) * 6, landed: 0, restY: 0, x0: 0 });
     gsap.fromTo(funnel.scale, { x: 1.25, z: 1.25 }, { x: 1, z: 1, duration: 0.35, ease: 'elastic.out(1, 0.4)' });
     sound.note(220, 0.08, { type: 'triangle', vol: 0.12, to: 440 });
     buzz(8);
@@ -301,7 +290,25 @@ export async function mount({ stage, controls, info, bank }) {
     hud();
     return true;
   }
-  function drop(n) {
+  // In the lab: work out where this duck lands before it falls, then replay the same bounces on screen
+  function releaseOne() {
+    if (ducks.length >= MAX_DUCKS) return false;
+    const b = betSize();
+    if (wallet.balance() < b) return false;
+    const seed = randomSeed();
+    const pays = RISKS[risk].pays;
+    const trial = seeded(seed);
+    const ghost = makeBall(trial);
+    for (let s = 0; !ghost.done && s < 240 * 30; s++) stepBall(ghost, rows, trial);
+    const bucket = ghost.done ? ghost.bucket : (BUCKETS - 1) / 2;
+    const payout = Math.round(b * pays[bucket]);
+    const id = wallet.bet(b, payout, { game: 'plinko', mult: pays[bucket], risk });
+    if (id == null) return false;
+    return launchDuck({ seed, bucket, payout, id, bet: b, pays });
+  }
+  let asking = false;
+  let queuedPay = 0;   // paid by the server for ducks that haven't been dropped on screen yet
+  async function drop(n) {
     sound.unlock();
     if (wallet.balance() < BETS[0]) {
       const line = wallet.broke();
@@ -321,6 +328,19 @@ export async function mount({ stage, controls, info, bank }) {
       winFx.float(`Bet lowered to ${money(bet)}`, view.w / 2, view.h * 0.3, { color: '#ffe27a', size: 22 });
       return;
     }
+    if (wallet.server) {
+      // In the casino the server drops the ducks: it picks each one's seed and pays it
+      if (asking || ducks.length >= MAX_DUCKS) return;
+      asking = true;
+      const b = betSize(), pays = RISKS[risk].pays;
+      const drops = await wallet.drop(Math.min(n, MAX_DUCKS - ducks.length), b, risk);
+      asking = false;
+      if (!drops || !drops.length) { hud(); return; }
+      if (drops.length > 1) sound.quack();
+      for (const d of drops) queuedPay += d.payout;
+      drops.forEach((d, i) => later(() => { queuedPay -= d.payout; launchDuck({ ...d, bet: b, pays }); }, i * (calm ? 200 : 110)));
+      return;
+    }
     if (!releaseOne()) return;
     if (n > 1) {
       sound.quack();
@@ -336,8 +356,9 @@ export async function mount({ stage, controls, info, bank }) {
   function landed(d) {
     const i = d.bucket;                     // decided at the drop; the fall replays it
     const mult = d.pays[i];
-    const win = Math.round(d.bet * mult);   // whole dollars
-    wallet.settle(d.id);
+    const win = d.payout;
+    if (wallet.server) wallet.reveal(win);   // already paid; now it shows
+    else wallet.settle(d.id);
     const b = buckets[i];
     b.flash = 1;
     const [sx, sy] = screenOf(b.x, BUCKET_TOP + 0.02);
@@ -532,7 +553,12 @@ export async function mount({ stage, controls, info, bank }) {
       cancelAnimationFrame(raf);
       for (const t of timers) clearTimeout(t);
       // Ducks still in the air are paid what they were going to land on
-      for (const d of ducks) if (!d.ball.done) wallet.settle(d.id);
+      for (const d of ducks) {
+        if (d.ball.done) continue;
+        if (wallet.server) wallet.reveal(d.payout);
+        else wallet.settle(d.id);
+      }
+      if (wallet.server && queuedPay) wallet.reveal(queuedPay);
       gsap.killTweensOf(funnel.scale);
       window.removeEventListener('keydown', onKey);
       winFx.dispose();

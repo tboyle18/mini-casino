@@ -4,10 +4,18 @@
 // over a WebSocket, send moves ({ t: 'hit', k, s } and so on), and every connected
 // browser gets the whole table back after each change. Turn timers, the betting
 // countdown and seats freed by players who left run on the object's alarm.
-// The rules themselves are the same code the page uses for the solo table.
+// The rules themselves are the same code the server runs for the solo table.
+//
+// Chips at the table come out of the players' wallets (the wallets table in Neon): a
+// 'chips' move is only applied once the wallet has paid for it, and whatever a player
+// cashes out (the 'cashed' count in the rules) is paid back into the wallet. The room
+// tells each player their new wallet balance. The shoe's seed never leaves the room.
 
 import { DurableObject } from 'cloudflare:workers';
+import { neon } from '@neondatabase/serverless';
 import { newTable, newPlayer, migrateTable, applyMove, autoAdvance, nextDeadline, AWAY_MS, AWAY_SEAT_MS } from './rules.js';
+import { walletDebit, walletCredit, withWallet } from './wallet.js';
+import { note } from './play.js';
 
 const MAX_MESSAGE = 2048;
 const MOVES = new Set(['sit', 'leave', 'cashout', 'chips', 'bet', 'ready', 'unready', 'out', 'ins', 'hit', 'stand', 'double', 'split']);
@@ -16,15 +24,21 @@ const OPEN = 1;
 export class TableRoom extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
+    this.env = env;
     this.T = null;
     this.away = {};    // uid -> when their last connection closed
     this.names = {};   // uid -> name shown at the table
+    this.paid = {};    // uid -> how much of their 'cashed' total has gone back to their wallet
+    this.netDone = {}; // uid -> the last round whose result went into their weekly total
     ctx.blockConcurrencyWhile(async () => {
-      const got = await ctx.storage.get(['T', 'away', 'names']);
+      const got = await ctx.storage.get(['T', 'away', 'names', 'paid', 'netDone']);
       this.T = got.get('T') || null;
-      if (migrateTable(this.T)) await ctx.storage.put('T', this.T);
       this.away = got.get('away') || {};
       this.names = got.get('names') || {};
+      this.paid = got.get('paid') || {};
+      this.netDone = got.get('netDone') || {};
+      if (migrateTable(this.T)) { this.paid = {}; await this.save(); }
+      if (this.T && !this.T.sid) { this.T.sid = crypto.randomUUID(); await this.save(); }
     });
     // Keep-alive pings are answered without waking the room
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
@@ -38,6 +52,7 @@ export class TableRoom extends DurableObject {
       const { code, name, seed, uid, display } = await request.json();
       const now = Date.now();
       const T = newTable(code, name, seed, now);
+      T.sid = crypto.randomUUID();
       T.seats[0] = uid;                 // the creator sits down straight away
       T.players[uid] = newPlayer();
       this.T = T;
@@ -70,7 +85,14 @@ export class TableRoom extends DurableObject {
     return new Response('Not found', { status: 404 });
   }
 
-  async webSocketMessage(ws, message) {
+  // One message at a time, in the order they came: taking chips from a wallet waits on the
+  // database, and a bet sent right behind them has to see them on the table
+  webSocketMessage(ws, message) {
+    this.queue = (this.queue || Promise.resolve()).then(() => this.handle(ws, message)).catch(err => console.error('room message', err));
+    return this.queue;
+  }
+
+  async handle(ws, message) {
     if (!this.T || typeof message !== 'string' || message.length > MAX_MESSAGE) return;
     let m;
     try { m = JSON.parse(message); } catch (e) { return; }
@@ -78,8 +100,19 @@ export class TableRoom extends DurableObject {
     if (!uid || !m || typeof m !== 'object') return;
     if (m.t === 'hello') { ws.send(this.snapshot(this.presence())); return; }
     if (!MOVES.has(m.t)) return;
+    // Chips are paid for from the wallet first; a wallet that can't cover them changes nothing
+    if (m.t === 'chips') {
+      const a = Math.floor(Number(m.a) || 0);
+      if (!(a > 0) || this.T.seats.indexOf(uid) < 0) return;
+      const balance = await walletDebit(this.sql(), uid, this.names[uid], a).catch(() => null);
+      if (balance == null) { this.tell(uid, { type: 'error', error: 'funds' }); return; }
+      this.tell(uid, { type: 'wallet', balance });
+    }
     const ctx = this.presence();
-    if (!applyMove(this.T, uid, m, ctx)) return;
+    if (!applyMove(this.T, uid, m, ctx)) {
+      if (m.t === 'chips') await this.refund(uid, Math.floor(Number(m.a) || 0));   // already seen: give it back
+      return;
+    }
     await this.update(ctx);
   }
 
@@ -131,6 +164,7 @@ export class TableRoom extends DurableObject {
     autoAdvance(this.T, ctx);
     this.T.rev = (this.T.rev || 0) + 1;
     this.T.updated = ctx.now;
+    await this.settleMoney();
     await this.save();
     const msg = this.snapshot(ctx);
     for (const w of this.ctx.getWebSockets()) {
@@ -140,7 +174,50 @@ export class TableRoom extends DurableObject {
   }
 
   snapshot(ctx) {
-    return JSON.stringify({ type: 'state', T: this.T, present: [...ctx.present], names: this.names, now: ctx.now });
+    const { seed, ...T } = this.T;   // the seed would let anyone work out the cards to come
+    return JSON.stringify({ type: 'state', T, present: [...ctx.present], names: this.names, now: ctx.now });
+  }
+
+  sql() { return neon(this.env.DATABASE_URL); }
+
+  // Send one player (all their open tabs) a message
+  tell(uid, msg) {
+    const text = JSON.stringify(msg);
+    for (const w of this.ctx.getWebSockets()) {
+      if ((w.deserializeAttachment() || {}).uid === uid) { try { w.send(text); } catch (e) { /* closing */ } }
+    }
+  }
+  async refund(uid, a) {
+    const balance = await walletCredit(this.sql(), uid, this.names[uid], a).catch(() => null);
+    if (balance != null) this.tell(uid, { type: 'wallet', balance });
+  }
+
+  /* Pay cashed-out chips back into the wallets, and add each finished round to the players'
+     weekly totals. Anything that fails (the database is unreachable) is tried again on the
+     next update. */
+  async settleMoney() {
+    const sql = this.sql();
+    for (const [uid, P] of Object.entries(this.T.players)) {
+      const owed = (P.cashed || 0) - (this.paid[uid] || 0);
+      if (!(owed > 0)) continue;
+      const balance = await walletCredit(sql, uid, this.names[uid], owed).catch(() => null);
+      if (balance == null) continue;
+      this.paid[uid] = P.cashed;
+      this.tell(uid, { type: 'wallet', balance });
+    }
+    const R = this.T.round;
+    if (R && R.over) {
+      for (const [uid, net] of Object.entries(R.net)) {
+        if (this.netDone[uid] === R.n) continue;
+        try {
+          await withWallet(sql, uid, this.names[uid], (w, now) => {
+            w.weekNet = Math.round((w.weekNet + net) * 100) / 100;
+            note(w, net, `Blackjack · ${this.T.name || 'Room'} · ${net > 0 ? 'Won' : net < 0 ? 'Lost' : 'Push'}`, now);
+          });
+          this.netDone[uid] = R.n;
+        } catch (e) { /* next time */ }
+      }
+    }
   }
 
   // Wake up for the next timer: a turn or betting deadline, or someone who dropped crossing an "away" limit
@@ -156,6 +233,6 @@ export class TableRoom extends DurableObject {
   }
 
   async save() {
-    await this.ctx.storage.put({ T: this.T, away: this.away, names: this.names });
+    await this.ctx.storage.put({ T: this.T, away: this.away, names: this.names, paid: this.paid, netDone: this.netDone });
   }
 }

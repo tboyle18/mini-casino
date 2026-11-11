@@ -4,9 +4,13 @@
 //   /api/auth/*  same-origin proxy to Neon Auth (Managed Better Auth), so the
 //                session cookie belongs to this site and Safari doesn't block it
 //   /api/me      who is signed in
-//   /api/save    the signed-in player's wallet, roulette and solo-blackjack save,
-//                stored in Neon Postgres (table: saves)
+//   /api/save    the signed-in player's stats and roulette history, stored in Neon
+//                Postgres (table: saves)
+//   /api/wallet  the signed-in player's wallet: balance, statement, rounds in progress
+//   /api/play    every bet: the server deals, decides and pays (src/play.js), and the
+//                money lives in the wallets table (src/wallet.js)
 //   /api/daily   claims the signed-in player's $1,000 daily bonus, once per calendar day
+//   /api/leaderboard  this week's net winnings, or everyone's balance
 //   /api/rooms   multiplayer blackjack: POST creates a room, /api/rooms/{code} says
 //                whether it exists, /api/rooms/{code}/ws connects to it. Each room
 //                is a Durable Object (src/room.js).
@@ -14,6 +18,9 @@
 import { neon } from '@neondatabase/serverless';
 import { makeCode } from './rules.js';
 import { TableRoom } from './room.js';
+import { play, roundsView, PlayError } from './play.js';
+import { loadWallet, withWallet, leaderboard, rollWeek, DAILY_BONUS } from './wallet.js';
+import { note } from './play.js';
 
 export { TableRoom };
 
@@ -21,9 +28,6 @@ export { TableRoom };
 // one-time verifier; the page trades it for a session through /get-session, still via this proxy.
 const AUTH_ROUTES = new Set(['/sign-up/email', '/sign-in/email', '/sign-in/social', '/sign-out', '/get-session']);
 const MAX_SAVE_BYTES = 256 * 1024;
-const DAILY_BONUS = 1000;
-const WALLET_VERSION = 2;          // wallets from before the daily bonus start over at $1,000
-const START_BALANCE = 1000;
 
 export default {
   async fetch(request, env) {
@@ -34,6 +38,9 @@ export default {
       if (url.pathname === '/api/me') return await me(request, env, url);
       if (url.pathname === '/api/save') return await save(request, env, url);
       if (url.pathname === '/api/daily') return await daily(request, env, url);
+      if (url.pathname === '/api/wallet') return await walletRoute(request, env, url);
+      if (url.pathname === '/api/play') return await playRoute(request, env, url);
+      if (url.pathname === '/api/leaderboard') return await boardRoute(request, env, url);
       if (url.pathname === '/api/rooms') return await createRoom(request, env, url);
       const room = url.pathname.match(/^\/api\/rooms\/([a-z0-9]{4,12})(\/ws)?$/);
       if (room) return await roomRoute(request, env, url, room[1], !!room[2]);
@@ -146,7 +153,7 @@ async function save(request, env, url) {
 export function cleanSave(d) {
   if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
   const out = {};
-  for (const key of ['wallet', 'roulette', 'solo', 'stats']) {
+  for (const key of ['roulette', 'stats']) {   // the wallet and the solo table live on the server now
     if (d[key] && typeof d[key] === 'object' && !Array.isArray(d[key])) out[key] = d[key];
   }
   return out;
@@ -187,20 +194,6 @@ export function validDay(day, now = Date.now()) {
   const n = dayNumber(day);
   return n >= Math.floor((now - 12 * 3600000) / DAY_MS) && n <= Math.floor((now + 14 * 3600000) / DAY_MS);
 }
-// A wallet from before the daily bonus (or none at all) starts over
-export function currentWallet(w, now = Date.now()) {
-  if (w && typeof w === 'object' && w.v === WALLET_VERSION && Number.isFinite(w.balance) && w.balance >= 0) return w;
-  return { v: WALLET_VERSION, balance: START_BALANCE, log: [{ a: START_BALANCE, w: 'Fresh start', at: now }] };
-}
-export function grantDaily(data, day, now = Date.now()) {
-  const out = data && typeof data === 'object' ? { ...data } : {};
-  const w = currentWallet(out.wallet, now);
-  const log = Array.isArray(w.log) ? w.log : [];
-  out.wallet = { ...w, balance: w.balance + DAILY_BONUS, log: [{ a: DAILY_BONUS, w: 'Daily bonus', at: now }, ...log].slice(0, 12) };
-  out.daily = { day, at: now };
-  return out;
-}
-const devClaims = new Map();   // local test players have no saved data, so their claims live here
 async function daily(request, env, url) {
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
   if (!sameOrigin(request, url)) return json({ error: 'bad_origin' }, 403);
@@ -209,25 +202,67 @@ async function daily(request, env, url) {
   const body = await request.json().catch(() => null);
   const day = body && body.day;
   if (!validDay(day)) return json({ error: 'bad_day' }, 400);
-  if (user.dev) {
-    if ((devClaims.get(user.id) || '') >= day) return json({ ok: false, claimed: true, day: devClaims.get(user.id) });
-    devClaims.set(user.id, day);
-    return json({ ok: true, granted: DAILY_BONUS, day, local: true });
-  }
   const sql = neon(env.DATABASE_URL);
-  for (let tries = 0; tries < 4; tries++) {
-    const saved = await readSave(sql, user.id);
-    const last = saved.data && saved.data.daily && typeof saved.data.daily.day === 'string' ? saved.data.daily.day : '';
-    if (last >= day) return json({ ok: false, claimed: true, day: last, data: saved.data, version: saved.version });
-    const next = grantDaily(saved.data, day);
-    const rows = saved.version
-      ? await sql`update saves set data = ${JSON.stringify(next)}::jsonb, version = version + 1, updated_at = now()
-                  where user_id = ${user.id} and version = ${saved.version} returning version`
-      : await sql`insert into saves (user_id, data, version) values (${user.id}, ${JSON.stringify(next)}::jsonb, 1)
-                  on conflict (user_id) do nothing returning version`;
-    if (rows.length) return json({ ok: true, granted: DAILY_BONUS, day, data: next, version: rows[0].version });
+  const { w, result } = await withWallet(sql, user.id, displayName(user), (w, now) => {
+    if (w.dailyDay >= day) return { ok: false, claimed: true };
+    w.dailyDay = day;
+    w.balance = Math.round((w.balance + DAILY_BONUS) * 100) / 100;
+    note(w, DAILY_BONUS, 'Daily bonus', now);
+    return { ok: true, granted: DAILY_BONUS };
+  });
+  return json({ ...result, day: w.dailyDay, wallet: walletView(w) });
+}
+
+/* ---------- Wallet, bets and the leaderboard ---------- */
+const randInt = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+const gameCtx = now => ({
+  now,
+  randInt,
+  rand: () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296,
+  seed: () => [...crypto.getRandomValues(new Uint8Array(8))].map(b => b.toString(16).padStart(2, '0')).join(''),
+});
+const walletView = w => ({ balance: w.balance, log: w.log, daily: w.dailyDay, weekNet: w.weekNet, rounds: roundsView(w, Date.now()) });
+
+async function walletRoute(request, env, url) {
+  if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  const user = await currentUser(request, env, url);
+  if (!user) return json({ error: 'signed_out' }, 401);
+  const sql = neon(env.DATABASE_URL);
+  const w = await loadWallet(sql, user.id, displayName(user));
+  rollWeek(w, Date.now());
+  return json(walletView(w));
+}
+
+const MAX_PLAY_BYTES = 8 * 1024;
+async function playRoute(request, env, url) {
+  if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!sameOrigin(request, url)) return json({ error: 'bad_origin' }, 403);
+  const user = await currentUser(request, env, url);
+  if (!user) return json({ error: 'signed_out' }, 401);
+  const text = await request.text();
+  if (text.length > MAX_PLAY_BYTES) return json({ error: 'too_large' }, 413);
+  let body;
+  try { body = JSON.parse(text); } catch (e) { return json({ error: 'bad_json' }, 400); }
+  if (!body || typeof body.game !== 'string' || typeof body.action !== 'string') return json({ error: 'bad_request' }, 400);
+  const sql = neon(env.DATABASE_URL);
+  try {
+    const { w, result } = await withWallet(sql, user.id, displayName(user), (w, now) => play(w, body.game, body.action, body.args, gameCtx(now)));
+    return json({ result, balance: w.balance, weekNet: w.weekNet, log: w.log });
+  } catch (err) {
+    if (err instanceof PlayError) {
+      const w = await loadWallet(sql, user.id, displayName(user));
+      return json({ error: err.code, message: err.message, balance: w.balance }, 400);
+    }
+    throw err;
   }
-  return json({ error: 'busy' }, 503);
+}
+
+async function boardRoute(request, env, url) {
+  if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  const user = await currentUser(request, env, url);
+  const board = url.searchParams.get('board') === 'balance' ? 'balance' : 'week';
+  const sql = neon(env.DATABASE_URL);
+  return json(await leaderboard(sql, board, user ? user.id : null, Date.now(), env.DEV_AUTH === '1'));
 }
 
 /* ---------- Multiplayer rooms ---------- */

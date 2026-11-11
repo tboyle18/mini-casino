@@ -6,7 +6,9 @@
 // on a parachute; wait too long and it's feathers everywhere. The crash point is decided at
 // launch (crash-math.js); cashing out at any multiplier returns about 97% over time.
 // It plays with the casino wallet when the app passes a `bank`, and with the shared lab
-// credits otherwise.
+// credits otherwise. In the casino the server draws the crash point and keeps it to itself:
+// the page asks how the flight is going a couple of times a second, and only learns where
+// the rocket blew up once it has.
 
 import * as THREE from 'three';
 import { gsap } from 'gsap';
@@ -444,8 +446,9 @@ export async function mount({ stage, controls, info, bank }) {
   }
 
   // ---- A round ----
-  function launch() {
-    if (st.state === 'countdown' || st.state === 'flying') return;
+  let asking = false, lastPeek = 0;
+  async function launch() {
+    if (st.state === 'countdown' || st.state === 'flying' || asking) return;
     sound.unlock();
     if (wallet.balance() < BETS[0]) {
       lineEl.textContent = wallet.broke();
@@ -462,10 +465,18 @@ export async function mount({ stage, controls, info, bank }) {
       return;
     }
     const stake = betSize();
-    const crashAt = crashPoint(rand);
-    // If the app closes mid-flight, the auto cash-out still counts if the rocket got that far
-    const id = wallet.bet(stake, auto && auto <= crashAt ? Math.round(stake * auto) : 0, { game: 'crash', crashAt });
-    if (id == null) return;
+    let crashAt = Infinity, id = null;
+    if (wallet.server) {
+      asking = true;
+      const r = await wallet.launch(stake, auto);
+      asking = false;
+      if (!r) { hud(); return; }
+    } else {
+      crashAt = crashPoint(rand);
+      // If the app closes mid-flight, the auto cash-out still counts if the rocket got that far
+      id = wallet.bet(stake, auto && auto <= crashAt ? Math.round(stake * auto) : 0, { game: 'crash', crashAt });
+      if (id == null) return;
+    }
     st.id = id;
     st.stake = stake;
     st.crashAt = crashAt;
@@ -514,13 +525,31 @@ export async function mount({ stage, controls, info, bank }) {
     buzz([20, 30, 20]);
     hud();
   }
-  function cashOut(at) {
-    if (st.state !== 'flying' || st.cashed) return;
+  async function cashOut(at) {
+    if (st.state !== 'flying' || st.cashed || asking) return;
+    if (wallet.server) {
+      // The server says whether you made it, and at what multiplier
+      asking = true;
+      const r = await wallet.cashout();
+      asking = false;
+      if (!r || st.state !== 'flying' || st.cashed) return;
+      heard(r);
+      return;
+    }
     const m = at || currentMult();
     if (m > st.crashAt || (!at && m >= st.crashAt)) return;
+    wallet.settle(st.id, Math.round(st.stake * m));
+    showCashOut(m, Math.round(st.stake * m));
+  }
+  // What the server said about the flight: cashed out (by you or the auto), blown up, or still going
+  function heard(r) {
+    if (Number.isFinite(r.at)) st.crashAt = r.at;
+    if (r.cashed) showCashOut(r.cashed, r.payout);
+    // a crash shows on the next frame, now that crashAt is known
+  }
+  function showCashOut(m, win) {
     st.cashed = m;
-    const win = Math.round(st.stake * m);
-    wallet.settle(st.id, win);
+    wallet.reveal && wallet.reveal(win);
     multEl.className = 'cr-mult cashed';
     lineEl.textContent = `Cashed out at ${fmt(m)} · +${money(win - st.stake)}`;
     // The duck ejects and floats down under its parachute
@@ -564,7 +593,7 @@ export async function mount({ stage, controls, info, bank }) {
     puffAt(at, 16, 1.2, 0.5, 1, true);
     shake.amp = 0.3;
     sound.boom();
-    if (!st.cashed) wallet.settle(st.id, 0);
+    if (!st.cashed && !wallet.server) wallet.settle(st.id, 0);
     if (!st.cashed) {
       // The duck is fine. Singed, but fine.
       const wp = duck.getWorldPosition(new THREE.Vector3());
@@ -649,7 +678,14 @@ export async function mount({ stage, controls, info, bank }) {
       // cash out it fast-forwards, so you see how far it would have gone.
       st.flightT += gap * (st.cashed && !calm ? 3 : 1);
       let m = multAt(st.flightT);
-      if (auto && !st.cashed && auto <= st.crashAt && m >= auto) cashOut(auto);
+      if (wallet.server) {
+        if (!st.cashed && !asking && now - lastPeek > 0.5) {
+          lastPeek = now;
+          asking = true;
+          wallet.peek().then(r => { asking = false; if (r && st.state === 'flying' && !st.cashed) heard(r); }, () => { asking = false; });
+        }
+        if (!st.cashed && Number.isFinite(st.crashAt) && m >= st.crashAt) m = st.crashAt;
+      } else if (auto && !st.cashed && auto <= st.crashAt && m >= auto) cashOut(auto);
       if (m >= st.crashAt) {
         m = st.crashAt;
         rocket.position.y = PAD_TOP + altitude(m);
@@ -720,7 +756,10 @@ export async function mount({ stage, controls, info, bank }) {
       cancelAnimationFrame(raf);
       for (const t of timers) clearTimeout(t);
       // Leaving mid-flight cashes out at the current multiplier; leaving during the countdown refunds
-      if (st.state === 'flying' && !st.cashed) {
+      if (wallet.server) {
+        // Leaving mid-flight cashes out now; during the countdown the bet comes back
+        if ((st.state === 'flying' && !st.cashed) || st.state === 'countdown') wallet.cashout(true);
+      } else if (st.state === 'flying' && !st.cashed) {
         const m = multAt(st.flightT);
         wallet.settle(st.id, m < st.crashAt ? Math.round(st.stake * m) : 0);
       } else if (st.state === 'countdown') wallet.settle(st.id, st.stake);
