@@ -5,6 +5,7 @@ A play-money casino for phones, running on Cloudflare at https://mini-casino.boy
 - **Blackjack**: rooms for up to 4 players with invite links, or a solo table. 6 decks, blackjack pays 3 to 2, dealer stands on all 17s, with splits, doubles and insurance. An optional hints toggle highlights the basic-strategy move. Tap chips to build an amount, then **Place bet** puts it on the table; your bet carries over to the next hand.
 - **Roulette**: a single-zero wheel with straight-up and all outside bets, paid from your casino wallet. Tap chips for the amount, tap the spots you want, then **Place** puts that amount on each spot.
 - **The Bottomless Bank**: withdraw as much (fake) money as you want. Interest rate 0%, credit check skipped.
+- **Your stats**: net winnings, rounds played, biggest win and best winning streak, plus blackjack (won, lost, pushed, blackjacks, win rate) and roulette (spins, winning spins, luckiest and most common number). Every hand and spin is recorded as it finishes, each blackjack round once even across reloads, and the stats sync with your account.
 
 ## Files
 
@@ -22,7 +23,7 @@ A play-money casino for phones, running on Cloudflare at https://mini-casino.boy
 
 ## Accounts and cloud saves (Neon)
 
-Players can create an account (email and password, or Continue with Google), and their wallet, bank statement, roulette history and solo blackjack table save to it, so they follow them to any device. Signed out, solo games still work and stay in the browser. The first time someone creates an account, this browser's progress moves into it. Rooms with friends need an account.
+Players can create an account (email and password, or Continue with Google), and their wallet, bank statement, stats, roulette history and solo blackjack table save to it, so they follow them to any device. Signed out, solo games still work and stay in the browser. The first time someone creates an account, this browser's progress moves into it. Rooms with friends need an account.
 
 - **Database:** Neon project `mini-casino` (us-east-2), table `saves (user_id text primary key, data jsonb, version int, updated_at timestamptz)`. Saves use the version number so an old device can't overwrite newer progress; it gets the newer save instead.
 - **Sign-in:** Neon Auth (Managed Better Auth) on the project's `main` branch. The browser only talks to this site; the Worker proxies sign-in to Neon so the session cookie belongs to this domain. Google sign-in uses Neon's shared test keys until you add your own Google OAuth client in the Neon Console (Settings → Auth → OAuth providers).

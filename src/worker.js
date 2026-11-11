@@ -141,7 +141,7 @@ async function save(request, env, url) {
 export function cleanSave(d) {
   if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
   const out = {};
-  for (const key of ['wallet', 'roulette', 'solo']) {
+  for (const key of ['wallet', 'roulette', 'solo', 'stats']) {
     if (d[key] && typeof d[key] === 'object' && !Array.isArray(d[key])) out[key] = d[key];
   }
   return out;

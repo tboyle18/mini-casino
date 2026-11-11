@@ -443,6 +443,68 @@
   .acct-actions .btn { flex: 1; }
   .home-foot { margin-top: auto; padding-top: 6px; text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
 
+  /* ---------- Stats ---------- */
+  .stats-link {
+    appearance: none; cursor: pointer; text-align: left; color: inherit; font: inherit;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px;
+    padding: 14px 16px; border-radius: 18px;
+    background: var(--panel); border: 1px solid var(--line);
+    transition: transform .12s, background .15s;
+  }
+  .stats-link:active { transform: scale(.98); background: rgba(0, 0, 0, .32); }
+  .sl-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: rgba(233, 196, 106, .16); color: var(--gold); }
+  .sl-icon svg { width: 22px; height: 22px; }
+  .sl-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .sl-text b { font-size: 16px; }
+  .sl-text span { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sl-go { color: var(--gold); font-size: 26px; font-weight: 700; line-height: 1; }
+  .up { color: var(--win); }
+  .down { color: var(--lose); }
+  .stat-hero {
+    padding: 20px;
+    border-radius: 24px;
+    background:
+      radial-gradient(120% 140% at 0% 0%, rgba(233, 196, 106, .18), transparent 55%),
+      linear-gradient(160deg, rgba(0, 0, 0, .34), rgba(0, 0, 0, .16));
+    border: 1px solid rgba(233, 196, 106, .3);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .28);
+  }
+  .sh-label { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+  .sh-amt { margin-top: 2px; font: 800 clamp(38px, 12vw, 50px)/1.08 var(--font-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .sh-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+  .sh-row div { display: flex; flex-direction: column; gap: 3px; padding: 10px 10px 9px; border-radius: 14px; background: rgba(0, 0, 0, .22); min-width: 0; }
+  .sh-row b { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-row span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .sc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .sc-net { font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .wlp { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: rgba(255, 255, 255, .08); }
+  .wlp i { display: block; height: 100%; transition: flex-basis .5s cubic-bezier(.2, .8, .3, 1); }
+  .wlp .w, .wlp-legend .w { background: var(--win); }
+  .wlp .p, .wlp-legend .p { background: rgba(245, 240, 227, .45); }
+  .wlp .l, .wlp-legend .l { background: var(--lose); }
+  .wlp-legend { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .wlp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .wlp-legend i { width: 9px; height: 9px; border-radius: 3px; }
+  .wlp-legend b { color: var(--ink); }
+  .sc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+  .sc-grid div { padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .18); min-width: 0; }
+  .sc-grid dt { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .sc-grid dd { margin: 3px 0 0; font-weight: 800; font-size: 19px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sc-numbers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .sc-numbers > div { display: grid; justify-items: start; gap: 6px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .18); }
+  .sc-k { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .sc-num {
+    display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%;
+    font-weight: 800; font-size: 18px; color: #fff;
+    background: rgba(0, 0, 0, .35); border: 2px solid rgba(255, 255, 255, .22);
+  }
+  .sc-num.red { background: #b3262f; }
+  .sc-num.black { background: #1d1f24; }
+  .sc-num.green { background: #127a46; }
+  .sc-sub { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .st-reset { align-self: center; color: var(--ink-3); font-size: 14px; padding: 8px; }
+  .st-reset.armed { color: var(--lose); }
+
   /* ---------- Blackjack lobby ---------- */
   .room-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   .room-item {
@@ -967,8 +1029,68 @@
     </div>
     <div class="section-label">Games</div>
     <div class="tiles" id="tiles"></div>
+    <button class="stats-link" id="home-stats">
+      <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>
+      <span class="sl-text"><b>Your stats</b><span id="home-stats-sub">Play a round to start tracking</span></span>
+      <span class="sl-go" aria-hidden="true">›</span>
+    </button>
     <div class="account" id="account" hidden></div>
     <div class="home-foot">Play money only</div>
+  </section>
+
+  <!-- ================= Stats ================= -->
+  <section class="view" id="stats-view" hidden>
+    <div class="page-head">
+      <h1>Your stats</h1>
+      <p id="st-since">Since today</p>
+    </div>
+    <div class="stat-hero">
+      <div class="sh-label">Net winnings</div>
+      <div class="sh-amt" id="st-net">$0</div>
+      <div class="sh-row">
+        <div><b id="st-rounds">0</b><span>Rounds</span></div>
+        <div><b id="st-biggest">$0</b><span>Biggest win</span></div>
+        <div><b id="st-streak">0</b><span>Best streak</span></div>
+      </div>
+    </div>
+    <div class="lcard stat-card">
+      <div class="sc-head"><h2>Blackjack</h2><span class="sc-net" id="bj-net"></span></div>
+      <div class="wlp" id="bj-bar" aria-hidden="true"><i class="w"></i><i class="p"></i><i class="l"></i></div>
+      <div class="wlp-legend">
+        <span><i class="w"></i>Won <b id="bj-won">0</b></span>
+        <span><i class="p"></i>Pushed <b id="bj-pushed">0</b></span>
+        <span><i class="l"></i>Lost <b id="bj-lost">0</b></span>
+      </div>
+      <dl class="sc-grid">
+        <div><dt>Hands</dt><dd id="bj-hands">0</dd></div>
+        <div><dt>Win rate</dt><dd id="bj-rate">–</dd></div>
+        <div><dt>Blackjacks</dt><dd id="bj-bjs">0</dd></div>
+        <div><dt>Total bet</dt><dd id="bj-wagered">$0</dd></div>
+      </dl>
+    </div>
+    <div class="lcard stat-card">
+      <div class="sc-head"><h2>Roulette</h2><span class="sc-net" id="rl-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Spins</dt><dd id="rl-spins">0</dd></div>
+        <div><dt>Winning spins</dt><dd id="rl-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="rl-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="rl-biggest">$0</dd></div>
+      </dl>
+      <div class="sc-numbers">
+        <div><span class="sc-k">Luckiest number</span><span class="sc-num" id="rl-lucky">–</span><span class="sc-sub" id="rl-lucky-sub">No wins yet</span></div>
+        <div><span class="sc-k">Comes up most</span><span class="sc-num" id="rl-common">–</span><span class="sc-sub" id="rl-common-sub">No spins yet</span></div>
+      </div>
+    </div>
+    <div class="lcard stat-card">
+      <div class="sc-head"><h2>The Bottomless Bank</h2></div>
+      <dl class="sc-grid">
+        <div><dt>Withdrawn</dt><dd id="bk-withdrawn">$0</dd></div>
+        <div><dt>Withdrawals</dt><dd id="bk-count">0</dd></div>
+      </dl>
+      <p class="fine" id="bk-line"></p>
+    </div>
+    <p class="fine center" id="st-where"></p>
+    <button class="linkbtn st-reset" id="st-reset">Reset stats</button>
   </section>
 
   <!-- ================= Bank ================= -->
@@ -1298,7 +1420,12 @@ const $ = id => document.getElementById(id);
 const ui = {
   casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
   backLabel: $('back-label'), brand: $('brand'), barTitle: $('bar-title'), tableTools: $('table-tools'),
-  homeWallet: $('home-wallet'), homeBank: $('home-bank'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
+  homeWallet: $('home-wallet'), homeBank: $('home-bank'), homeStats: $('home-stats'), homeStatsSub: $('home-stats-sub'),
+  statsView: $('stats-view'), stSince: $('st-since'), stNet: $('st-net'), stRounds: $('st-rounds'), stBiggest: $('st-biggest'), stStreak: $('st-streak'),
+  bjNet: $('bj-net'), bjBar: $('bj-bar'), bjWon: $('bj-won'), bjPushed: $('bj-pushed'), bjLost: $('bj-lost'), bjHands: $('bj-hands'), bjRate: $('bj-rate'), bjBjs: $('bj-bjs'), bjWagered: $('bj-wagered'),
+  rlNet: $('rl-net'), rlSpins: $('rl-spins'), rlRate: $('rl-rate'), rlWagered: $('rl-wagered'), rlBiggest: $('rl-biggest'),
+  rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
+  bkWithdrawn: $('bk-withdrawn'), bkCount: $('bk-count'), bkLine: $('bk-line'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
   rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
   rCapNum: $('r-cap-num'), rCapTitle: $('r-cap-title'), rCapSub: $('r-cap-sub'), rCapHint: $('r-cap-hint'),
@@ -1413,6 +1540,7 @@ function route() {
   else if (h === 'blackjack') target = { view: 'lobby', code: '' };
   else if (h === 'bank') target = { view: 'bank', code: '' };
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
+  else if (h === 'stats') target = { view: 'stats', code: '' };
   else if (/^table-[a-z0-9]{4,12}$/.test(h)) target = { view: 'table', code: h.slice(6) };
   const net = target.view === 'lobby' || target.view === 'table';
   const who = !cloud.ready ? 'wait' : cloud.user ? cloud.user.id : 'out';   // re-enter rooms once sign-in is known
@@ -1901,6 +2029,86 @@ function buildTiles() {
   }
 }
 
+/* ================= Stats =================
+   A running record of every blackjack hand and roulette spin you play, kept in this
+   browser and synced with your account alongside the wallet. Each blackjack round is
+   counted once (by table and round number), so reloading or reconnecting never counts
+   it twice. */
+const STATS_KEY = 'mini-casino.stats';
+function freshStats() {
+  return {
+    since: Date.now(),
+    bj: { hands: 0, won: 0, lost: 0, pushed: 0, blackjacks: 0, wagered: 0, net: 0, biggest: 0 },
+    rl: { spins: 0, hits: 0, wagered: 0, net: 0, biggest: 0, landed: {}, paid: {} },
+    streak: 0, best: 0,
+    seen: [],
+  };
+}
+const stats = freshStats();
+const finite = v => (Number.isFinite(v) ? v : 0);
+function statsLoad(d) {
+  if (!d || typeof d !== 'object') return;
+  const f = freshStats();
+  if (Number.isFinite(d.since)) f.since = d.since;
+  for (const k of Object.keys(f.bj)) f.bj[k] = finite(d.bj && d.bj[k]);
+  for (const k of ['spins', 'hits', 'wagered', 'net', 'biggest']) f.rl[k] = finite(d.rl && d.rl[k]);
+  for (const m of ['landed', 'paid']) {
+    const src = d.rl && d.rl[m];
+    if (src && typeof src === 'object') {
+      for (const [n, v] of Object.entries(src)) if (/^(\d|[12]\d|3[0-6])$/.test(n) && Number.isFinite(v) && v > 0) f.rl[m][n] = v;
+    }
+  }
+  f.streak = finite(d.streak);
+  f.best = finite(d.best);
+  if (Array.isArray(d.seen)) f.seen = d.seen.filter(x => typeof x === 'string').slice(-200);
+  Object.assign(stats, f);
+}
+function statsSave() {
+  try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* storage unavailable */ }
+  cloudMarkDirty();
+}
+// A winning round extends the streak, a losing one ends it, a push leaves it alone
+function statsStreak(net) {
+  if (net > 0) { stats.streak++; stats.best = Math.max(stats.best, stats.streak); }
+  else if (net < 0) stats.streak = 0;
+}
+function recordRoulette(result, wagered, payout) {
+  const r = stats.rl;
+  const net = payout - wagered;
+  r.spins++;
+  r.wagered += wagered;
+  r.net += net;
+  if (net > 0) r.hits++;
+  r.biggest = Math.max(r.biggest, net);
+  r.landed[result] = (r.landed[result] || 0) + 1;
+  if (payout > 0) r.paid[result] = (r.paid[result] || 0) + payout;
+  statsStreak(net);
+  statsSave();
+}
+function recordBlackjackRound(T) {
+  const R = T && T.round;
+  const me = myId();
+  if (!R || !R.over || !me || !(me in R.net)) return;
+  const key = `${T.seed}:${R.n}`;
+  if (stats.seen.includes(key)) return;
+  stats.seen.push(key);
+  if (stats.seen.length > 200) stats.seen.splice(0, stats.seen.length - 200);
+  const b = stats.bj;
+  for (const h of R.hands.filter(x => x.uid === me)) {
+    b.hands++;
+    b.wagered += h.bet;
+    if (h.result === 'win' || h.result === 'blackjack') b.won++;
+    else if (h.result === 'push') b.pushed++;
+    else b.lost++;
+    if (h.result === 'blackjack') b.blackjacks++;
+  }
+  const net = R.net[me];
+  b.net += net;
+  b.biggest = Math.max(b.biggest, net);
+  statsStreak(net);
+  statsSave();
+}
+
 /* ================= Roulette (single zero, solo, plays from the wallet) ================= */
 const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -2095,6 +2303,7 @@ function rlSettle() {
   rl.undo = [];
   rl.history = [live.result, ...rl.history].slice(0, 14);
   rlSave();
+  recordRoulette(live.result, live.total, payout);
   walletChange(payout, null, { log: { a: net, w: `Roulette · ${live.result} ${colorName(live.result)}` } });
   if (net > 0) buzz([15, 60, 25]);
   if (rl.stage) {
@@ -2464,6 +2673,7 @@ function cloudSnapshot() {
     wallet: { balance: wallet.balance, withdrawn: wallet.withdrawn, count: wallet.count, log: wallet.log },
     roulette: { history: rl.history, last: rl.last, chip: rl.chip },
     solo: readSoloLocal(),
+    stats,
   };
 }
 /* Load a save from the account into this browser, validating it like a local load. */
@@ -2477,6 +2687,10 @@ function cloudApply(data) {
       rl.history = [];
       rl.last = null;
       rlLoad();
+    }
+    if (data.stats && typeof data.stats === 'object') {
+      statsLoad(data.stats);
+      try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) { /* storage unavailable */ }
     }
     const s = data.solo;
     const midHand = app.view === 'table' && app.solo && app.T && roundLive(app.T);
@@ -2814,6 +3028,7 @@ function render() {
   ui.rouletteView.hidden = v !== 'roulette';
   ui.lobby.hidden = v !== 'lobby';
   ui.tableView.hidden = v !== 'table';
+  ui.statsView.hidden = v !== 'stats';
   // Game screens fill the screen exactly and never scroll
   document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette');
   document.documentElement.classList.toggle('bj', v === 'table');
@@ -2833,12 +3048,99 @@ function render() {
 
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
-  if (v === 'home') renderAccount();
+  if (v === 'home') { renderAccount(); renderHomeStats(); }
   if (v === 'lobby') renderLobby();
+  else if (v === 'stats') renderStats();
   else if (v === 'bank') renderBank();
   else if (v === 'roulette') renderRoulette();
   else if (v === 'table') renderTable();
   syncLock();
+}
+
+/* ================= Stats page ================= */
+const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n));
+const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');
+const tone = (el, n) => { el.classList.toggle('up', n > 0); el.classList.toggle('down', n < 0); };
+function statsTotals() {
+  const b = stats.bj, r = stats.rl;
+  return { net: b.net + r.net, rounds: b.hands + r.spins, biggest: Math.max(b.biggest, r.biggest, 0) };
+}
+function renderHomeStats() {
+  const t = statsTotals();
+  ui.homeStatsSub.textContent = t.rounds ? `Net ${signed(t.net)} · ${t.rounds.toLocaleString('en-US')} played` : 'Play a round to start tracking';
+}
+function topNumber(map) {
+  let best = null;
+  for (const [n, v] of Object.entries(map)) if (!best || v > best.v || (v === best.v && Number(n) < best.n)) best = { n: Number(n), v };
+  return best;
+}
+function paintNumber(el, sub, best, words) {
+  el.className = 'sc-num' + (best ? ' ' + colorOf(best.n) : '');
+  el.textContent = best ? String(best.n) : '–';
+  sub.textContent = best ? words(best.v) : sub.dataset.empty;
+}
+function renderStats() {
+  const b = stats.bj, r = stats.rl, t = statsTotals();
+  const since = new Date(stats.since);
+  ui.stSince.textContent = `Since ${since.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  ui.stNet.textContent = signed(t.net);
+  tone(ui.stNet, t.net);
+  ui.stRounds.textContent = t.rounds.toLocaleString('en-US');
+  ui.stBiggest.textContent = money(t.biggest);
+  ui.stStreak.textContent = String(stats.best);
+
+  ui.bjNet.textContent = b.hands ? signed(b.net) : '';
+  tone(ui.bjNet, b.net);
+  const [w, p, l] = ui.bjBar.children;
+  const total = b.won + b.pushed + b.lost;
+  w.style.flex = `0 0 ${total ? (b.won / total) * 100 : 0}%`;
+  p.style.flex = `0 0 ${total ? (b.pushed / total) * 100 : 0}%`;
+  l.style.flex = `0 0 ${total ? (b.lost / total) * 100 : 0}%`;
+  ui.bjWon.textContent = b.won;
+  ui.bjPushed.textContent = b.pushed;
+  ui.bjLost.textContent = b.lost;
+  ui.bjHands.textContent = b.hands.toLocaleString('en-US');
+  ui.bjRate.textContent = pct(b.won, b.won + b.lost);
+  ui.bjBjs.textContent = b.blackjacks;
+  ui.bjWagered.textContent = money(b.wagered);
+
+  ui.rlNet.textContent = r.spins ? signed(r.net) : '';
+  tone(ui.rlNet, r.net);
+  ui.rlSpins.textContent = r.spins.toLocaleString('en-US');
+  ui.rlRate.textContent = pct(r.hits, r.spins);
+  ui.rlWagered.textContent = money(r.wagered);
+  ui.rlBiggest.textContent = money(r.biggest);
+  ui.rlLuckySub.dataset.empty = 'No wins yet';
+  ui.rlCommonSub.dataset.empty = 'No spins yet';
+  paintNumber(ui.rlLucky, ui.rlLuckySub, topNumber(r.paid), v => `${money(v)} paid out`);
+  paintNumber(ui.rlCommon, ui.rlCommonSub, topNumber(r.landed), v => `${v} time${v === 1 ? '' : 's'}`);
+
+  ui.bkWithdrawn.textContent = money(wallet.withdrawn);
+  ui.bkCount.textContent = wallet.count.toLocaleString('en-US');
+  ui.bkLine.textContent = !wallet.withdrawn ? 'You haven’t borrowed a cent. Impressive.'
+    : t.net >= wallet.withdrawn ? 'You’ve won more than you’ve taken. The bank is nervous.'
+    : `You’d need to win ${money(wallet.withdrawn - Math.max(0, t.net))} more to cover what you’ve taken.`;
+  ui.stWhere.textContent = cloud.user && !cloud.user.dev ? 'Saved to your account, so your stats follow you to any device.'
+    : 'Saved on this device. Sign in to keep your stats on every device.';
+}
+// Reset needs a second tap within a few seconds
+let resetArmed = 0;
+function resetStats() {
+  if (!resetArmed) {
+    ui.stReset.textContent = 'Tap again to reset everything';
+    ui.stReset.classList.add('armed');
+    resetArmed = setTimeout(() => { resetArmed = 0; ui.stReset.textContent = 'Reset stats'; ui.stReset.classList.remove('armed'); }, 4000);
+    return;
+  }
+  clearTimeout(resetArmed);
+  resetArmed = 0;
+  const seen = stats.seen;   // keep these so a finished round on screen isn't counted again
+  Object.assign(stats, freshStats(), { seen });
+  statsSave();
+  ui.stReset.textContent = 'Reset stats';
+  ui.stReset.classList.remove('armed');
+  toast('Stats reset');
+  render();
 }
 
 function renderChipsPanel() {
@@ -2923,6 +3225,8 @@ function renderTable() {
   for (const k of [...cardEls.keys()]) if (!anim.used.has(k)) cardEls.delete(k);
   runAnimations(anim, initial);
   if (R) app.renderedRound = R.n;
+
+  if (R && R.over) recordBlackjackRound(T);
 
   // Chips at this table (minus your bet and whatever is in your hand)
   const P = myP();
@@ -3193,6 +3497,8 @@ ui.soloBtn.addEventListener('click', () => go('solo'));
 ui.homeBtn.addEventListener('click', () => go(app.view === 'table' ? 'blackjack' : 'home'));
 ui.balanceBtn.addEventListener('click', () => go('bank'));
 ui.homeBank.addEventListener('click', () => go('bank'));
+ui.homeStats.addEventListener('click', () => go('stats'));
+ui.stReset.addEventListener('click', resetStats);
 ui.authForm.addEventListener('submit', authSubmit);
 googleButton(ui.authGoogle);
 googleButton(ui.lobbyGoogle);
@@ -3319,6 +3625,7 @@ async function boot() {
   buildRoulette();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
   walletInit();
+  try { statsLoad(JSON.parse(localStorage.getItem(STATS_KEY) || 'null')); } catch (e) { /* storage unavailable */ }
   route();
   cloudInit();
   // The wheel's numbers are painted once per size; repaint them in Manrope when it arrives
