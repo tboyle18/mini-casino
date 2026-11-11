@@ -1,4 +1,4 @@
-// Graphics lab: three experiments, each loaded only when its tab is opened.
+// Graphics lab: four experiments, each loaded only when its tab is opened.
 // Every demo module exports mount({ stage, controls, info }) and returns { dispose() }.
 
 const stage = document.getElementById('stage');
@@ -7,6 +7,7 @@ const info = document.getElementById('info');
 const fps = document.getElementById('fps');
 
 const demos = {
+  slots: () => import('./slots.js'),
   roulette: () => import('./roulette.js'),
   win: () => import('./celebrate.js'),
   table: () => import('./table.js'),
@@ -48,4 +49,4 @@ async function show(name) {
 
 for (const b of document.querySelectorAll('[data-demo]')) b.addEventListener('click', () => show(b.dataset.demo));
 const first = location.hash.slice(1);
-show(demos[first] ? first : 'roulette');
+show(demos[first] ? first : 'slots');
