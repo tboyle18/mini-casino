@@ -23,7 +23,7 @@ A play-money casino for phones, running on Cloudflare at https://mini-casino.boy
 
 ## Accounts and cloud saves (Neon)
 
-Players can create an account (email and password, or Continue with Google), and their wallet, bank statement, stats, roulette history and solo blackjack table save to it, so they follow them to any device. Signed out, solo games still work and stay in the browser. The first time someone creates an account, this browser's progress moves into it. Rooms with friends need an account.
+Players can create an account from the button at the top right of the home screen (email and password, or Continue with Google), and their wallet, bank statement, stats, roulette history and solo blackjack table save to it, so they follow them to any device. Signed out, solo games still work and stay in the browser. The first time someone creates an account, this browser's progress moves into it. Rooms with friends need an account.
 
 - **Database:** Neon project `mini-casino` (us-east-2), table `saves (user_id text primary key, data jsonb, version int, updated_at timestamptz)`. Saves use the version number so an old device can't overwrite newer progress; it gets the newer save instead.
 - **Sign-in:** Neon Auth (Managed Better Auth) on the project's `main` branch. The browser only talks to this site; the Worker proxies sign-in to Neon so the session cookie belongs to this domain. Google sign-in uses Neon's shared test keys until you add your own Google OAuth client in the Neon Console (Settings → Auth → OAuth providers).

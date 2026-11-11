@@ -36,7 +36,7 @@
     --gr: max(16px, env(safe-area-inset-right, 0px));
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --bar-h: 56px;
+    --bar-h: 48px;
     --cw: 64px;
     --ch: 90px;
     --chip: min(50px, 12.6vw);
@@ -221,13 +221,23 @@
     font: 600 16px/1 var(--font-body); color: var(--gold);
   }
   .back svg { width: 24px; height: 24px; }
-  .brand { margin: 0 auto; font: 800 17px/1 var(--font-display); color: var(--gold); letter-spacing: .28em; text-transform: uppercase; white-space: nowrap; }
+  .brand { margin: 0 auto; font: 800 15px/1 var(--font-display); color: var(--gold); letter-spacing: .24em; text-transform: uppercase; white-space: nowrap; }
+  .appbar.is-home .brand { margin-left: 0; }
   .bar-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
   .bt-main { max-width: 100%; font: 700 17px/1.15 var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-sub { margin-top: 3px; font: 600 11px/1 var(--font-mono); letter-spacing: .14em; color: var(--ink-3); }
   .bt-sub:empty { display: none; }
   .bar-right { margin-left: auto; flex: none; display: flex; align-items: center; gap: 2px; }
-  .appbar.is-home .bar-right { display: none; }
+  .acct-btn {
+    appearance: none; cursor: pointer; flex: none;
+    height: 34px; min-width: 34px; padding: 0 14px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font: 700 14px/1 var(--font-body); color: var(--gold);
+    background: rgba(233, 196, 106, .12); border: 1px solid rgba(233, 196, 106, .45);
+    transition: transform .12s;
+  }
+  .acct-btn:active { transform: scale(.94); }
+  .acct-btn.is-user { width: 34px; padding: 0; background: var(--gold); color: var(--on-gold); border: none; font-weight: 800; font-size: 15px; }
   .balance {
     appearance: none; background: none; border: none; padding: 4px 0; cursor: pointer;
     display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
@@ -431,14 +441,10 @@
     border: 5px solid #4a250f;
     box-shadow: 0 6px 16px rgba(0, 0, 0, .35), inset 0 0 0 2px #c99a3c;
   }
-  .account {
-    display: flex; flex-direction: column; gap: 12px;
-    padding: 16px;
-    border-radius: 18px;
-    background: var(--panel); border: 1px solid var(--line);
-  }
+  .account { display: flex; flex-direction: column; gap: 12px; }
   .acct-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; color: var(--ink-2); font-size: 14px; }
   .acct-text b { color: var(--ink); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acct-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .acct-actions { display: flex; gap: 8px; }
   .acct-actions .btn { flex: 1; }
   .home-foot { margin-top: auto; padding-top: 6px; text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
@@ -458,6 +464,7 @@
   .sl-text b { font-size: 16px; }
   .sl-text span { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sl-go { color: var(--gold); font-size: 26px; font-weight: 700; line-height: 1; }
+  .sl-tag { margin-left: 8px; font-style: normal; padding: 3px 7px; border-radius: 6px; vertical-align: 2px; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); background: rgba(233, 196, 106, .14); }
   .up { color: var(--win); }
   .down { color: var(--lose); }
   .stat-hero {
@@ -595,7 +602,7 @@
     justify-content: center;
     min-width: 34px;
     padding: 3px 10px;
-    border-radius: 999px;
+    border-radius: 8px;
     background: rgba(0, 0, 0, .5);
     color: var(--ink);
     font-size: 16px;
@@ -1009,6 +1016,7 @@
           <button class="barbtn" id="invite-btn" aria-expanded="false">Invite</button>
           <button class="barbtn hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
         </span>
+        <button class="acct-btn" id="acct-btn" hidden></button>
         <button class="balance" id="balance-btn" title="Open the bank">
           <span class="balance-label">Your wallet balance</span>
           <span class="balance-amt" id="wallet-amt">—</span>
@@ -1036,10 +1044,9 @@
     </button>
     <a class="stats-link" id="home-lab" href="/lab/">
       <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span>
-      <span class="sl-text"><b>3D preview</b><span>3D roulette and table demos</span></span>
+      <span class="sl-text"><b>3D preview<i class="sl-tag">Experimental</i></b><span>Roulette and table demos</span></span>
       <span class="sl-go" aria-hidden="true">›</span>
     </a>
-    <div class="account" id="account" hidden></div>
     <div class="home-foot">Play money only</div>
   </section>
 
@@ -1321,6 +1328,14 @@
   </div>
 </div>
 
+<div class="overlay" id="acct-panel" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="acct-title">
+    <h2 id="acct-title">Your account</h2>
+    <div class="account" id="account"></div>
+    <button class="btn block" id="acct-close">Done</button>
+  </div>
+</div>
+
 <div class="overlay" id="invite-panel" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="inv-title">
     <h2 id="inv-title">Invite friends</h2>
@@ -1434,7 +1449,7 @@ const ui = {
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
   rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
   rCapNum: $('r-cap-num'), rCapTitle: $('r-cap-title'), rCapSub: $('r-cap-sub'), rCapHint: $('r-cap-hint'),
-  account: $('account'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
+  account: $('account'), acctBtn: $('acct-btn'), acctPanel: $('acct-panel'), acctTitle: $('acct-title'), acctClose: $('acct-close'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
   authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
   authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
   authGoogle: $('auth-google'), lobbySignin: $('lobby-signin'), lobbyGoogle: $('lobby-google'), lobbyEmail: $('lobby-email'),
@@ -1524,7 +1539,7 @@ function buzz(pattern) {
   try { if (navigator.vibrate) navigator.vibrate(pattern || 8); } catch (e) { /* not allowed in this frame */ }
 }
 function syncLock() {
-  const open = !ui.auth.hidden || !ui.chipsPanel.hidden || !ui.invitePanel.hidden || !ui.rStage.hidden;
+  const open = !ui.auth.hidden || !ui.acctPanel.hidden || !ui.chipsPanel.hidden || !ui.invitePanel.hidden || !ui.rStage.hidden;
   document.body.classList.toggle('locked', open);
 }
 function inviteURL(code) {
@@ -2770,41 +2785,64 @@ async function cloudPush(keepalive = false) {
   render();
 }
 
+/* The account button in the top right of the home bar: "Sign in" when signed out, the
+   player's initial when signed in. It opens the account sheet. */
 function renderAccount() {
+  const show = app.view === 'home' && cloud.ready && cloud.on;
+  ui.acctBtn.hidden = !show;
+  if (!show) { app.acctOpen = false; ui.acctPanel.hidden = true; return; }
+  const u = cloud.user;
+  const who = u ? (u.name || u.email || '') : '';
+  ui.acctBtn.classList.toggle('is-user', !!u);
+  ui.acctBtn.textContent = u ? ((who.trim()[0] || '•').toUpperCase()) : 'Sign in';
+  ui.acctBtn.setAttribute('aria-label', u ? `Account: ${who || 'signed in'}` : 'Sign in or create an account');
+  ui.acctBtn.setAttribute('aria-expanded', String(!!app.acctOpen));
+  ui.acctPanel.hidden = !app.acctOpen;
+  if (!app.acctOpen) return;
+
   const el = ui.account;
-  el.hidden = !cloud.on;
-  if (!cloud.on) return;
   el.textContent = '';
   const text = document.createElement('div');
   text.className = 'acct-text';
-  const head = document.createElement('b');
-  const line = document.createElement('span');
-  text.append(head, line);
-  const actions = document.createElement('div');
-  actions.className = 'acct-actions';
   const btn = (label, fn, primary) => {
     const b = document.createElement('button');
-    b.className = 'btn small' + (primary ? ' primary' : '');
+    b.className = 'btn' + (primary ? ' primary' : '');
     b.textContent = label;
     b.addEventListener('click', fn);
-    actions.appendChild(b);
+    return b;
   };
-  if (cloud.user) {
-    head.textContent = `Signed in as ${cloud.user.name || cloud.user.email || 'you'}`;
-    line.textContent = { loading: 'Loading your save…', saving: 'Saving…', saved: 'Progress saved', error: 'Couldn’t save. Will retry on your next move.' }[cloud.state]
+  if (u) {
+    ui.acctTitle.textContent = 'Your account';
+    const name = document.createElement('b');
+    name.textContent = u.name || u.email || 'Signed in';
+    text.appendChild(name);
+    if (u.name && u.email) {
+      const mail = document.createElement('span');
+      mail.textContent = u.email;
+      text.appendChild(mail);
+    }
+    const status = document.createElement('span');
+    status.textContent = { loading: 'Loading your save…', saving: 'Saving…', saved: 'Progress saved', error: 'Couldn’t save. Will retry on your next move.' }[cloud.state]
       || 'Your progress saves to your account.';
-    btn('Sign out', signOut);
+    text.appendChild(status);
+    el.append(text, btn('Sign out', () => { closeAcct(); signOut(); }));
   } else {
-    head.textContent = 'Save your progress';
-    line.textContent = 'Keep your wallet on every device.';
-    btn('Sign in', () => openAuth('in'));
-    btn('Create account', () => openAuth('up'), true);
+    ui.acctTitle.textContent = 'Save your progress';
+    const line = document.createElement('span');
+    line.textContent = 'Keep your wallet, stats and tables on every device.';
+    text.appendChild(line);
     const g = document.createElement('button');
     g.className = 'btn google-btn';
+    const actions = document.createElement('div');
+    actions.className = 'acct-actions';
+    actions.append(btn('Sign in', () => { closeAcct(); openAuth('in'); }), btn('Create account', () => { closeAcct(); openAuth('up'); }, true));
     el.append(text, googleButton(g), actions);
-    return;
   }
-  el.append(text, actions);
+}
+function closeAcct() {
+  app.acctOpen = false;
+  renderAccount();
+  syncLock();
 }
 
 function openAuth(mode) {
@@ -3045,7 +3083,7 @@ function render() {
   ui.backLabel.textContent = v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms') : 'Home';
   ui.barTitle.hidden = v !== 'table';
   ui.tableTools.hidden = v !== 'table';
-  ui.balanceBtn.hidden = v === 'table';
+  ui.balanceBtn.hidden = v === 'table' || v === 'home';
   ui.balanceBtn.disabled = v === 'bank';
   const bal = wallet.ready ? money(wallet.balance) : '—';
   ui.walletAmt.textContent = bal;
@@ -3053,7 +3091,8 @@ function render() {
 
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
-  if (v === 'home') { renderAccount(); renderHomeStats(); }
+  renderAccount();
+  if (v === 'home') renderHomeStats();
   if (v === 'lobby') renderLobby();
   else if (v === 'stats') renderStats();
   else if (v === 'bank') renderBank();
@@ -3512,6 +3551,9 @@ ui.lobbyEmail.addEventListener('click', () => openAuth('in'));
 ui.tEmail.addEventListener('click', () => openAuth('in'));
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
 ui.authClose.addEventListener('click', closeAuth);
+ui.acctBtn.addEventListener('click', () => { app.acctOpen = true; renderAccount(); syncLock(); });
+ui.acctClose.addEventListener('click', closeAcct);
+ui.acctPanel.addEventListener('click', e => { if (e.target === ui.acctPanel) closeAcct(); });
 ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
 // Sheets close from Done, a tap on the dimmed backdrop, or Escape
 const closeChips = () => { app.chipsOpen = false; render(); };
@@ -3524,6 +3566,7 @@ ui.rStage.addEventListener('click', () => { if (rl.stage === 'result') rlStageCl
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!ui.auth.hidden) closeAuth();
+  else if (app.acctOpen) closeAcct();
   else if (app.chipsOpen) closeChips();
   else if (app.inviteOpen) closeInvite();
   else if (rl.stage === 'result') rlStageClose();

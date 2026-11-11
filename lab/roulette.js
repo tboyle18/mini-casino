@@ -336,7 +336,7 @@ export async function mount({ stage, controls, info }) {
   // ---- Spin logic ----
   let follow = false;
   const result = document.createElement('div');
-  result.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%) scale(.6);opacity:0;transition:transform .35s cubic-bezier(.2,.9,.3,1.4),opacity .25s;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:999px;background:rgba(10,8,6,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;z-index:3;font-weight:800;font-size:20px;';
+  result.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%) scale(.6);opacity:0;transition:transform .35s cubic-bezier(.2,.9,.3,1.4),opacity .25s;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:rgba(10,8,6,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;z-index:3;font-weight:800;font-size:20px;';
   stage.appendChild(result);
 
   function spin() {
