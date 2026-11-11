@@ -48,7 +48,8 @@
   }
   .lab-row { height: 52px; display: flex; align-items: center; gap: 10px; }
   .back { color: var(--gold); text-decoration: none; font-weight: 700; white-space: nowrap; }
-  .lab-name { margin-left: auto; font-weight: 800; letter-spacing: .24em; font-size: 12px; text-transform: uppercase; color: var(--ink-3); }
+  .lab-help { margin-left: auto; color: var(--gold); text-decoration: none; font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .lab-name { margin-left: 14px; font-weight: 800; letter-spacing: .24em; font-size: 12px; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
   .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 14px; background: rgba(255, 255, 255, .06); }
   .tabs button {
     appearance: none; border: 0; border-radius: 10px; padding: 9px 2px;
@@ -86,6 +87,7 @@
   <header class="lab-bar">
     <div class="lab-row">
       <a class="back" href="/">‹ Casino</a>
+      <a class="lab-help" id="lab-help" href="/#learn">How to play</a>
       <span class="lab-name">Graphics lab</span>
     </div>
     <div class="tabs" role="tablist">

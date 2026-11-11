@@ -646,6 +646,7 @@
   .card.down .inner { transform: rotateY(180deg); }
   .card .face, .card .back {
     position: absolute; inset: 0;
+    width: auto; height: auto; margin: 0; padding: 0;   /* the app bar's .back button styles would otherwise squash card backs */
     border-radius: calc(var(--cw) * .09);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
@@ -991,7 +992,77 @@
   .stage.lose .stage-sub { color: var(--lose); }
   .stage-hint { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 
+  /* ---------- Video poker ----------
+     The pay table on top, five cards you tap to hold, and the chip dock. The cards size
+     themselves to the space in between (cqw and cqh are 1% of that space). */
+  html.vp body::before { background: radial-gradient(ellipse 130% 80% at 50% 0%, #143477 0%, #0a1a40 55%, #060c20 100%); }
+  html.vp .dock { background: rgba(6, 12, 32, .92); }
+  .vp-pays {
+    flex: none; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, auto); grid-auto-flow: column; gap: 2px 12px;
+    margin-top: 10px; padding: 8px 10px; border-radius: 14px;
+    background: rgba(0, 0, 0, .3); border: 1px solid rgba(233, 196, 106, .3);
+    font-variant-numeric: tabular-nums;
+  }
+  .vp-row { display: flex; justify-content: space-between; gap: 8px; min-width: 0; padding: 4px 7px; border-radius: 7px; font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+  .vp-row span { overflow: hidden; text-overflow: ellipsis; }
+  .vp-row b { color: var(--gold); font-weight: 800; }
+  .vp-row.hit { background: var(--gold); color: var(--on-gold); }
+  .vp-row.hit b { color: var(--on-gold); }
+  .vp-screen { flex: 1; min-height: 0; container-type: size; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 6px 0; }
+  .vp-msg { min-height: 50px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+  .vp-title { font: 800 26px/1.15 var(--font-display); letter-spacing: -.01em; }
+  .vp-sub { margin-top: 3px; font-weight: 700; font-size: 16px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .vp-msg.win .vp-title { color: var(--gold); }
+  .vp-msg.win .vp-sub { color: var(--win); }
+  .vp-msg.lose .vp-sub { color: var(--lose); }
+  .vp-hand {
+    --cw: min(calc((100cqw - 24px) / 5), calc(50cqh * .714)); --ch: calc(var(--cw) / .714);
+    display: grid; grid-template-columns: repeat(5, var(--cw)); gap: 6px; justify-content: center;
+  }
+  .vp-card { appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .vp-card:disabled { cursor: default; }
+  .vp-card .card { transition: transform .18s ease, opacity .25s; }
+  .vp-card.held .card { transform: translateY(-8px); }
+  .vp-card.held .card .face { box-shadow: 0 0 0 3px var(--gold), 0 10px 18px rgba(0, 0, 0, .4); }
+  .vp-card.win .card .face { box-shadow: 0 0 0 3px var(--gold), 0 0 22px rgba(233, 196, 106, .75); }
+  .vp-card.dim .card { opacity: .45; }
+  .vp-held { font: 800 11px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; padding: 6px 8px; border-radius: 7px; background: var(--gold); color: var(--on-gold); visibility: hidden; }
+  .vp-card.held .vp-held { visibility: visible; }
+
+  /* ---------- How to play ---------- */
+  .learn-index { display: flex; flex-direction: column; gap: 12px; }
+  .kb { display: flex; flex-direction: column; gap: 12px; }
+  .kb h1 { margin: 16px 0 0; font: 800 30px/1.1 var(--font-display); letter-spacing: -.02em; color: var(--gold); }
+  .kb .kb-lead { font-size: 17px; line-height: 1.45; color: var(--ink); }
+  .kb h2 { margin: 14px 0 0; font: 800 19px/1.2 var(--font-display); color: var(--ink); }
+  .kb p, .kb li { color: var(--ink-2); font-size: 15px; line-height: 1.55; }
+  .kb p { margin: 0; }
+  .kb ul, .kb ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+  .kb b { color: var(--ink); }
+  .kb-table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; border-radius: 14px; overflow: hidden; background: var(--panel); }
+  .kb-table th, .kb-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+  .kb-table th { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .kb-table td:last-child, .kb-table th:last-child { text-align: right; }
+  .kb-table td.pay { color: var(--gold); font-weight: 800; white-space: nowrap; }
+  .kb-table tr:last-child td { border-bottom: 0; }
+  .kb-tip { padding: 12px 14px; border-radius: 14px; background: rgba(233, 196, 106, .1); border: 1px solid rgba(233, 196, 106, .3); color: var(--ink); font-size: 15px; line-height: 1.5; }
+  .kb-cta { margin-top: 10px; text-decoration: none; }
+  .barbtn.help { width: 36px; height: 36px; padding: 0; justify-content: center; margin-right: 4px; border-radius: 10px; color: var(--gold); box-shadow: inset 0 0 0 1.5px rgba(233, 196, 106, .5); }
+  .barbtn.help svg { width: 20px; height: 20px; }
+
+  /* A third game gets a full-width tile, with its picture beside the words */
+  .tile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 14px; }
+  .tile.wide .tile-art { width: 112px; height: 86px; margin: 0; }
+  .tile.wide .tile-body { align-self: stretch; }
+  .tile-art.fan .card { --cw: 38px; --ch: 53px; position: absolute; left: 37px; top: 22px; transform-origin: 50% 115%; }
+  .tile-art.fan .card:nth-child(1) { left: 37px; top: 22px; transform: rotate(-26deg); }
+  .tile-art.fan .card:nth-child(2) { left: 37px; top: 22px; transform: rotate(-13deg); }
+  .tile-art.fan .card:nth-child(4) { transform: rotate(13deg); }
+  .tile-art.fan .card:nth-child(5) { transform: rotate(26deg); }
+
   @media (max-height: 700px) {
+    .vp-title { font-size: 21px; }
+    .vp-msg { min-height: 44px; }
     .msg { min-height: 50px; }
     .msg .title { font-size: 23px; }
     .msg .sub { font-size: 16px; }
@@ -1012,6 +1083,7 @@
       <span class="brand" id="brand">Mini Casino</span>
       <div class="bar-title" id="bar-title" hidden><span class="bt-main" id="t-name"></span><span class="bt-sub" id="t-code"></span></div>
       <div class="bar-right">
+        <button class="barbtn help" id="help-btn" aria-label="How to play" title="How to play" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.1"/></svg></button>
         <span id="table-tools" hidden>
           <button class="barbtn" id="invite-btn" aria-expanded="false">Invite</button>
           <button class="barbtn hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
@@ -1040,6 +1112,11 @@
     <button class="stats-link" id="home-stats">
       <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span>
       <span class="sl-text"><b>Your stats</b><span id="home-stats-sub">Play a round to start tracking</span></span>
+      <span class="sl-go" aria-hidden="true">›</span>
+    </button>
+    <button class="stats-link" id="home-learn">
+      <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.1"/></svg></span>
+      <span class="sl-text"><b>How to play</b><span>Rules and tips for every game</span></span>
       <span class="sl-go" aria-hidden="true">›</span>
     </button>
     <a class="stats-link" id="home-lab" href="/lab/">
@@ -1094,6 +1171,16 @@
       </div>
     </div>
     <div class="lcard stat-card">
+      <div class="sc-head"><h2>Video poker</h2><span class="sc-net" id="vp-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Hands</dt><dd id="vp-hands">0</dd></div>
+        <div><dt>Winning hands</dt><dd id="vp-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="vp-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="vp-biggest">$0</dd></div>
+      </dl>
+      <p class="fine" id="vp-best">Best hand: none yet</p>
+    </div>
+    <div class="lcard stat-card">
       <div class="sc-head"><h2>The Bottomless Bank</h2></div>
       <dl class="sc-grid">
         <div><dt>Withdrawn</dt><dd id="bk-withdrawn">$0</dd></div>
@@ -1103,6 +1190,240 @@
     </div>
     <p class="fine center" id="st-where"></p>
     <button class="linkbtn st-reset" id="st-reset">Reset stats</button>
+  </section>
+
+  <!-- ================= How to play ================= -->
+  <section class="view learn" id="learn-view" hidden>
+    <div class="learn-index" id="learn-index">
+      <div class="page-head">
+        <h1>How to play</h1>
+        <p>Rules, payouts and tips</p>
+      </div>
+      <div class="section-label">Casino games</div>
+      <button class="stats-link" data-learn="blackjack">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="10" height="14" rx="2" transform="rotate(-10 8.5 12)"/><rect x="10.5" y="5" width="10" height="14" rx="2" transform="rotate(10 15.5 12)"/></svg></span>
+        <span class="sl-text"><b>Blackjack</b><span>Beat the dealer to 21</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <button class="stats-link" data-learn="roulette">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3.5v6M12 14.5v6M3.5 12h6M14.5 12h6"/></svg></span>
+        <span class="sl-text"><b>Roulette</b><span>Pick where the ball lands</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <button class="stats-link" data-learn="poker">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="8" height="12" rx="1.6" transform="rotate(-14 6.5 12.5)"/><rect x="8" y="5" width="8" height="12" rx="1.6"/><rect x="13.5" y="6.5" width="8" height="12" rx="1.6" transform="rotate(14 17.5 12.5)"/></svg></span>
+        <span class="sl-text"><b>Video poker</b><span>Hold, draw and make a hand</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <div class="section-label">3D lab · experimental</div>
+      <button class="stats-link" data-learn="slots">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6h9l-5.5 12"/></svg></span>
+        <span class="sl-text"><b>Lucky Duck slots</b><span>Pull the lever, line up three</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <button class="stats-link" data-learn="plinko">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.6"/><circle cx="8.5" cy="10" r="1.6"/><circle cx="15.5" cy="10" r="1.6"/><circle cx="5" cy="14.5" r="1.6"/><circle cx="12" cy="14.5" r="1.6"/><circle cx="19" cy="14.5" r="1.6"/><circle cx="8.5" cy="19" r="1.6"/><circle cx="15.5" cy="19" r="1.6"/></svg></span>
+        <span class="sl-text"><b>Duck Drop plinko</b><span>Drop ducks, hit the edges</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+      <div class="section-label">Your money</div>
+      <button class="stats-link" data-learn="wallet">
+        <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M15.5 14.5h2.5"/></svg></span>
+        <span class="sl-text"><b>Wallet and bank</b><span>Play money, saving and stats</span></span>
+        <span class="sl-go" aria-hidden="true">›</span>
+      </button>
+    </div>
+
+    <article class="kb" data-kb="blackjack" hidden>
+      <h1>Blackjack</h1>
+      <p class="kb-lead">Get closer to 21 than the dealer without going over.</p>
+      <h2>Card values</h2>
+      <p>Number cards count as their number. Jacks, Queens and Kings count as 10. An Ace counts as 11, or as 1 if 11 would take you over 21. A hand where an Ace still counts as 11 is called <b>soft</b>.</p>
+      <h2>How a hand goes</h2>
+      <ol>
+        <li>Tap chips to choose your bet, then tap <b>Place bet</b>. Your bet carries over to the next hand.</li>
+        <li>You and the dealer each get two cards. One of the dealer's cards is face down.</li>
+        <li>On your turn, <b>Hit</b> takes another card, <b>Stand</b> keeps what you have, <b>Double</b> doubles your bet for exactly one more card, and <b>Split</b> turns two cards of the same value into two hands, each with its own bet.</li>
+        <li>Go over 21 and you <b>bust</b>: that hand loses, whatever the dealer does.</li>
+        <li>Then the dealer turns over the hidden card and draws until reaching 17 or more.</li>
+      </ol>
+      <h2>Payouts</h2>
+      <table class="kb-table">
+        <thead><tr><th>Result</th><th>Pays</th></tr></thead>
+        <tbody>
+          <tr><td>Win: you beat the dealer, or the dealer busts</td><td class="pay">1 to 1</td></tr>
+          <tr><td>Blackjack: an Ace and a 10-value card as your first two</td><td class="pay">3 to 2</td></tr>
+          <tr><td>Push: a tie</td><td class="pay">Bet back</td></tr>
+          <tr><td>Insurance, when the dealer has blackjack</td><td class="pay">2 to 1</td></tr>
+        </tbody>
+      </table>
+      <p>1 to 1 means a $10 bet wins $10, so you get $20 back. A $10 blackjack gets $25 back.</p>
+      <h2>Table rules</h2>
+      <ul>
+        <li>Six decks, shuffled again when about a quarter of the shoe is left.</li>
+        <li>The dealer stands on all 17s, soft 17 included.</li>
+        <li>Double on any first two cards, including after a split.</li>
+        <li>Split up to four hands. Split Aces get one card each, and 21 after a split counts as 21, not blackjack.</li>
+        <li>When the dealer shows an Ace you're offered <b>insurance</b>. It costs half your bet and pays 2 to 1 if the dealer has blackjack.</li>
+      </ul>
+      <h2>Playing with friends</h2>
+      <p>From the Blackjack screen, start a room and send the invite link. Up to four players can sit, and anyone with the link can watch. You need to be signed in to take a seat. With two or more players, each turn has a 30-second timer, and betting closes 15 seconds after the first player is ready.</p>
+      <h2>Tips</h2>
+      <div class="kb-tip">At a table, turn on <b>Hints</b> (top right) and the best move by basic strategy lights up.</div>
+      <ul>
+        <li>Always split Aces and 8s. Never split 10s or 5s.</li>
+        <li>Double on 11 unless the dealer shows an Ace, and on 10 when the dealer shows 2 to 9.</li>
+        <li>Stand on 17 or more.</li>
+        <li>With 13 to 16, stand if the dealer shows 2 to 6, and hit otherwise. With 12, stand only against 4 to 6.</li>
+        <li>Skip insurance: over time it costs more than it pays.</li>
+      </ul>
+      <button class="btn primary block kb-cta" data-go="blackjack">Play blackjack</button>
+    </article>
+
+    <article class="kb" data-kb="roulette" hidden>
+      <h1>Roulette</h1>
+      <p class="kb-lead">Bet on where the ball will land. This is a single-zero wheel: 37 pockets, numbered 0 to 36.</p>
+      <h2>How to bet</h2>
+      <ol>
+        <li>Tap chips to choose an amount. It shows as <b>In hand</b>.</li>
+        <li>Tap the spots you want on the board: single numbers, or the outside bets around them.</li>
+        <li>Tap <b>Place</b> to put that amount on every spot you picked. Repeat to add more bets.</li>
+        <li>Tap <b>Spin</b>. Winning bets are paid straight into your wallet.</li>
+      </ol>
+      <p><b>Undo</b> and <b>Clear</b> take bets back, <b>Rebet</b> repeats your last spin's bets, and <b>×2</b> doubles everything on the board.</p>
+      <h2>Bets and payouts</h2>
+      <table class="kb-table">
+        <thead><tr><th>Bet</th><th>Covers</th><th>Pays</th></tr></thead>
+        <tbody>
+          <tr><td>A single number</td><td>1 number</td><td class="pay">35 to 1</td></tr>
+          <tr><td>A dozen: 1st, 2nd or 3rd 12</td><td>12 numbers</td><td class="pay">2 to 1</td></tr>
+          <tr><td>A column (the 2 to 1 spots)</td><td>12 numbers</td><td class="pay">2 to 1</td></tr>
+          <tr><td>Red or black, odd or even, 1–18 or 19–36</td><td>18 numbers</td><td class="pay">1 to 1</td></tr>
+        </tbody>
+      </table>
+      <h2>The zero</h2>
+      <p>0 is green, and it isn't red, black, odd or even, so every outside bet loses when it comes up. That one pocket is the house's edge: about 2.7% of every bet over time, whichever bets you choose.</p>
+      <h2>Tips</h2>
+      <ul>
+        <li>No betting pattern beats the zero, so bet whatever's fun.</li>
+        <li>Outside bets win almost half the time. Single numbers rarely win, but pay big.</li>
+        <li>The recent numbers sit next to the wheel, but every spin is independent of the last.</li>
+      </ul>
+      <button class="btn primary block kb-cta" data-go="roulette">Play roulette</button>
+    </article>
+
+    <article class="kb" data-kb="poker" hidden>
+      <h1>Video poker</h1>
+      <p class="kb-lead">Jacks or Better: you get five cards and one chance to swap any of them. Your final hand pays from the table.</p>
+      <h2>How a hand goes</h2>
+      <ol>
+        <li>Tap chips to choose your bet, then tap <b>Deal</b>.</li>
+        <li>Tap the cards you want to keep. They lift up and show <b>Held</b>. Tap one again to let it go.</li>
+        <li>Tap <b>Draw</b>. Every card you didn't hold is replaced from the rest of the deck.</li>
+        <li>Your final hand pays from the table at the top of the screen.</li>
+      </ol>
+      <h2>Pay table</h2>
+      <table class="kb-table">
+        <thead><tr><th>Hand</th><th>Pays</th></tr></thead>
+        <tbody id="kb-poker-pays"></tbody>
+      </table>
+      <p>Pays are a multiple of your bet and include it, so Jacks or better just gives your bet back, and a full house on a $10 bet returns $90.</p>
+      <h2>The hands</h2>
+      <ul>
+        <li><b>Royal flush</b>: A, K, Q, J and 10, all the same suit.</li>
+        <li><b>Straight flush</b>: five in a row, all the same suit.</li>
+        <li><b>Four of a kind</b>: four cards of the same rank.</li>
+        <li><b>Full house</b>: three of a kind plus a pair.</li>
+        <li><b>Flush</b>: five cards of the same suit.</li>
+        <li><b>Straight</b>: five in a row. An Ace can start one (A-2-3-4-5) or end one (10-J-Q-K-A).</li>
+        <li><b>Three of a kind</b> and <b>two pair</b> are what they sound like. <b>Jacks or better</b> is a pair of Jacks, Queens, Kings or Aces.</li>
+      </ul>
+      <h2>What to hold</h2>
+      <p>Go down this list and hold the first thing your hand has.</p>
+      <ol>
+        <li>A royal flush, straight flush or four of a kind</li>
+        <li>Four cards to a royal flush</li>
+        <li>A full house, flush, straight or three of a kind</li>
+        <li>Four cards to a straight flush</li>
+        <li>Two pair</li>
+        <li>A pair of Jacks or better</li>
+        <li>Three cards to a royal flush</li>
+        <li>Four cards to a flush</li>
+        <li>A low pair (2s to 10s)</li>
+        <li>Four cards in a row that could finish at either end</li>
+        <li>Two high cards (J, Q, K or A) of the same suit</li>
+        <li>Three cards to a straight flush</li>
+        <li>Two high cards of different suits</li>
+        <li>A 10 with a J, Q or K of the same suit</li>
+        <li>One high card</li>
+        <li>Nothing: draw five new cards</li>
+      </ol>
+      <div class="kb-tip">Played this way, this pay table gives back about 99.5% of what you bet over time, the best odds in the casino.</div>
+      <button class="btn primary block kb-cta" data-go="poker">Play video poker</button>
+    </article>
+
+    <article class="kb" data-kb="slots" hidden>
+      <h1>Lucky Duck slots</h1>
+      <p class="kb-lead">A deliberately ridiculous 3D slot machine in the graphics lab. It's experimental, and it plays with lab credits, not your wallet.</p>
+      <h2>How to play</h2>
+      <ol>
+        <li>Tap <b>Bet</b> to choose $5, $25, $100 or $500.</li>
+        <li>Drag the red knob on the lever down and let go, or tap <b>Pull</b>. Yank it hard and the reels spin longer.</li>
+        <li>Three of a kind across the middle line wins. So do any two cherries.</li>
+      </ol>
+      <h2>Payouts</h2>
+      <p>Tap <b>Payouts</b> on the machine for the full table. The rubber duck is <b>wild</b>: it counts as whatever symbol completes a win, and three ducks is the 777× jackpot.</p>
+      <h2>Good to know</h2>
+      <ul>
+        <li>When the first two reels could still make a big win, the third reel slows to a crawl. It's just for drama: the result is decided the moment you pull.</li>
+        <li>Over time the machine pays back about 96% of what goes in.</li>
+        <li>Run out of credits and the duck lends you $1,000.</li>
+      </ul>
+      <a class="btn primary block kb-cta" href="/lab/#slots">Open the slots</a>
+    </article>
+
+    <article class="kb" data-kb="plinko" hidden>
+      <h1>Duck Drop plinko</h1>
+      <p class="kb-lead">Drop rubber ducks down a board of pegs and see which bucket they land in. It's in the graphics lab, so it's experimental and plays with lab credits.</p>
+      <h2>How to play</h2>
+      <ol>
+        <li>Tap <b>Bet</b> to choose how much each duck costs.</li>
+        <li>Pick a risk level at the top: Low, Medium or High.</li>
+        <li>Tap <b>Drop</b> for one duck, or <b>×10</b> for ten in a row.</li>
+        <li>Each duck pays the multiplier on the bucket it lands in.</li>
+      </ol>
+      <h2>Risk levels</h2>
+      <table class="kb-table">
+        <thead><tr><th>Risk</th><th>Middle</th><th>Edges</th></tr></thead>
+        <tbody>
+          <tr><td>Low</td><td>0.5×</td><td class="pay">10×</td></tr>
+          <tr><td>Medium</td><td>0.3×</td><td class="pay">27×</td></tr>
+          <tr><td>High</td><td>0.1×</td><td class="pay">100×</td></tr>
+        </tbody>
+      </table>
+      <p>Most ducks land near the middle, so higher risk means more small losses and rarer, much bigger wins. Every level pays back about 97% over time.</p>
+      <h2>Good to know</h2>
+      <ul>
+        <li>Where a duck lands comes only from how it bounces. Nothing steers it.</li>
+        <li>Every peg plays a note when a duck hits it, so turn the sound up.</li>
+      </ul>
+      <a class="btn primary block kb-cta" href="/lab/#plinko">Open Duck Drop</a>
+    </article>
+
+    <article class="kb" data-kb="wallet" hidden>
+      <h1>Wallet and bank</h1>
+      <p class="kb-lead">Everything here is play money. Nothing costs anything, and nothing can be cashed out.</p>
+      <h2>Your wallet</h2>
+      <p>One wallet pays for every casino game. Roulette and video poker bets come straight out of it, and at blackjack you bring chips from it to the table.</p>
+      <h2>The Bottomless Bank</h2>
+      <p>Out of money? Tap your balance at the top of a game, or <b>Get money</b> on the home screen, and withdraw any amount, as often as you like. No interest, no credit check.</p>
+      <h2>Saving your progress</h2>
+      <p>Sign in from the top right of the home screen with Google, or with an email and password. Your wallet, stats and solo blackjack table then save to your account and follow you to any device. You also need to be signed in to sit at a table with friends. Signed out, everything stays in this browser.</p>
+      <h2>Your stats</h2>
+      <p><b>Your stats</b> on the home screen tracks every hand, spin and draw: net winnings, biggest wins, streaks and more. It also remembers how much you've borrowed from the Bank.</p>
+      <h2>3D lab credits</h2>
+      <p>The games in the 3D lab use their own credits, separate from your wallet, so you can go wild there without touching your balance.</p>
+    </article>
   </section>
 
   <!-- ================= Bank ================= -->
@@ -1169,6 +1490,28 @@
         <button class="btn" id="r-double">×2 <kbd>X</kbd></button>
         <button class="btn primary wide" id="r-place" hidden>Place</button>
         <button class="btn primary wide" id="r-spin">Spin <kbd>Space</kbd></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Video poker ================= -->
+  <section class="view has-dock" id="poker-view" hidden>
+    <div class="vp-pays" id="vp-pays" aria-label="Pay table"></div>
+    <div class="vp-screen">
+      <div class="vp-msg" id="vp-msg" role="status" aria-live="polite"><div class="vp-title" id="vp-title"></div><div class="vp-sub" id="vp-sub"></div></div>
+      <div class="vp-hand" id="vp-hand" aria-label="Your hand"></div>
+    </div>
+    <div class="dock">
+      <div class="dock-top">
+        <span class="dt-item">Bet<b id="vp-bet">$0</b></span>
+        <span class="dt-item">Jacks or Better</span>
+      </div>
+      <div class="rlow" id="vp-low" hidden>Running low? <button class="linkbtn" id="vp-bank">Get more from the Bank</button></div>
+      <div class="chips" id="vp-chips" aria-label="Chip value"></div>
+      <div class="row actions">
+        <button class="btn" id="vp-clear">Clear</button>
+        <button class="btn" id="vp-double">×2</button>
+        <button class="btn primary wide" id="vp-deal">Deal</button>
       </div>
     </div>
   </section>
@@ -1406,6 +1749,7 @@ const WITHDRAW_MAX = 999999999999;
 const GAMES = [
   { go: 'blackjack', name: 'Blackjack', blurb: 'Solo, or a room for up to four friends.', cta: 'Play', art: 'cards' },
   { go: 'roulette', name: 'Roulette', blurb: 'Single zero. Bets straight from your wallet.', cta: 'Play', art: 'wheel' },
+  { go: 'poker', name: 'Video Poker', blurb: 'Jacks or Better. Hold your keepers, draw the rest.', cta: 'Play', art: 'fan', wide: true },
 ];
 const QUIPS = [
   'Approved. We didn’t check.',
@@ -1421,10 +1765,12 @@ const QUIPS = [
 /* ================= Rules engine =================
    Shared with the room server: src/rules.js is inlined here by scripts/build.mjs. */
 /* @@RULES@@ */
+/* @@POKER@@ */
 
 /* ================= App state ================= */
 const app = {
   view: 'home', solo: false, code: null, routeKey: '', hashOverride: null,
+  learnId: '', learnBack: null,       // the How to play article on screen, and where its back button returns to
   chipsOpen: false, teller: '', lastQuip: -1,
   T: null, confirmed: false, missing: false, loadErr: '', slow: false,
   seq: 0, opt: null, pendingPlay: null,
@@ -1444,6 +1790,11 @@ const ui = {
   statsView: $('stats-view'), stSince: $('st-since'), stNet: $('st-net'), stRounds: $('st-rounds'), stBiggest: $('st-biggest'), stStreak: $('st-streak'),
   bjNet: $('bj-net'), bjBar: $('bj-bar'), bjWon: $('bj-won'), bjPushed: $('bj-pushed'), bjLost: $('bj-lost'), bjHands: $('bj-hands'), bjRate: $('bj-rate'), bjBjs: $('bj-bjs'), bjWagered: $('bj-wagered'),
   rlNet: $('rl-net'), rlSpins: $('rl-spins'), rlRate: $('rl-rate'), rlWagered: $('rl-wagered'), rlBiggest: $('rl-biggest'),
+  vpNet: $('vp-net'), vpHands: $('vp-hands'), vpRate: $('vp-rate'), vpWagered: $('vp-wagered'), vpBiggest: $('vp-biggest'), vpBest: $('vp-best'),
+  pokerView: $('poker-view'), vpPays: $('vp-pays'), vpMsg: $('vp-msg'), vpTitle: $('vp-title'), vpSub: $('vp-sub'), vpHand: $('vp-hand'),
+  vpBet: $('vp-bet'), vpLow: $('vp-low'), vpBank: $('vp-bank'), vpChips: $('vp-chips'), vpClear: $('vp-clear'), vpDouble: $('vp-double'), vpDeal: $('vp-deal'),
+  learnView: $('learn-view'), learnIndex: $('learn-index'), kbArticles: [...document.querySelectorAll('.kb')], kbPokerPays: $('kb-poker-pays'),
+  helpBtn: $('help-btn'), homeLearn: $('home-learn'),
   rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
   bkWithdrawn: $('bk-withdrawn'), bkCount: $('bk-count'), bkLine: $('bk-line'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
@@ -1561,17 +1912,21 @@ function route() {
   else if (h === 'bank') target = { view: 'bank', code: '' };
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
   else if (h === 'stats') target = { view: 'stats', code: '' };
+  else if (h === 'poker') target = { view: 'poker', code: '' };
+  else if (h === 'learn') target = { view: 'learn', code: '' };
+  else if (/^learn-[a-z]+$/.test(h)) target = { view: 'learn', code: h.slice(6) };
   else if (/^table-[a-z0-9]{4,12}$/.test(h)) target = { view: 'table', code: h.slice(6) };
   const net = target.view === 'lobby' || target.view === 'table';
   const who = !cloud.ready ? 'wait' : cloud.user ? cloud.user.id : 'out';   // re-enter rooms once sign-in is known
   const key = `${target.view}:${target.code}:${net ? who : ''}`;
   if (key === app.routeKey) { render(); return; }
   app.routeKey = key;
+  if (target.view !== 'learn') app.learnBack = null;
   teardown();
   if (target.view === 'lobby') enterLobby();
   else if (target.view === 'solo') enterSolo();
   else if (target.view === 'table') enterTable(target.code);
-  else { app.view = target.view; app.solo = false; render(); }
+  else { app.view = target.view; app.solo = false; app.learnId = target.view === 'learn' ? target.code : ''; render(); }
   window.scrollTo(0, 0);
 }
 function go(hash) {
@@ -2026,7 +2381,12 @@ function buildTiles() {
     const art = document.createElement('div');
     art.className = 'tile-art';
     art.setAttribute('aria-hidden', 'true');
-    if (g.art === 'cards') {
+    if (g.wide) b.classList.add('wide');
+    if (g.art === 'fan') {
+      art.classList.add('fan');
+      art.innerHTML = ['10S', 'JS', 'QS', 'KS', 'AS'].map(c =>
+        `<div class="card${c === 'AS' ? ' ace' : ''}"><div class="inner"><div class="face">${faceHTML(c)}</div></div></div>`).join('');
+    } else if (g.art === 'cards') {
       art.innerHTML =
         `<div class="card ace"><div class="inner"><div class="face">${faceHTML('AS')}</div></div></div>` +
         `<div class="card red"><div class="inner"><div class="face">${faceHTML('KH')}</div></div></div>`;
@@ -2050,7 +2410,7 @@ function buildTiles() {
 }
 
 /* ================= Stats =================
-   A running record of every blackjack hand and roulette spin you play, kept in this
+   A running record of every blackjack hand, roulette spin and video poker hand you play, kept in this
    browser and synced with your account alongside the wallet. Each blackjack round is
    counted once (by table and round number), so reloading or reconnecting never counts
    it twice. */
@@ -2060,6 +2420,7 @@ function freshStats() {
     since: Date.now(),
     bj: { hands: 0, won: 0, lost: 0, pushed: 0, blackjacks: 0, wagered: 0, net: 0, biggest: 0 },
     rl: { spins: 0, hits: 0, wagered: 0, net: 0, biggest: 0, landed: {}, paid: {} },
+    vp: { hands: 0, wins: 0, wagered: 0, net: 0, biggest: 0, made: {} },
     streak: 0, best: 0,
     seen: [],
   };
@@ -2078,6 +2439,9 @@ function statsLoad(d) {
       for (const [n, v] of Object.entries(src)) if (/^(\d|[12]\d|3[0-6])$/.test(n) && Number.isFinite(v) && v > 0) f.rl[m][n] = v;
     }
   }
+  for (const k of ['hands', 'wins', 'wagered', 'net', 'biggest']) f.vp[k] = finite(d.vp && d.vp[k]);
+  const made = d.vp && d.vp.made;
+  if (made && typeof made === 'object') for (const p of POKER_PAYS) if (Number.isFinite(made[p.key]) && made[p.key] > 0) f.vp.made[p.key] = made[p.key];
   f.streak = finite(d.streak);
   f.best = finite(d.best);
   if (Array.isArray(d.seen)) f.seen = d.seen.filter(x => typeof x === 'string').slice(-200);
@@ -2102,6 +2466,18 @@ function recordRoulette(result, wagered, payout) {
   r.biggest = Math.max(r.biggest, net);
   r.landed[result] = (r.landed[result] || 0) + 1;
   if (payout > 0) r.paid[result] = (r.paid[result] || 0) + payout;
+  statsStreak(net);
+  statsSave();
+}
+function recordPoker(rank, wagered, payout) {
+  const p = stats.vp;
+  const net = payout - wagered;
+  p.hands++;
+  p.wagered += wagered;
+  p.net += net;
+  if (net > 0) p.wins++;
+  p.biggest = Math.max(p.biggest, net);
+  if (rank) p.made[rank.key] = (p.made[rank.key] || 0) + 1;
   statsStreak(net);
   statsSave();
 }
@@ -2604,6 +2980,235 @@ function renderRoulette() {
   if (!rl.anim) rlDraw();
 }
 
+/* ================= Video poker (Jacks or Better, solo, plays from the wallet) =================
+   Chips set the bet, Deal takes it from the wallet and deals five cards, you tap the cards to
+   hold, and Draw replaces the rest. The hand in progress is kept in this browser. Replacement
+   cards are picked when you draw, so nothing saved here gives away what's coming. */
+const VP_KEY = 'mini-casino.poker';
+const vp = { bet: 25, hand: [], held: [false, false, false, false, false], phase: 'bet', stake: 0, result: null, busy: false };
+const vpCards = [];
+const vpRows = [];
+const cardLabel = c => `${RANK_NAMES[rankOf(c)] || rankOf(c)} of ${SUIT_NAMES[suitOf(c)]}`;
+function vpSave() {
+  try { localStorage.setItem(VP_KEY, JSON.stringify({ bet: vp.bet, hand: vp.hand, held: vp.held, phase: vp.phase, stake: vp.stake })); } catch (e) { /* storage unavailable */ }
+}
+function vpLoad() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(VP_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
+  if (!d) return;
+  if (Number.isFinite(d.bet) && d.bet >= 0) vp.bet = Math.floor(d.bet);
+  const deck = new Set(pokerDeck());
+  const hand = Array.isArray(d.hand) ? d.hand.filter(c => deck.has(c)) : [];
+  const stake = Number.isFinite(d.stake) && d.stake > 0 ? d.stake : 0;
+  if (hand.length !== 5 || new Set(hand).size !== 5 || !stake || (d.phase !== 'hold' && d.phase !== 'done')) return;
+  vp.hand = hand;
+  vp.held = [0, 1, 2, 3, 4].map(i => !!(Array.isArray(d.held) && d.held[i]));
+  vp.phase = d.phase;
+  vp.stake = stake;
+  if (vp.phase === 'done') vp.result = pokerRank(vp.hand);
+}
+function vpPaintCard(i, code) {
+  const card = vpCards[i].card;
+  card.classList.toggle('red', /[HD]$/.test(code));
+  card.classList.toggle('ace', rankOf(code) === 'A');
+  card.querySelector('.face').innerHTML = faceHTML(code);
+  card.setAttribute('aria-label', cardLabel(code));
+}
+function buildPoker() {
+  for (let i = 0; i < 5; i++) {
+    const b = document.createElement('button');
+    b.className = 'vp-card';
+    b.innerHTML = '<div class="card down" role="img" aria-label="Face-down card"><div class="inner"><div class="face"></div><div class="back cardback"></div></div></div><span class="vp-held">Held</span>';
+    b.addEventListener('click', () => vpToggle(i));
+    ui.vpHand.appendChild(b);
+    vpCards.push({ btn: b, card: b.querySelector('.card') });
+  }
+  for (const p of POKER_PAYS) {
+    const row = document.createElement('div');
+    row.className = 'vp-row';
+    const name = document.createElement('span');
+    name.textContent = p.name;
+    const amt = document.createElement('b');
+    row.append(name, amt);
+    ui.vpPays.appendChild(row);
+    vpRows.push({ row, amt, p });
+  }
+  for (const v of R_CHIPS) {
+    const c = document.createElement('button');
+    c.className = 'chip chipface';
+    c.style.setProperty('--c', R_CHIP_COLORS[v]);
+    c.dataset.v = String(v);
+    c.textContent = chipLabel(v);
+    c.setAttribute('aria-label', `Add ${moneyFull(v)} to your bet`);
+    c.addEventListener('click', () => vpAddChip(v));
+    ui.vpChips.appendChild(c);
+  }
+  // A hand that was in progress comes back face up
+  vp.hand.forEach((c, i) => { vpPaintCard(i, c); vpCards[i].card.classList.remove('down'); });
+}
+const vpCanBet = () => !vp.busy && vp.phase !== 'hold';
+// Changing the bet after a hand clears its result, but leaves the cards on show
+function vpFresh() {
+  if (vp.phase === 'done') { vp.phase = 'bet'; vp.result = null; }
+}
+function vpAddChip(v) {
+  if (!vpCanBet() || !wallet.ready) return;
+  if (vp.bet + v > wallet.balance) { toast('Not enough in your wallet for that. The bank can fix that.'); return; }
+  vp.bet += v;
+  vpFresh();
+  vpSave();
+  buzz(5);
+  render();
+}
+function vpClear() {
+  if (!vpCanBet() || !vp.bet) return;
+  vp.bet = 0;
+  vpFresh();
+  vpSave();
+  render();
+}
+function vpDouble() {
+  if (!vpCanBet() || !vp.bet) return;
+  if (vp.bet * 2 > wallet.balance) { toast('Your wallet can’t cover double. The bank can.'); return; }
+  vp.bet *= 2;
+  vpFresh();
+  vpSave();
+  buzz(5);
+  render();
+}
+function vpToggle(i) {
+  if (vp.busy || vp.phase !== 'hold') return;
+  vp.held[i] = !vp.held[i];
+  vpSave();
+  buzz(6);
+  render();
+}
+/* Flip the chosen cards face down, put their new faces on, and turn them back up one by one,
+   left to right. Calls done() once the last card is up. */
+function vpReveal(which, done) {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const turn = reduce ? 0 : 260, step = reduce ? 0 : 110;
+  const idx = [0, 1, 2, 3, 4].filter(i => which[i]);
+  vp.busy = true;
+  idx.forEach(i => vpCards[i].card.classList.add('down'));
+  render();
+  idx.forEach((i, k) => setTimeout(() => {
+    vpPaintCard(i, vp.hand[i]);
+    vpCards[i].card.classList.remove('down');
+  }, turn + k * step));
+  setTimeout(() => { vp.busy = false; done(); render(); }, turn + idx.length * step + (reduce ? 0 : 380));
+}
+function vpDeal() {
+  if (vp.busy || !wallet.ready) return;
+  if (vp.phase === 'hold') { vpDraw(); return; }
+  if (!vp.bet) { toast('Tap chips to choose your bet.'); return; }
+  if (vp.bet > wallet.balance) { toast('Your wallet can’t cover that bet. The bank can.'); render(); return; }
+  if (!walletChange(-vp.bet, null)) return;
+  vp.stake = vp.bet;
+  vp.hand = pokerDeal(randInt);
+  vp.held = [false, false, false, false, false];
+  vp.phase = 'hold';
+  vp.result = null;
+  vpSave();
+  buzz(10);
+  vpReveal([true, true, true, true, true], () => {});
+}
+function vpDraw() {
+  if (vp.busy || vp.phase !== 'hold') return;
+  const swap = vp.held.map(h => !h);
+  vp.hand = pokerDraw(vp.hand, vp.held, randInt);
+  const r = pokerRank(vp.hand);
+  const payout = r ? vp.stake * r.pays : 0;
+  const net = payout - vp.stake;
+  vp.result = r;
+  vp.phase = 'done';
+  vpSave();
+  vpReveal(swap, () => {
+    if (r && r.pays >= 25) buzz([30, 40, 60]);
+    else if (net > 0) buzz([15, 50, 25]);
+  });
+  // Paid as soon as the hand is decided, so closing the app mid-flip can't lose a win
+  recordPoker(r, vp.stake, payout);
+  walletChange(payout, null, { log: { a: net, w: `Video poker · ${r ? r.name : 'No win'}` } });
+}
+function renderPoker() {
+  const bal = wallet.ready ? wallet.balance : 0;
+  const hold = vp.phase === 'hold';
+  const done = vp.phase === 'done' && !vp.busy;
+  const r = vp.result;
+  const base = hold ? vp.stake : vp.bet;
+  ui.vpBet.textContent = money(base);
+  for (const { row, amt, p } of vpRows) {
+    amt.textContent = base ? money(base * p.pays) : `${p.pays}×`;
+    row.classList.toggle('hit', done && !!r && r.key === p.key);
+  }
+  vpCards.forEach(({ btn }, i) => {
+    btn.classList.toggle('held', hold && vp.held[i]);
+    btn.classList.toggle('win', done && !!r && r.cards.includes(i));
+    btn.classList.toggle('dim', done && !!r && !r.cards.includes(i));
+    btn.disabled = !hold || vp.busy;
+    btn.setAttribute('aria-pressed', String(hold && vp.held[i]));
+  });
+  let title, sub = '', cls = '';
+  if (vp.busy) title = hold ? 'Dealing…' : 'Drawing…';
+  else if (hold) {
+    const now = pokerRank(vp.hand);
+    title = now ? `You have ${now.name.toLowerCase()}` : 'Pick your keepers';
+    sub = 'Tap cards to hold, then Draw';
+  } else if (vp.phase === 'done') {
+    if (!r) { title = 'No win'; sub = `−${money(vp.stake)}`; cls = 'lose'; }
+    else if (r.pays === 1) { title = r.name; sub = 'Your bet back'; }
+    else { title = `${r.name}!`; sub = `+${money(vp.stake * r.pays - vp.stake)}`; cls = 'win'; }
+  } else {
+    title = 'Jacks or Better';
+    sub = vp.bet ? 'Tap Deal when you’re ready' : 'Tap chips to choose your bet';
+  }
+  ui.vpTitle.textContent = title;
+  ui.vpSub.textContent = sub;
+  ui.vpMsg.className = 'vp-msg' + (cls ? ' ' + cls : '');
+  ui.vpDeal.textContent = hold ? 'Draw' : 'Deal';
+  ui.vpDeal.disabled = vp.busy;
+  ui.vpClear.disabled = !vpCanBet() || !vp.bet;
+  ui.vpDouble.disabled = !vpCanBet() || !vp.bet || vp.bet * 2 > bal;
+  for (const c of ui.vpChips.children) c.disabled = !vpCanBet() || !wallet.ready || vp.bet + Number(c.dataset.v) > bal;
+  ui.vpLow.hidden = hold || vp.busy || !wallet.ready || bal >= Math.max(5, vp.bet);
+}
+
+/* ================= How to play ================= */
+const LEARN = ['blackjack', 'roulette', 'poker', 'slots', 'plinko', 'wallet'];
+// Game screens with a ? button: the article it opens, and what its back button says
+const HELP_FOR = { lobby: ['blackjack', 'Blackjack'], table: ['blackjack', 'Table'], roulette: ['roulette', 'Roulette'], poker: ['poker', 'Video poker'] };
+function buildLearn() {
+  for (const p of POKER_PAYS) {
+    const tr = document.createElement('tr');
+    const name = document.createElement('td');
+    name.textContent = p.name;
+    const pays = document.createElement('td');
+    pays.className = 'pay';
+    pays.textContent = `${p.pays}×`;
+    tr.append(name, pays);
+    ui.kbPokerPays.appendChild(tr);
+  }
+  ui.learnView.addEventListener('click', e => {
+    const t = e.target.closest('[data-learn], [data-go]');
+    if (!t) return;
+    if (t.dataset.learn) go('learn-' + t.dataset.learn);
+    else go(t.dataset.go);
+  });
+}
+function renderLearn() {
+  const id = LEARN.includes(app.learnId) ? app.learnId : '';
+  ui.learnIndex.hidden = !!id;
+  for (const a of ui.kbArticles) a.hidden = a.dataset.kb !== id;
+}
+function openHelp() {
+  const h = HELP_FOR[app.view];
+  if (!h) return;
+  const here = app.hashOverride != null ? app.hashOverride : decodeURIComponent(location.hash.slice(1));
+  app.learnBack = { hash: here || app.view, label: h[1] };
+  go('learn-' + h[0]);
+}
+
 /* ================= Cloud saves (Cloudflare site, Neon backend) =================
    Only the Cloudflare deployment has /api. On claude.ai the page keeps using
    claude.ai's own storage, and opened as a plain file it stays in this browser. */
@@ -3072,15 +3677,21 @@ function render() {
   ui.lobby.hidden = v !== 'lobby';
   ui.tableView.hidden = v !== 'table';
   ui.statsView.hidden = v !== 'stats';
+  ui.pokerView.hidden = v !== 'poker';
+  ui.learnView.hidden = v !== 'learn';
   // Game screens fill the screen exactly and never scroll
-  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette');
+  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker');
   document.documentElement.classList.toggle('bj', v === 'table');
+  document.documentElement.classList.toggle('vp', v === 'poker');
 
   // App bar: the brand on home; elsewhere a back link, plus the wallet (or the table's tools at blackjack)
   ui.casinoBar.classList.toggle('is-home', v === 'home');
   ui.brand.hidden = v !== 'home';
   ui.homeBtn.hidden = v === 'home';
-  ui.backLabel.textContent = v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms') : 'Home';
+  ui.backLabel.textContent = v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms')
+    : v === 'learn' ? (app.learnBack ? app.learnBack.label : app.learnId ? 'How to play' : 'Home')
+    : 'Home';
+  ui.helpBtn.hidden = !HELP_FOR[v];
   ui.barTitle.hidden = v !== 'table';
   ui.tableTools.hidden = v !== 'table';
   ui.balanceBtn.hidden = v === 'table' || v === 'home';
@@ -3098,6 +3709,8 @@ function render() {
   else if (v === 'bank') renderBank();
   else if (v === 'roulette') renderRoulette();
   else if (v === 'table') renderTable();
+  else if (v === 'poker') renderPoker();
+  else if (v === 'learn') renderLearn();
   syncLock();
 }
 
@@ -3106,8 +3719,8 @@ const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n));
 const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');
 const tone = (el, n) => { el.classList.toggle('up', n > 0); el.classList.toggle('down', n < 0); };
 function statsTotals() {
-  const b = stats.bj, r = stats.rl;
-  return { net: b.net + r.net, rounds: b.hands + r.spins, biggest: Math.max(b.biggest, r.biggest, 0) };
+  const b = stats.bj, r = stats.rl, p = stats.vp;
+  return { net: b.net + r.net + p.net, rounds: b.hands + r.spins + p.hands, biggest: Math.max(b.biggest, r.biggest, p.biggest, 0) };
 }
 function renderHomeStats() {
   const t = statsTotals();
@@ -3158,6 +3771,16 @@ function renderStats() {
   ui.rlCommonSub.dataset.empty = 'No spins yet';
   paintNumber(ui.rlLucky, ui.rlLuckySub, topNumber(r.paid), v => `${money(v)} paid out`);
   paintNumber(ui.rlCommon, ui.rlCommonSub, topNumber(r.landed), v => `${v} time${v === 1 ? '' : 's'}`);
+
+  const vs = stats.vp;
+  ui.vpNet.textContent = vs.hands ? signed(vs.net) : '';
+  tone(ui.vpNet, vs.net);
+  ui.vpHands.textContent = vs.hands.toLocaleString('en-US');
+  ui.vpRate.textContent = pct(vs.wins, vs.hands);
+  ui.vpWagered.textContent = money(vs.wagered);
+  ui.vpBiggest.textContent = money(vs.biggest);
+  const best = POKER_PAYS.find(x => vs.made[x.key]);
+  ui.vpBest.textContent = best ? `Best hand: ${best.name}${vs.made[best.key] > 1 ? `, made ${vs.made[best.key]} times` : ''}` : 'Best hand: none yet';
 
   ui.bkWithdrawn.textContent = money(wallet.withdrawn);
   ui.bkCount.textContent = wallet.count.toLocaleString('en-US');
@@ -3538,7 +4161,22 @@ ui.roomName.addEventListener('keydown', e => { if (e.key === 'Enter') createRoom
 ui.joinBtn.addEventListener('click', joinByCode);
 ui.joinCode.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
 ui.soloBtn.addEventListener('click', () => go('solo'));
-ui.homeBtn.addEventListener('click', () => go(app.view === 'table' ? 'blackjack' : 'home'));
+ui.homeBtn.addEventListener('click', () => {
+  if (app.view === 'table') { go('blackjack'); return; }
+  if (app.view === 'learn') {
+    const back = app.learnBack;
+    app.learnBack = null;
+    go(back ? back.hash : app.learnId ? 'learn' : 'home');
+    return;
+  }
+  go('home');
+});
+ui.helpBtn.addEventListener('click', openHelp);
+ui.homeLearn.addEventListener('click', () => go('learn'));
+ui.vpDeal.addEventListener('click', vpDeal);
+ui.vpClear.addEventListener('click', vpClear);
+ui.vpDouble.addEventListener('click', vpDouble);
+ui.vpBank.addEventListener('click', () => go('bank'));
 ui.balanceBtn.addEventListener('click', () => go('bank'));
 ui.homeBank.addEventListener('click', () => go('bank'));
 ui.homeStats.addEventListener('click', () => go('stats'));
@@ -3620,7 +4258,7 @@ ui.insNo.addEventListener('click', () => insure(false));
 ui.leave.addEventListener('click', leaveSeat);
 
 document.addEventListener('keydown', e => {
-  if (app.view !== 'roulette' && (app.view !== 'table' || !app.T)) return;
+  if (app.view !== 'roulette' && app.view !== 'poker' && (app.view !== 'table' || !app.T)) return;
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   const t = e.target;
   if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
@@ -3638,6 +4276,16 @@ document.addEventListener('keydown', e => {
     else if (k === 'c') rlClear();
     else if (k === 'r') rlRebet();
     else if (k === 'x') rlDouble();
+    else used = false;
+    if (used) e.preventDefault();
+    return;
+  }
+  if (app.view === 'poker') {
+    let used = true;
+    if (k === ' ' || k === 'enter') vpDeal();
+    else if (k >= '1' && k <= '5') vpToggle(Number(k) - 1);
+    else if (k === 'c' || k === 'backspace') vpClear();
+    else if (k === 'x') vpDouble();
     else used = false;
     if (used) e.preventDefault();
     return;
@@ -3671,6 +4319,9 @@ async function boot() {
   rlLoad();
   buildTiles();
   buildRoulette();
+  vpLoad();
+  buildPoker();
+  buildLearn();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
   walletInit();
   try { statsLoad(JSON.parse(localStorage.getItem(STATS_KEY) || 'null')); } catch (e) { /* storage unavailable */ }

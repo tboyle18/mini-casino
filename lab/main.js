@@ -5,6 +5,8 @@ const stage = document.getElementById('stage');
 const controls = document.getElementById('controls');
 const info = document.getElementById('info');
 const fps = document.getElementById('fps');
+const help = document.getElementById('lab-help');
+const HELP = { slots: '/#learn-slots', plinko: '/#learn-plinko' };
 
 const demos = {
   slots: () => import('./slots.js'),
@@ -37,6 +39,7 @@ async function show(name) {
   info.textContent = 'Loading…';
   for (const b of document.querySelectorAll('[data-demo]')) b.setAttribute('aria-selected', String(b.dataset.demo === name));
   try { history.replaceState(null, '', '#' + name); } catch (e) { /* not allowed here */ }
+  help.href = HELP[name] || '/#learn';
   try {
     const mod = await demos[name]();
     if (mine !== token) return;

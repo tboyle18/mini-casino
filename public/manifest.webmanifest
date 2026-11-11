@@ -55,6 +55,16 @@
       ]
     },
     {
+      "name": "Video Poker",
+      "url": "/#poker",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "The Bottomless Bank",
       "short_name": "Bank",
       "url": "/#bank",

@@ -4,8 +4,9 @@
 // document skeleton. This script adds the skeleton plus everything that makes
 // the site an installable PWA (manifest, icons, iOS home screen tags, service
 // worker), and inlines the blackjack rules from src/rules.js, which the room
-// server (src/worker.js) imports too. It also bundles the graphics lab (lab/,
-// served at /lab/) with its packages (Three.js, cannon-es, GSAP, canvas-confetti).
+// server (src/worker.js) imports too, and the video poker hands from src/poker.js.
+// It also bundles the graphics lab (lab/, served at /lab/) with its packages
+// (Three.js, cannon-es, GSAP, canvas-confetti).
 
 import { cp, copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { build as esbuild } from 'esbuild';
@@ -59,7 +60,9 @@ async function listFiles(dir) {
 const page = await readFile(join(root, 'mini-casino.html'), 'utf8');
 const rules = (await readFile(join(root, 'src', 'rules.js'), 'utf8')).replace(/^export /gm, '');
 if (!page.includes('/* @@RULES@@ */')) throw new Error('mini-casino.html is missing its /* @@RULES@@ */ marker');
-const body = page.replace('/* @@RULES@@ */', () => rules);
+const poker = (await readFile(join(root, 'src', 'poker.js'), 'utf8')).replace(/^export /gm, '');
+if (!page.includes('/* @@POKER@@ */')) throw new Error('mini-casino.html is missing its /* @@POKER@@ */ marker');
+const body = page.replace('/* @@RULES@@ */', () => rules).replace('/* @@POKER@@ */', () => poker);
 
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
