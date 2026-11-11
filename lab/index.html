@@ -49,10 +49,10 @@
   .lab-row { height: 52px; display: flex; align-items: center; gap: 10px; }
   .back { color: var(--gold); text-decoration: none; font-weight: 700; white-space: nowrap; }
   .lab-name { margin-left: auto; font-weight: 800; letter-spacing: .24em; font-size: 12px; text-transform: uppercase; color: var(--ink-3); }
-  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 14px; background: rgba(255, 255, 255, .06); }
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 14px; background: rgba(255, 255, 255, .06); }
   .tabs button {
-    appearance: none; border: 0; border-radius: 10px; padding: 9px 4px;
-    background: transparent; color: var(--ink-2); font-weight: 700; font-size: 14px; cursor: pointer;
+    appearance: none; border: 0; border-radius: 10px; padding: 9px 2px;
+    background: transparent; color: var(--ink-2); font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap;
   }
   .tabs button[aria-selected="true"] { background: var(--gold); color: var(--on-gold); }
   #stage { position: relative; overflow: hidden; touch-action: none; }
@@ -90,6 +90,7 @@
     </div>
     <div class="tabs" role="tablist">
       <button role="tab" data-demo="slots" aria-selected="true">Slots</button>
+      <button role="tab" data-demo="plinko" aria-selected="false">Plinko</button>
       <button role="tab" data-demo="roulette" aria-selected="false">Roulette</button>
       <button role="tab" data-demo="table" aria-selected="false">Table</button>
       <button role="tab" data-demo="win" aria-selected="false">Big Win</button>

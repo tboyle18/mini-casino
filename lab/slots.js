@@ -4,17 +4,14 @@
 // rattle when you pull the lever, three real reel cylinders and a lever you drag down.
 // Bloom makes the bulbs glow. Near misses tease you with a slow third reel, wins spit
 // coins at the camera, and jackpots launch the duck. Sounds are synthesized on the fly.
-// Credits here are lab credits, separate from the casino wallet.
+// It plays with lab credits (shared with the other lab games), not the casino wallet.
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { gsap } from 'gsap';
-import confetti from 'canvas-confetti';
-import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady } from './shared.js';
+import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, loadCredits, saveCredits, LAB_START } from './shared.js';
+import { makeSound, createWinFx } from './fx.js';
+import { EMOJI, canvas, tex, rrect, signCanvas, casinoScene, bloomComposer } from './arcade.js';
 import { GLYPH, NAME, PAYS, TWO_CHERRIES, STRIPS, evaluate, bestPossible, randomSymbol, stopFor } from './slots-math.js';
 
 const TAU = Math.PI * 2;
@@ -33,9 +30,7 @@ const LEVER_REST = -0.18, LEVER_PULLED = 1.65;
 const EYE_R = 0.066, PUPIL_R = 0.03, EYE_Y = 0.885;
 const PUPIL_MAX = EYE_R - PUPIL_R - 0.004;
 const BETS = [5, 25, 100, 500];
-const START_CREDITS = 1000;
 const STORE = 'mini-casino.lab-slots';
-const EMOJI = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
 
 const QUIPS = {
   idle: ['PULL THE LEVER. YOU KNOW YOU WANT TO.', 'THE DUCK IS WATCHING.', 'NOW WITH 30% MORE SPIN.', 'WARNING: LEVER MAY BE TOO FUN.', 'NO REFUNDS. NO REGRETS.', 'DRAG THE RED KNOB DOWN. HARDER = LONGER SPIN.'],
@@ -59,17 +54,6 @@ function rand() {
 }
 
 const CSS = `
-.slot-fx { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; align-content: center; gap: 8px; pointer-events: none; opacity: 0; }
-.slot-title { display: flex; font-weight: 800; line-height: .95; letter-spacing: -.02em; white-space: nowrap; }
-.slot-title span { display: inline-block; background: linear-gradient(180deg, #fff6d6 0%, #ffd56b 38%, #e3a52f 62%, #fff1b8 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 4px 0 #8a1238) drop-shadow(0 10px 24px rgba(0, 0, 0, .6)); }
-.slot-title .gap { width: .28em; }
-.slot-amount { font-weight: 800; font-size: min(11vw, 52px); color: #fff; font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 18px rgba(255, 210, 110, .85), 0 3px 0 rgba(0, 0, 0, .4); }
-.slot-float { position: absolute; z-index: 4; left: 0; top: 0; pointer-events: none; opacity: 0; white-space: nowrap;
-  font-weight: 800; font-size: 36px; color: #ffe27a; text-shadow: 0 0 14px rgba(255, 190, 60, .9), 0 3px 0 rgba(0, 0, 0, .45); }
-.slot-confetti { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
 .slot-pays { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 5; display: grid; gap: 10px;
   max-height: calc(100% - 24px); overflow: auto; padding: 16px; border-radius: 18px;
   background: rgba(16, 9, 22, .95); border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 20px 50px rgba(0, 0, 0, .6); }
@@ -84,34 +68,6 @@ const CSS = `
 .slot-pays .slot-row .lab-btn { flex: 1; }
 .slot-7 { color: #ff3b47; font-weight: 900; -webkit-text-stroke: 1px #ffd23f; }
 `;
-
-/* ---------- Canvas artwork ---------- */
-function canvas(w, h) {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  return [c, c.getContext('2d')];
-}
-function tex(c, renderer) {
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  return t;
-}
-// A rounded rectangle centered on (cx, cy), as a THREE.Shape or Path
-function rrect(path, cx, cy, w, h, r) {
-  const x = cx - w / 2, y = cy - h / 2;
-  path.moveTo(x + r, y);
-  path.lineTo(x + w - r, y);
-  path.quadraticCurveTo(x + w, y, x + w, y + r);
-  path.lineTo(x + w, y + h - r);
-  path.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  path.lineTo(x + r, y + h);
-  path.quadraticCurveTo(x, y + h, x, y + h - r);
-  path.lineTo(x, y + r);
-  path.quadraticCurveTo(x, y, x + r, y);
-  return path;
-}
 
 function drawSymbol(g, sym, size) {
   g.textAlign = 'center';
@@ -171,110 +127,6 @@ function blurCanvas(src) {
     const dx = k * step;
     g.drawImage(src, dx, 0);
     g.drawImage(src, dx - Math.sign(dx) * src.width, 0);
-  }
-  return c;
-}
-
-function arcText(g, text, cx, cy, r, font, fill, stroke) {
-  g.save();
-  g.font = font;
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  const widths = [...text].map(ch => g.measureText(ch).width + 6);
-  const total = widths.reduce((a, b) => a + b, 0);
-  let a = -Math.PI / 2 - total / r / 2;
-  for (let i = 0; i < text.length; i++) {
-    const w = widths[i] / r;
-    a += w / 2;
-    g.save();
-    g.translate(cx + r * Math.cos(a), cy + r * Math.sin(a));
-    g.rotate(a + Math.PI / 2);
-    g.lineJoin = 'round';
-    g.lineWidth = 18;
-    g.strokeStyle = stroke;
-    g.strokeText(text[i], 0, 0);
-    g.fillStyle = fill(g);
-    g.fillText(text[i], 0, 0);
-    g.restore();
-    a += w / 2;
-  }
-  g.restore();
-}
-// The marquee: a half-disc sign in the top half of a square canvas (CircleGeometry's UVs)
-function signCanvas() {
-  const S = 1024, cx = S / 2, cy = S / 2, R = S / 2;
-  const [c, g] = canvas(S, S);
-  g.save();
-  g.beginPath();
-  g.arc(cx, cy, R, Math.PI, 0);
-  g.closePath();
-  g.clip();
-  const bg = g.createRadialGradient(cx, cy, 20, cx, cy, R);
-  bg.addColorStop(0, '#6a0c1d');
-  bg.addColorStop(1, '#16030b');
-  g.fillStyle = bg;
-  g.fillRect(0, 0, S, S);
-  for (let i = 0; i < 24; i++) {
-    const a0 = Math.PI + (i * Math.PI) / 24;
-    g.beginPath();
-    g.moveTo(cx, cy);
-    g.arc(cx, cy, R, a0, a0 + Math.PI / 48);
-    g.closePath();
-    g.fillStyle = 'rgba(255, 80, 110, .13)';
-    g.fill();
-  }
-  g.restore();
-  g.strokeStyle = '#f2c14e';
-  g.lineWidth = 12;
-  g.beginPath();
-  g.arc(cx, cy, R - 34, Math.PI, 0);
-  g.stroke();
-  const goldFill = gg => {
-    const grad = gg.createLinearGradient(0, -50, 0, 50);
-    grad.addColorStop(0, '#fff3c4');
-    grad.addColorStop(0.5, '#ffcf4a');
-    grad.addColorStop(1, '#e09a1f');
-    return grad;
-  };
-  arcText(g, 'LUCKY DUCK', cx, cy, R * 0.68, '900 112px Manrope, sans-serif', goldFill, '#3a0610');
-  g.save();
-  g.translate(cx, cy - 110);
-  g.font = '900 150px Manrope, sans-serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.lineJoin = 'round';
-  g.lineWidth = 20;
-  g.strokeStyle = '#3a0610';
-  g.strokeText('3000', 0, 0);
-  g.fillStyle = '#ffffff';
-  g.fillText('3000', 0, 0);
-  g.restore();
-  g.font = `64px ${EMOJI}`;
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.fillText('🦆', cx - 300, cy - 70);
-  g.fillText('🦆', cx + 300, cy - 70);
-  return c;
-}
-// A loud casino carpet
-function carpetCanvas() {
-  const S = 512;
-  const [c, g] = canvas(S, S);
-  g.fillStyle = '#1c0a2a';
-  g.fillRect(0, 0, S, S);
-  g.strokeStyle = 'rgba(233, 196, 106, .2)';
-  g.lineWidth = 6;
-  for (let i = -S; i <= S * 2; i += 128) {
-    g.beginPath(); g.moveTo(i, 0); g.lineTo(i + S, S); g.stroke();
-    g.beginPath(); g.moveTo(i, S); g.lineTo(i + S, 0); g.stroke();
-  }
-  const cols = ['#ff3fa4', '#3fe0ff', '#ffd23f', '#7cff6b'];
-  g.globalAlpha = 0.32;
-  for (let i = 0; i < 70; i++) {
-    g.fillStyle = cols[i % 4];
-    g.beginPath();
-    g.arc(14 + Math.random() * (S - 28), 14 + Math.random() * (S - 28), 3 + Math.random() * 7, 0, TAU);
-    g.fill();
   }
   return c;
 }
@@ -339,112 +191,6 @@ function makeTicker(renderer) {
   return { mesh, texture, say, draw };
 }
 
-/* ---------- Sound: tiny synthesized effects, no audio files ---------- */
-function makeSound() {
-  let ac = null, out = null, noise = null, enabled = true;
-  function ctx() {
-    if (!enabled) return null;
-    if (!ac) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return null;
-      ac = new AC();
-      out = ac.createGain();
-      out.gain.value = 0.55;
-      out.connect(ac.destination);
-      noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
-      const d = noise.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    }
-    if (ac.state === 'suspended') ac.resume();
-    return ac;
-  }
-  function tone(f, dur, { type = 'square', vol = 0.15, at = 0, to = null, attack = 0.004 } = {}) {
-    const a = ctx();
-    if (!a) return;
-    const t = a.currentTime + at;
-    const o = a.createOscillator();
-    const gn = a.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(f, t);
-    if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
-    gn.gain.setValueAtTime(0.0001, t);
-    gn.gain.exponentialRampToValueAtTime(vol, t + attack);
-    gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(gn).connect(out);
-    o.start(t);
-    o.stop(t + dur + 0.02);
-  }
-  function hiss(dur, { vol = 0.2, at = 0, freq = 1000, q = 1 } = {}) {
-    const a = ctx();
-    if (!a) return;
-    const t = a.currentTime + at;
-    const src = a.createBufferSource();
-    src.buffer = noise;
-    const f = a.createBiquadFilter();
-    f.type = 'bandpass';
-    f.frequency.value = freq;
-    f.Q.value = q;
-    const gn = a.createGain();
-    gn.gain.setValueAtTime(vol, t);
-    gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(gn).connect(out);
-    src.start(t, Math.random() * 0.5);
-    src.stop(t + dur + 0.02);
-  }
-  const NOTES = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568];
-  return {
-    get on() { return enabled; },
-    set on(v) { enabled = v; if (!v && ac) ac.suspend(); },
-    unlock() { ctx(); },
-    ratchet() { tone(1500, 0.022, { vol: 0.07 }); },
-    tick() { tone(2600, 0.014, { vol: 0.03 }); },
-    pull() { hiss(0.12, { vol: 0.22, freq: 600 }); tone(180, 0.15, { type: 'triangle', vol: 0.2, to: 90 }); },
-    boing() { tone(200, 0.5, { type: 'sine', vol: 0.16, to: 560 }); },
-    clunk() { tone(120, 0.16, { type: 'sine', vol: 0.45, to: 55 }); hiss(0.05, { vol: 0.22, freq: 1800, q: 0.7 }); },
-    drum(sec) {
-      const n = Math.floor(sec * 16);
-      for (let i = 0; i < n; i++) hiss(0.05, { vol: 0.04 + 0.26 * (i / n), at: i / 16, freq: 240, q: 0.8 });
-    },
-    sad() {
-      tone(392, 0.3, { type: 'sawtooth', vol: 0.07, to: 370 });
-      tone(370, 0.3, { type: 'sawtooth', vol: 0.07, at: 0.32, to: 349 });
-      tone(349, 0.8, { type: 'sawtooth', vol: 0.07, at: 0.64, to: 290 });
-    },
-    boop() { tone(330, 0.12, { type: 'triangle', vol: 0.1, to: 220 }); },
-    win(level) {
-      const k = level === 1 ? 3 : level === 2 ? 5 : 6;
-      for (let i = 0; i < k; i++) tone(NOTES[i], 0.16, { vol: 0.11, at: i * 0.08 });
-    },
-    fanfare() {
-      const seq = [0, 1, 2, 3, 2, 3, 4, 5];
-      seq.forEach((n, i) => tone(NOTES[n], 0.22, { vol: 0.12, at: i * 0.11 }));
-      tone(NOTES[5], 1, { vol: 0.11, at: seq.length * 0.11, type: 'triangle' });
-    },
-    // A sawtooth sweep through a nasal band-pass filter, which is close enough to a quack
-    quack(at = 0) {
-      const a = ctx();
-      if (!a) return;
-      const t = a.currentTime + at;
-      const o = a.createOscillator();
-      o.type = 'sawtooth';
-      o.frequency.setValueAtTime(540, t);
-      o.frequency.exponentialRampToValueAtTime(250, t + 0.17);
-      const f = a.createBiquadFilter();
-      f.type = 'bandpass';
-      f.frequency.value = 1150;
-      f.Q.value = 5;
-      const gn = a.createGain();
-      gn.gain.setValueAtTime(0.0001, t);
-      gn.gain.exponentialRampToValueAtTime(0.6, t + 0.015);
-      gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
-      o.connect(f).connect(gn).connect(out);
-      o.start(t);
-      o.stop(t + 0.21);
-    },
-    close() { if (ac) ac.close(); },
-  };
-}
-
 /* ---------- Reel motion ----------
    Each spin is planned up front: a little wind-up backwards, a run-up to full speed, a
    steady spin, a slow-down that lands just past the target stop, then a settle back onto
@@ -488,22 +234,11 @@ export async function mount({ stage, controls, info }) {
 
   const { renderer, envTex } = makeRenderer(stage);
   const canvasEl = renderer.domElement;
-  renderer.toneMappingExposure = 0.92;
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x12071c);
-  scene.environment = envTex;
-  scene.environmentIntensity = 0.42;
-  scene.fog = new THREE.Fog(0x12071c, 4.5, 11);
-  const camera = new THREE.PerspectiveCamera(34, 1, 0.05, 30);
-
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.35, 1.0);
-  composer.addPass(bloom);
-  composer.addPass(new OutputPass());
-
   const textures = [];
   const keep = t => { textures.push(t); return t; };
+  const scene = casinoScene(renderer, envTex, keep);
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.05, 30);
+  const composer = bloomComposer(renderer, scene, camera);
 
   // ---- Framing: fit the whole machine (duck and lever included) on any screen ----
   const view = { w: 0, h: 0, dist: 3, close: 1.5, target: new THREE.Vector3(0.05, 0.82, 0) };
@@ -513,7 +248,6 @@ export async function mount({ stage, controls, info }) {
     view.w = w;
     view.h = h;
     renderer.setSize(w, h, false);
-    composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -522,38 +256,10 @@ export async function mount({ stage, controls, info }) {
     view.close = Math.max(0.28 / t, 0.34 / (t * camera.aspect));   // the reel window, edge to edge
   }
 
-  // ---- Room: carpet, neon and colored rim lights ----
-  scene.add(new THREE.HemisphereLight(0xffe9f2, 0x1a0820, 0.3));
-  const key = new THREE.DirectionalLight(0xfff0e0, 1.7);
-  key.position.set(-1.2, 2.6, 2.4);
-  key.target.position.set(0, 0.7, 0);
-  key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
-  Object.assign(key.shadow.camera, { left: -1.3, right: 1.3, top: 2.2, bottom: -0.6, near: 0.5, far: 7 });
-  key.shadow.bias = -0.0005;
-  key.shadow.normalBias = 0.01;
-  key.shadow.radius = 4;
-  scene.add(key, key.target);
-  const rimL = new THREE.PointLight(0xff2bd6, 1.6, 4, 2);
-  rimL.position.set(-1.1, 1.3, -0.5);
-  const rimR = new THREE.PointLight(0x2be7ff, 1.6, 4, 2);
-  rimR.position.set(1.2, 1.1, -0.4);
+  // A soft light just in front of the reels
   const reelLight = new THREE.PointLight(0xfff3d6, 0.08, 1.2, 2);
   reelLight.position.set(0, WIN_Y + 0.12, FACE_Z + 0.25);
-  scene.add(rimL, rimR, reelLight);
-
-  const carpet = keep(tex(carpetCanvas(), renderer));
-  carpet.wrapS = carpet.wrapT = THREE.RepeatWrapping;
-  carpet.repeat.set(14, 14);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: carpet, roughness: 0.95 }));
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
-  scene.add(floor);
-  for (const [x, color] of [[-1.5, new THREE.Color(1.6, 0.2, 1.2)], [1.6, new THREE.Color(0.2, 1.2, 1.6)], [-0.9, new THREE.Color(1.5, 1.1, 0.25)], [1.0, new THREE.Color(1.6, 0.2, 1.2)]]) {
-    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.8, 12), new THREE.MeshBasicMaterial({ color }));
-    tube.position.set(x, 1.1, -2.2 - Math.abs(x) * 0.2);
-    scene.add(tube);
-  }
+  scene.add(reelLight);
 
   // ---- Materials ----
   const paint = new THREE.MeshPhysicalMaterial({ color: 0xa8001c, metalness: 0.2, roughness: 0.38, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
@@ -642,7 +348,7 @@ export async function mount({ stage, controls, info }) {
   archShape.lineTo(ARCH_R, 0);
   add(new THREE.Mesh(new THREE.ExtrudeGeometry(archShape, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 48 }), paint))
     .position.set(0, TOP_Y - 0.01, -0.07);
-  const sign = new THREE.Mesh(new THREE.CircleGeometry(ARCH_R - 0.025, 64, 0, Math.PI), new THREE.MeshBasicMaterial({ map: keep(tex(signCanvas(), renderer)), color: new THREE.Color(1.25, 1.25, 1.25) }));
+  const sign = new THREE.Mesh(new THREE.CircleGeometry(ARCH_R - 0.025, 64, 0, Math.PI), new THREE.MeshBasicMaterial({ map: keep(tex(signCanvas('LUCKY DUCK', '3000'), renderer)), color: new THREE.Color(1.25, 1.25, 1.25) }));
   sign.position.set(0, TOP_Y - 0.01, 0.247);
   machine.add(sign);
   add(new THREE.Mesh(new THREE.TorusGeometry(ARCH_R + 0.004, 0.014, 12, 72, Math.PI), gold)).position.set(0, TOP_Y - 0.01, 0.245);
@@ -781,16 +487,8 @@ export async function mount({ stage, controls, info }) {
     coins.instanceMatrix.needsUpdate = true;
   }
 
-  // ---- DOM layers: the win title, floating amounts, confetti and the payout table ----
-  const fx = document.createElement('div');
-  fx.className = 'slot-fx';
-  fx.innerHTML = '<div class="slot-title"></div><div class="slot-amount"></div>';
-  const titleEl = fx.querySelector('.slot-title');
-  const amountEl = fx.querySelector('.slot-amount');
-  const floatEl = document.createElement('div');
-  floatEl.className = 'slot-float';
-  const confettiCanvas = document.createElement('canvas');
-  confettiCanvas.className = 'slot-confetti';
+  // ---- DOM layers: win effects and the payout table ----
+  const winFx = createWinFx(stage);
   const pays = document.createElement('div');
   pays.className = 'slot-pays';
   pays.hidden = true;
@@ -808,21 +506,19 @@ export async function mount({ stage, controls, info }) {
     paysBtn.setAttribute('aria-pressed', 'false');
   });
   pays.querySelector('.slot-row').append(bribeBtn, button('Close', () => { pays.hidden = true; paysBtn.setAttribute('aria-pressed', 'false'); }));
-  stage.append(confettiCanvas, fx, floatEl, pays);
-  const fire = confetti.create(confettiCanvas, { resize: true, useWorker: true });
-  const coinShape = confetti.shapeFromPath({ path: 'M10 0a10 10 0 1 0 0.001 0zM10 3a7 7 0 1 1-0.001 0z' });
-  const duckShape = confetti.shapeFromText({ text: '🦆', scalar: 2.2 });
+  stage.append(pays);
 
   // ---- State ----
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; } catch (e) { /* storage unavailable */ }
-  let credits = Number.isFinite(saved.credits) && saved.credits >= 0 ? saved.credits : START_CREDITS;
+  let credits = loadCredits();
   let bet = BETS.includes(saved.bet) ? saved.bet : 25;
   let rigged = false;
   const sound = makeSound();
   sound.on = saved.sound !== false;
   const persist = () => {
-    try { localStorage.setItem(STORE, JSON.stringify({ credits, bet, sound: sound.on })); } catch (e) { /* storage unavailable */ }
+    saveCredits(credits);
+    try { localStorage.setItem(STORE, JSON.stringify({ bet, sound: sound.on })); } catch (e) { /* storage unavailable */ }
   };
   const st = { spinning: false, t0: 0, line: null, tease: 0, teased: false };
   let mode = 'idle', modeUntil = 0, idleNext = 0;
@@ -830,7 +526,6 @@ export async function mount({ stage, controls, info }) {
   const shake = { amp: 0 };
   const timers = [];
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-  let titleTl = null;
 
   function hud(extra) {
     info.textContent = extra || `Credits ${money(credits)} · Bet ${money(bet)}`;
@@ -853,7 +548,7 @@ export async function mount({ stage, controls, info }) {
     if (st.spinning) return false;
     sound.unlock();
     if (credits < BETS[0]) {
-      credits += START_CREDITS;
+      credits += LAB_START;
       persist();
       hud();
       led.say('OUT OF CREDITS. THE DUCK LENT YOU $1,000. NO INTEREST. JUST QUACKS.', { color: '#7cff6b' });
@@ -1010,44 +705,11 @@ export async function mount({ stage, controls, info }) {
 
   function floatText(text) {
     const p = new THREE.Vector3(0, WIN_Y + 0.06, FACE_Z).applyMatrix4(machine.matrixWorld).project(camera);
-    floatEl.textContent = text;
-    floatEl.style.left = `${((p.x + 1) / 2) * stage.clientWidth}px`;
-    floatEl.style.top = `${((1 - p.y) / 2) * stage.clientHeight}px`;
-    gsap.killTweensOf(floatEl);
-    gsap.timeline()
-      .fromTo(floatEl, { xPercent: -50, yPercent: -50, y: 10, scale: 0.5, opacity: 0 }, { y: -50, scale: 1.15, opacity: 1, duration: 0.45, ease: 'back.out(2.5)' })
-      .to(floatEl, { y: -90, opacity: 0, duration: 0.6, ease: 'power1.in' }, '+=0.9');
+    winFx.float(text, ((p.x + 1) / 2) * stage.clientWidth, ((1 - p.y) / 2) * stage.clientHeight);
   }
-  function showTitle(text, amount, jackpot) {
-    hideTitle();
-    titleEl.innerHTML = [...text].map(ch => (ch === ' ' ? '<span class="gap"></span>' : `<span>${ch}</span>`)).join('');
-    titleEl.style.fontSize = `min(17vw, 84px, ${(128 / text.length).toFixed(1)}vw)`;
-    const letters = titleEl.querySelectorAll('span');
-    const counter = { v: 0 };
-    amountEl.textContent = '+$0';
-    gsap.set(fx, { opacity: 1 });
-    titleTl = gsap.timeline()
-      .fromTo(letters, { y: 90, scale: 0.2, opacity: 0, rotation: () => gsap.utils.random(-40, 40) },
-        { y: 0, scale: 1, opacity: 1, rotation: 0, duration: 0.7, ease: 'back.out(3)', stagger: 0.05 })
-      .fromTo(amountEl, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)' }, 0.4)
-      .to(counter, { v: amount, duration: jackpot ? 2.6 : 1.6, ease: 'power3.out', onUpdate: () => { amountEl.textContent = '+' + money(counter.v); } }, 0.45)
-      .to(fx, { opacity: 0, duration: 0.5 }, jackpot ? 5.5 : 3.6);
-    // Goofy wobble while it's up
-    gsap.to(letters, { y: -9, rotation: () => gsap.utils.random(-7, 7), duration: 0.32, yoyo: true, repeat: jackpot ? 15 : 9, ease: 'sine.inOut', stagger: 0.05, delay: 0.9 });
-  }
-  function hideTitle() {
-    if (titleTl) titleTl.kill();
-    titleTl = null;
-    gsap.killTweensOf([fx, amountEl, ...titleEl.children]);
-    gsap.set(fx, { opacity: 0 });
-  }
-  function cannons(power) {
-    const party = ['#ffd56b', '#ff3fa4', '#3fe0ff', '#7cff6b', '#ffffff'];
-    for (const [x, angle] of [[0, 62], [1, 118]]) {
-      fire({ particleCount: Math.round(70 * power), angle, spread: 60, startVelocity: 60, origin: { x, y: 1 }, colors: party, ticks: 260 });
-      fire({ particleCount: Math.round(10 * power), angle, spread: 50, startVelocity: 55, origin: { x, y: 1 }, shapes: [duckShape, coinShape], colors: ['#ffd56b'], scalar: 2, ticks: 300 });
-    }
-  }
+  const showTitle = (text, amount, jackpot) => winFx.showTitle(text, amount, { jackpot });
+  const hideTitle = () => winFx.hideTitle();
+  const cannons = power => winFx.cannons(power);
 
   // ---- Lever dragging ----
   const ray = new THREE.Raycaster();
@@ -1241,19 +903,18 @@ export async function mount({ stage, controls, info }) {
     dispose() {
       cancelAnimationFrame(raf);
       for (const t of timers) clearTimeout(t);
-      hideTitle();
-      gsap.killTweensOf([lv, camFx, duckFx, floatEl]);
+      gsap.killTweensOf([lv, camFx, duckFx]);
       canvasEl.removeEventListener('pointerdown', onDown);
       canvasEl.removeEventListener('pointermove', onMove);
       canvasEl.removeEventListener('pointerup', onUp);
       canvasEl.removeEventListener('pointercancel', onUp);
       window.removeEventListener('keydown', onKey);
-      fire.reset();
+      winFx.dispose();
       sound.close();
-      for (const el of [confettiCanvas, fx, floatEl, pays, style]) el.remove();
+      pays.remove();
+      style.remove();
       disposeScene(scene);
       for (const t of textures) t.dispose();
-      bloom.dispose();
       composer.dispose();
       envTex.dispose();
       renderer.dispose();

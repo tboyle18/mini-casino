@@ -60,3 +60,20 @@ export function disposeScene(scene) {
 export async function fontReady() {
   try { await document.fonts.load('800 40px Manrope'); } catch (e) { /* fall back to system font */ }
 }
+
+/* Lab credits: one play-money balance shared by the lab games, separate from the casino
+   wallet. (Slots kept its own balance before; that carries over the first time.) */
+const CREDITS_KEY = 'mini-casino.lab-credits';
+export const LAB_START = 1000;
+export function loadCredits() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CREDITS_KEY) || 'null');
+    if (Number.isFinite(v) && v >= 0) return v;
+    const old = JSON.parse(localStorage.getItem('mini-casino.lab-slots') || 'null');
+    if (old && Number.isFinite(old.credits) && old.credits >= 0) return old.credits;
+  } catch (e) { /* storage unavailable */ }
+  return LAB_START;
+}
+export function saveCredits(n) {
+  try { localStorage.setItem(CREDITS_KEY, JSON.stringify(n)); } catch (e) { /* storage unavailable */ }
+}

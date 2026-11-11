@@ -18,7 +18,7 @@ A play-money casino for phones, running on Cloudflare at https://mini-casino.boy
 | `wrangler.jsonc` | Cloudflare config: the Worker, the static assets in `dist/`, and the `ROOMS` Durable Object. |
 | `scripts/build.mjs` | Builds `dist/`: wraps `mini-casino.html` in a full HTML document (doctype, viewport, PWA and iOS tags) as `index.html`, inlines `src/rules.js`, bundles the graphics lab with esbuild, copies `public/`, and stamps the service worker with a content hash. |
 | `public/` | PWA files: `manifest.webmanifest`, `sw.js` (offline cache), `_headers` (no-cache for the service worker) and `icons/`. |
-| `lab/` | The graphics lab, served at `/lab/`: test demos built with real graphics packages (see below). The **3D preview** card on the home screen opens it. |
+| `lab/` | The graphics lab, served at `/lab/`: test demos built with real graphics packages (see below). The **3D preview** card on the home screen opens it. `arcade.js` (the casino room, marquee sign and bloom) and `fx.js` (sounds and win effects) are shared by the slots and plinko. |
 | `scripts/make-icons.mjs` | Draws the app icons into `public/icons/`. Run it after changing the icon design; the PNGs are committed. |
 
 ## Accounts and cloud saves (Neon)
@@ -46,10 +46,13 @@ Durable Objects with SQLite storage are included in Cloudflare's free plan.
 
 `/lab/` (https://mini-casino.boyletb8.workers.dev/lab/, or the **3D preview** card on the home screen) is a playground for trying real graphics packages before any of them go into the casino. Each tab loads only its own code, and a frame-rate meter shows how hard the phone is working.
 
-- **Slots** (Three.js + GSAP + canvas-confetti, with bloom): Lucky Duck 3000, a deliberately ridiculous slot machine. Drag the red knob down to pull the lever (a harder yank spins longer) or tap **Pull**. Three real reels, a light-bulb marquee, googly eyes that rattle, a rubber duck that hops and launches on a jackpot, coins that spray at the camera, and synthesized sounds. When the first two reels could still make a big win, the third reel slows to a crawl and the camera leans in. The duck is wild; payouts and odds live in `lab/slots-math.js` (about a 96% return, a win on roughly 1 spin in 4.4). It plays with its own lab credits, not the casino wallet, and **Bribe the duck** in Payouts rigs the next pull for a duck jackpot.
+- **Slots** (Three.js + GSAP + canvas-confetti, with bloom): Lucky Duck 3000, a deliberately ridiculous slot machine. Drag the red knob down to pull the lever (a harder yank spins longer) or tap **Pull**. Three real reels, a light-bulb marquee, googly eyes that rattle, a rubber duck that hops and launches on a jackpot, coins that spray at the camera, and synthesized sounds. When the first two reels could still make a big win, the third reel slows to a crawl and the camera leans in. The duck is wild; payouts and odds live in `lab/slots-math.js` (about a 96% return, a win on roughly 1 spin in 4.4). **Bribe the duck** in Payouts rigs the next pull for a duck jackpot.
+- **Plinko** (Three.js + GSAP + canvas-confetti, with bloom): Duck Drop, where the balls are rubber ducks. They tumble down 12 rows of pegs; each peg lights up and plays a note when hit, so every drop plays a little tune. 13 buckets pay from 0.1× in the middle to 100× at the edges, depending on the risk level (Low, Medium, High). **×10** drops a storm of ten ducks. Where a duck lands comes from the bounce physics in `lab/plinko-physics.js`; the payouts are tuned to about a 97% return at every risk level, measured by simulating 100,000 drops (`simulate()` and `odds()` in that file).
 - **3D Roulette** (Three.js + cannon-es): a real-scale wheel with lacquered wood, brass and chrome under studio lighting. While the ball is fast it circles the outer wall on a calculated path, then the physics engine takes over: it drops, hits the deflectors, bounces between the frets and settles in a pocket. Drag to orbit; **Ball cam** chases the ball.
 - **Big Win** (GSAP + canvas-confetti): a light-ray sunburst, a gold title that bounces in letter by letter, the amount counting up, and confetti, coins, sparkles or card suits. Three flavours: big win, blackjack, jackpot.
 - **3D Table** (Three.js + GSAP): a blackjack table from the player's seat with printed felt, a padded rail, the chip tray and a shoe. Cards fly out of the shoe and flip; chips drop onto the betting spot and stack.
+
+The slots and plinko share one balance of lab credits (starting at $1,000, topped up by the duck if you go broke), separate from the casino wallet.
 
 The packages are dev dependencies; the build bundles and serves them from this site, so nothing loads from a CDN.
 

@@ -1,4 +1,4 @@
-// Graphics lab: four experiments, each loaded only when its tab is opened.
+// Graphics lab: five experiments, each loaded only when its tab is opened.
 // Every demo module exports mount({ stage, controls, info }) and returns { dispose() }.
 
 const stage = document.getElementById('stage');
@@ -8,6 +8,7 @@ const fps = document.getElementById('fps');
 
 const demos = {
   slots: () => import('./slots.js'),
+  plinko: () => import('./plinko.js'),
   roulette: () => import('./roulette.js'),
   win: () => import('./celebrate.js'),
   table: () => import('./table.js'),
