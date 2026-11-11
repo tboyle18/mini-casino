@@ -453,6 +453,8 @@
   .pips i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, .2); }
   .pips i.on { background: var(--gold); }
   .room-cards { display: flex; flex-direction: column; gap: 14px; }
+  .signin-row { display: flex; flex-direction: column; gap: 8px; }
+  #table-view > .signin-row { margin-top: 12px; }
   .lobby-rules { text-align: center; color: var(--ink-3); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
 
   /* ---------- Blackjack table ----------
@@ -652,8 +654,11 @@
   .seat-head { display: flex; align-items: center; justify-content: center; gap: 5px; max-width: 100%; min-width: 0; }
   .avatar {
     width: 18px; height: 18px; flex: none;
+    display: grid; place-items: center;
     border-radius: 50%;
-    background: rgba(255, 255, 255, .15) center / cover no-repeat;
+    background: rgba(233, 196, 106, .22);
+    color: var(--gold);
+    font-size: 10px; font-weight: 800;
   }
   .pname { font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .you {
@@ -1040,6 +1045,10 @@
     </div>
     <div class="section-label">Play with friends</div>
     <p class="note" id="lobby-note" hidden></p>
+    <div class="signin-row" id="lobby-signin" hidden>
+      <button class="btn google-btn" id="lobby-google"></button>
+      <button class="btn" id="lobby-email">Sign in with email</button>
+    </div>
     <div class="room-cards" id="room-cards">
     <div class="lcard">
       <h2>Start a room</h2>
@@ -1048,7 +1057,7 @@
         <input class="text" id="room-name" maxlength="28" placeholder="Friday night" autocomplete="off" enterkeyhint="go">
         <button class="btn primary" id="create-btn">Create</button>
       </div>
-      <p class="fine">You’ll get an invite link for up to three friends.</p>
+      <p class="fine">You’ll get an invite link to send to up to three friends.</p>
     </div>
     <div class="lcard">
       <h2>Join with a code</h2>
@@ -1059,7 +1068,7 @@
       </div>
     </div>
     <div class="lcard">
-      <h2>Open rooms</h2>
+      <h2>Your rooms</h2>
       <ul class="room-list" id="room-list"></ul>
       <p class="fine" id="room-empty"></p>
     </div>
@@ -1070,6 +1079,10 @@
   <!-- ================= Table ================= -->
   <section class="view has-dock" id="table-view" hidden>
     <p class="note" id="t-note" hidden></p>
+    <div class="signin-row" id="t-signin" hidden>
+      <button class="btn google-btn" id="t-google"></button>
+      <button class="btn" id="t-email">Sign in with email</button>
+    </div>
     <div id="game">
       <div class="felt" id="felt">
         <div class="tray" aria-hidden="true"><i style="--c:#c8303c"></i><i style="--c:#2f6fd0"></i><i style="--c:#2a2c32"></i><i style="--c:#7a3fb8"></i><i style="--c:#d9822b"></i><i style="--c:#1f8a8a"></i><i style="--c:#c8303c"></i><i style="--c:#2f6fd0"></i></div>
@@ -1230,33 +1243,17 @@
 'use strict';
 
 /* ================= Config ================= */
-const ARTIFACT_URL = 'https://claude.ai/artifact/Jr9pJxUStQxXb7Un3cHvPZ';
-const SEATS = 4;
-const DECKS = 6;
-const SHOE = DECKS * 52;
-const CUT = 78;                 // reshuffle when a quarter of the shoe is left
-const MIN_BET = 5;
-const START_BANK = 1000;
-const MAX_HANDS = 4;            // per player, after splits
-const TURN_MS = 30000;          // time to act when other players are waiting
-const BET_MS = 15000;           // countdown once someone is ready
-const AWAY_MS = 8000;           // missing from the room this long counts as away
-const AWAY_SEAT_MS = 120000;    // away this long during betting frees the seat
-const WARM_MS = 3000;
 const STAGGER = 170;
 const DENOMS = [500, 100, 25, 5];
 const CHIP_COLORS = { 5: '#c8303c', 25: '#2f6fd0', 100: '#2a2c32', 500: '#7a3fb8' };
 const SUIT_CH = { S: '♠', H: '♥', D: '♦', C: '♣' };
 const SUIT_NAMES = { S: 'Spades', H: 'Hearts', D: 'Diamonds', C: 'Clubs' };
-const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 const RANK_NAMES = { A: 'Ace', J: 'Jack', Q: 'Queen', K: 'King' };
 const RESULT_LABEL = { win: 'Win', lose: 'Lose', push: 'Push', bust: 'Bust', blackjack: 'Blackjack' };
-const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
 const TEXT_VS = '︎';
 const SOLO_ID = 'solo';
 const WALLET_MAX = 1e15;              // the vault's idea of infinity
 const WITHDRAW_MAX = 999999999999;
-const MAX_CHIPS = 1e15;
 const GAMES = [
   { go: 'blackjack', name: 'Blackjack', blurb: 'Solo, or a room for up to four friends.', cta: 'Play', art: 'cards' },
   { go: 'roulette', name: 'Roulette', blurb: 'Single zero. Bets straight from your wallet.', cta: 'Play', art: 'wheel' },
@@ -1272,420 +1269,21 @@ const QUIPS = [
   'Have a nice day. You can afford it.',
 ];
 
-/* ================= Rules engine (pure, deterministic) =================
-   A table is one JSON document. Every change is applied by the reducer below,
-   so whichever player's browser runs it produces the same result. */
-
-function hash32(str) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-}
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-const shoeCache = new Map();
-function getShoe(seed, no) {
-  const key = seed + ':' + no;
-  let shoe = shoeCache.get(key);
-  if (shoe) return shoe;
-  const rnd = mulberry32(hash32(key));
-  shoe = [];
-  for (let d = 0; d < DECKS; d++) for (const s of 'SHDC') for (const r of RANKS) shoe.push(r + s);
-  for (let i = shoe.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
-  }
-  if (shoeCache.size > 8) shoeCache.clear();
-  shoeCache.set(key, shoe);
-  return shoe;
-}
-
-const rankOf = c => c.slice(0, -1);
-const suitOf = c => c.slice(-1);
-function val(c) {
-  const r = rankOf(c);
-  if (r === 'A') return 1;
-  if (r === 'J' || r === 'Q' || r === 'K') return 10;
-  return Number(r);
-}
-function score(cards) {
-  let total = 0, aces = 0;
-  for (const c of cards) { total += val(c); if (rankOf(c) === 'A') aces++; }
-  const soft = aces > 0 && total + 10 <= 21;
-  return { total: soft ? total + 10 : total, soft };
-}
-const isBJ = h => !h.split && h.cards.length === 2 && score(h.cards).total === 21;
-
-function newTable(code, name, seed, now) {
-  return {
-    v: 1, code, name, seed, created: now, updated: now, rev: 0,
-    shoeNo: 0, pos: 0, n: 0, turn: 0, readyAt: 0, turnAt: 0,
-    seats: [null, null, null, null], players: {}, phase: 'betting', round: null, processed: {},
-  };
-}
-function newPlayer() {
-  return { bank: START_BANK, bet: 0, lastBet: 0, status: 'betting', leaving: false, stats: { w: 0, l: 0, p: 0, bj: 0 } };
-}
-function newHand(R, seat, uid, bet) {
-  return { id: R.nextId++, seat, uid, bet, cards: [], done: false, doubled: false, split: false, splitAces: false, result: null };
-}
-function draw(T) {
-  if (T.pos >= SHOE) { T.shoeNo++; T.pos = 0; }
-  return getShoe(T.seed, T.shoeNo)[T.pos++];
-}
-const isPresent = (ctx, uid) => !ctx.present || ctx.present.has(uid);
-const roundLive = T => !!(T.round && !T.round.over);
-function activeHandOf(T) {
-  const R = T.round;
-  return R && !R.over && T.phase === 'player' ? R.hands[R.active] || null : null;
-}
-function seatedPresent(T, ctx) {
-  return T.seats.filter(u => u && T.players[u] && isPresent(ctx, u) && !T.players[u].leaving);
-}
-const timersOn = (T, ctx) => seatedPresent(T, ctx).length >= 2;
-
-function canDouble(T, h) {
-  const P = T.players[h.uid];
-  return !!P && h.cards.length === 2 && !h.splitAces && P.bank >= h.bet;
-}
-function canSplit(T, h) {
-  const P = T.players[h.uid];
-  return !!P && h.cards.length === 2 && val(h.cards[0]) === val(h.cards[1]) && !h.splitAces
-    && T.round.hands.filter(x => x.uid === h.uid).length < MAX_HANDS && P.bank >= h.bet;
-}
-
-function applyIntent(T, uid, m, ctx) {
-  const P = T.players[uid];
-  const seat = T.seats.indexOf(uid);
-  switch (m.t) {
-    case 'sit': {
-      const k = Number(m.seat);
-      if (seat >= 0 || !(k >= 0 && k < SEATS) || T.seats[k]) return;
-      T.seats[k] = uid;
-      const p = T.players[uid] || (T.players[uid] = newPlayer());
-      p.leaving = false;
-      p.status = 'betting';
-      return;
-    }
-    case 'leave': {
-      if (seat < 0) return;
-      if (roundLive(T) && T.round.hands.some(h => h.uid === uid)) P.leaving = true;
-      else { T.seats[seat] = null; P.status = 'betting'; P.leaving = false; }
-      return;
-    }
-    case 'rebuy':
-      if (seat >= 0 && T.phase === 'betting' && P.bank < MIN_BET) { P.bank += START_BANK; P.status = 'betting'; }
-      return;
-    case 'chips': {
-      const a = Math.floor(Number(m.a) || 0);
-      if (seat < 0 || !(a > 0) || a > MAX_CHIPS) return;
-      P.bank = Math.min(P.bank + a, MAX_CHIPS);
-      return;
-    }
-    case 'bet': {
-      if (seat < 0 || T.phase !== 'betting') return;
-      let a = Math.floor((Number(m.a) || 0) / 5) * 5;
-      a = Math.max(0, Math.min(a, Math.floor(P.bank / 5) * 5));
-      P.bet = a;
-      P.status = 'betting';
-      return;
-    }
-    case 'ready':
-      if (seat >= 0 && T.phase === 'betting' && P.bet >= MIN_BET && P.bet <= P.bank) P.status = 'ready';
-      return;
-    case 'unready':
-      if (seat >= 0 && T.phase === 'betting') P.status = 'betting';
-      return;
-    case 'out':
-      if (seat >= 0 && T.phase === 'betting') P.status = 'out';
-      return;
-    case 'ins': {
-      if (T.phase !== 'insurance' || !P) return;
-      for (const h of T.round.hands) {
-        if (h.uid !== uid || T.round.ins[h.id] !== null) continue;
-        if (m.y && P.bank >= h.bet / 2) { P.bank -= h.bet / 2; T.round.ins[h.id] = 'yes'; }
-        else T.round.ins[h.id] = 'no';
-      }
-      return;
-    }
-    case 'hit': case 'stand': case 'double': case 'split': {
-      const h = activeHandOf(T);
-      if (!h || h.uid !== uid || m.k !== T.turn) return;
-      play(T, h, m.t, ctx);
-      return;
-    }
-  }
-}
-
-function play(T, h, t, ctx) {
-  const P = T.players[h.uid];
-  const R = T.round;
-  if (t === 'hit') {
-    h.cards.push(draw(T));
-    const total = score(h.cards).total;
-    if (total > 21) { h.done = true; h.result = 'bust'; }
-    else if (total === 21) h.done = true;
-  } else if (t === 'stand') {
-    h.done = true;
-  } else if (t === 'double') {
-    if (!canDouble(T, h)) return;
-    P.bank -= h.bet; h.bet *= 2; h.doubled = true;
-    h.cards.push(draw(T));
-    h.done = true;
-    if (score(h.cards).total > 21) h.result = 'bust';
-  } else if (t === 'split') {
-    if (!canSplit(T, h)) return;
-    P.bank -= h.bet;
-    const nh = newHand(R, h.seat, h.uid, h.bet);
-    nh.cards.push(h.cards.pop());
-    h.split = nh.split = true;
-    if (rankOf(h.cards[0]) === 'A') h.splitAces = nh.splitAces = true;
-    R.hands.splice(R.active + 1, 0, nh);
-  }
-  T.turn++;
-  T.turnAt = ctx.now;
-  advance(T, ctx);
-}
-
-/* Move to the next hand that needs a decision, or play the dealer. */
-function advance(T, ctx) {
-  const R = T.round;
-  let i = Math.max(0, R.active);
-  while (i < R.hands.length) {
-    const h = R.hands[i];
-    if (!h.done) {
-      if (h.cards.length === 1) {
-        h.cards.push(draw(T));
-        if (h.splitAces) { h.done = true; i++; continue; }
-      }
-      if (score(h.cards).total >= 21) { h.done = true; i++; continue; }
-      if (R.active !== i) { R.active = i; T.turn++; T.turnAt = ctx.now; }
-      return;
-    }
-    i++;
-  }
-  R.active = -1;
-  dealerPlay(T, ctx);
-}
-
-function deal(T, ctx) {
-  if (T.pos > SHOE - CUT) { T.shoeNo++; T.pos = 0; }
-  const R = {
-    n: T.n + 1, nextId: 1, dealer: [], holeUp: false, hands: [], active: -1,
-    ins: {}, over: false, start: {}, net: {}, how: '', shuffled: T.pos === 0,
-  };
-  for (let s = 0; s < SEATS; s++) {
-    const uid = T.seats[s];
-    if (!uid) continue;
-    const P = T.players[uid];
-    if (P.status === 'ready' && isPresent(ctx, uid) && !P.leaving && P.bet >= MIN_BET && P.bet <= P.bank) {
-      R.start[uid] = P.bank;
-      P.bank -= P.bet;
-      P.lastBet = P.bet;
-      R.hands.push(newHand(R, s, uid, P.bet));
-    }
-  }
-  if (!R.hands.length) return false;
-  T.n = R.n;
-  T.round = R;
-  T.turn++;
-  T.readyAt = 0;
-  for (const h of R.hands) h.cards.push(draw(T));
-  R.dealer.push(draw(T));
-  for (const h of R.hands) h.cards.push(draw(T));
-  R.dealer.push(draw(T));
-  if (rankOf(R.dealer[0]) === 'A') {
-    T.phase = 'insurance';
-    T.turnAt = ctx.now;
-    for (const h of R.hands) R.ins[h.id] = T.players[h.uid].bank >= h.bet / 2 ? null : 'no';
-  } else {
-    peek(T, ctx);
-  }
-  return true;
-}
-
-function peek(T, ctx) {
-  const R = T.round;
-  const up = R.dealer[0];
-  R.peeked = rankOf(up) === 'A' || val(up) === 10;
-  if (R.peeked && score(R.dealer).total === 21) {
-    R.holeUp = true;
-    for (const h of R.hands) {
-      const P = T.players[h.uid];
-      if (R.ins[h.id] === 'yes') P.bank += h.bet * 1.5;      // stake back plus 2 to 1
-      if (isBJ(h)) { h.result = 'push'; P.bank += h.bet; } else h.result = 'lose';
-      h.done = true;
-    }
-    finish(T, ctx, 'bj');
-    return;
-  }
-  for (const h of R.hands) {
-    if (isBJ(h)) { h.result = 'blackjack'; h.done = true; T.players[h.uid].bank += h.bet * 2.5; }
-  }
-  T.phase = 'player';
-  R.active = -1;
-  advance(T, ctx);
-}
-
-function dealerPlay(T, ctx) {
-  const R = T.round;
-  R.holeUp = true;
-  if (R.hands.some(h => !h.result)) {
-    while (score(R.dealer).total < 17) R.dealer.push(draw(T));   // stands on all 17s
-  }
-  const d = score(R.dealer).total;
-  for (const h of R.hands) {
-    if (h.result) continue;
-    const P = T.players[h.uid];
-    const p = score(h.cards).total;
-    if (d > 21 || p > d) { h.result = 'win'; P.bank += h.bet * 2; }
-    else if (p === d) { h.result = 'push'; P.bank += h.bet; }
-    else h.result = 'lose';
-  }
-  finish(T, ctx, d > 21 ? 'bust' : 'stand');
-}
-
-function finish(T, ctx, how) {
-  const R = T.round;
-  R.over = true;
-  R.how = how;
-  R.active = -1;
-  for (const h of R.hands) {
-    const st = T.players[h.uid].stats;
-    if (h.result === 'win' || h.result === 'blackjack') st.w++;
-    else if (h.result === 'push') st.p++;
-    else st.l++;
-    if (h.result === 'blackjack') st.bj++;
-  }
-  for (const uid of Object.keys(R.start)) R.net[uid] = T.players[uid].bank - R.start[uid];
-  T.phase = 'betting';
-  T.turn++;
-  T.readyAt = 0;
-  T.turnAt = 0;
-  for (let s = 0; s < SEATS; s++) {
-    const uid = T.seats[s];
-    if (!uid) continue;
-    const P = T.players[uid];
-    if (P.leaving) { T.seats[s] = null; P.leaving = false; P.status = 'betting'; continue; }
-    P.status = 'betting';
-    const cap = Math.floor(P.bank / 5) * 5;
-    P.bet = Math.min(uid in R.start ? P.lastBet : P.bet, cap);
-  }
-}
-
-/* Changes that happen on their own: dealing once everyone is ready, timeouts, players who left. */
-function step(T, ctx) {
-  if (T.phase === 'betting') {
-    if (ctx.longAway && ctx.longAway.size) {
-      for (let s = 0; s < SEATS; s++) {
-        const u = T.seats[s];
-        if (u && ctx.longAway.has(u)) { T.seats[s] = null; T.players[u].status = 'betting'; }
-      }
-    }
-    const sp = seatedPresent(T, ctx);
-    const ready = sp.filter(u => T.players[u].status === 'ready');
-    if (!ready.length) { T.readyAt = 0; return; }
-    const waiting = sp.filter(u => T.players[u].status === 'betting');
-    if (!waiting.length || (T.readyAt && ctx.now >= T.readyAt + BET_MS)) { deal(T, ctx); return; }
-    if (!T.readyAt) T.readyAt = ctx.now;
-    return;
-  }
-  if (T.phase === 'insurance') {
-    const R = T.round;
-    const expired = timersOn(T, ctx) && ctx.now >= T.turnAt + TURN_MS;
-    for (const h of R.hands) {
-      if (R.ins[h.id] === null && (expired || !isPresent(ctx, h.uid) || T.players[h.uid].leaving)) R.ins[h.id] = 'no';
-    }
-    if (R.hands.every(h => R.ins[h.id] !== null)) { T.turn++; peek(T, ctx); }
-    return;
-  }
-  if (T.phase === 'player') {
-    const h = activeHandOf(T);
-    if (!h) return;
-    const P = T.players[h.uid];
-    const expired = timersOn(T, ctx) && ctx.now >= T.turnAt + TURN_MS;
-    if (!isPresent(ctx, h.uid) || !P || P.leaving || expired) {
-      h.done = true;
-      T.turn++;
-      T.turnAt = ctx.now;
-      advance(T, ctx);
-    }
-  }
-}
-function autoAdvance(T, ctx) {
-  for (let i = 0; i < 24; i++) {
-    const before = T.turn + ':' + T.phase + ':' + T.n + ':' + T.readyAt + ':' + T.seats.join(',');
-    step(T, ctx);
-    if (before === T.turn + ':' + T.phase + ':' + T.n + ':' + T.readyAt + ':' + T.seats.join(',')) break;
-  }
-}
-
-function nextDeadline(T, ctx) {
-  if (!T) return 0;
-  if (T.phase === 'betting' && T.readyAt) return T.readyAt + BET_MS;
-  if ((T.phase === 'insurance' || T.phase === 'player') && timersOn(T, ctx)) return T.turnAt + TURN_MS;
-  return 0;
-}
-
-/* Basic strategy: 6 decks, dealer stands on soft 17, double after split allowed. */
-function recommend(T, h, up) {
-  const d = rankOf(up) === 'A' ? 11 : val(up);
-  const canD = canDouble(T, h);
-  if (canSplit(T, h)) {
-    const v = val(h.cards[0]);
-    const p = v === 1 ? 11 : v;
-    const split =
-      p === 11 || p === 8 ? true :
-      p === 9 ? [2, 3, 4, 5, 6, 8, 9].includes(d) :
-      p === 7 || p === 3 || p === 2 ? d <= 7 :
-      p === 6 ? d <= 6 :
-      p === 4 ? d === 5 || d === 6 :
-      false;
-    if (split) return 'split';
-  }
-  const { total, soft } = score(h.cards);
-  if (soft) {
-    if (total >= 19) return 'stand';
-    if (total === 18) {
-      if (d >= 3 && d <= 6) return canD ? 'double' : 'stand';
-      return d <= 8 ? 'stand' : 'hit';
-    }
-    if (total === 17) return d >= 3 && d <= 6 && canD ? 'double' : 'hit';
-    if (total >= 15) return d >= 4 && d <= 6 && canD ? 'double' : 'hit';
-    return d >= 5 && d <= 6 && canD ? 'double' : 'hit';
-  }
-  if (total >= 17) return 'stand';
-  if (total >= 13) return d <= 6 ? 'stand' : 'hit';
-  if (total === 12) return d >= 4 && d <= 6 ? 'stand' : 'hit';
-  if (total === 11) return d <= 10 && canD ? 'double' : 'hit';
-  if (total === 10) return d <= 9 && canD ? 'double' : 'hit';
-  if (total === 9) return d >= 3 && d <= 6 && canD ? 'double' : 'hit';
-  return 'hit';
-}
+/* ================= Rules engine =================
+   Shared with the room server: src/rules.js is inlined here by scripts/build.mjs. */
+/* @@RULES@@ */
 
 /* ================= App state ================= */
 const app = {
   view: 'home', solo: false, code: null, routeKey: '', hashOverride: null,
   chipsOpen: false, teller: '', lastQuip: -1,
-  capsReady: false, db: null, user: null, room: null, nroom: null,
-  me: null, canWrite: null, readOnly: false,
   T: null, confirmed: false, missing: false, loadErr: '', slow: false,
-  tableRef: null, moves: {},
-  myQ: [], seq: 0, captured: 0, writing: false, writeAgain: false,
-  opt: null, pendingPlay: null,
-  lastSeen: new Map(), joinedAt: 0, present: null, longAway: null, presentKey: 'all',
-  hostBusy: false, hostAgain: false, hostTimer: 0, backupTimer: 0, workSince: 0,
-  names: {}, namesPending: false,
-  lobby: [], lobbyState: 'idle',
-  hints: false, inviteOpen: false,
+  seq: 0, opt: null, pendingPlay: null,
+  present: null, names: {},
+  ws: null, wsOpen: false, wsTries: 0, wsTimer: 0, pingTimer: 0,   // live connection to a multiplayer room
+  hints: false, inviteOpen: false, inviteOpenNext: false,
   unsubs: [], timers: [],
-  renderedRound: -1, animTimer: 0, msgKey: '', turnKey: '',
+  renderedRound: -1, animTimer: 0, msgKey: '',
   pending: 0,   // blackjack chips in your hand, not yet bet
 };
 
@@ -1700,7 +1298,8 @@ const ui = {
   account: $('account'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
   authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
   authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
-  authGoogle: $('auth-google'),
+  authGoogle: $('auth-google'), lobbySignin: $('lobby-signin'), lobbyGoogle: $('lobby-google'), lobbyEmail: $('lobby-email'),
+  tSignin: $('t-signin'), tGoogle: $('t-google'), tEmail: $('t-email'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
   rHist: $('r-hist'), rTotal: $('r-total'), rAmount: $('r-amount'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
   rUndo: $('r-undo'), rClear: $('r-clear'), rRebet: $('r-rebet'), rDouble: $('r-double'), rLow: $('r-low'), rBank: $('r-bank'),
@@ -1758,10 +1357,9 @@ function randomString(n, chars) {
   for (let i = 0; i < n; i++) s += chars[a[i] % chars.length];
   return s;
 }
-const makeCode = () => randomString(6, CODE_CHARS);
 const makeSeed = () => randomString(16, 'abcdefghijklmnopqrstuvwxyz0123456789');
 const clone = o => JSON.parse(JSON.stringify(o));
-const myId = () => (app.solo ? SOLO_ID : app.me);
+const myId = () => (app.solo ? SOLO_ID : cloud.user ? cloud.user.id : null);
 const curT = () => app.T;
 function myP() { const T = app.T; return T ? T.players[myId()] || null : null; }
 function mySeat() { const T = app.T; return T ? T.seats.indexOf(myId()) : -1; }
@@ -1769,12 +1367,11 @@ function processedMe() { const T = app.T; return (T && T.processed && T.processe
 function optLive() { return app.opt && processedMe() < app.opt.s; }
 function viewBet() { const P = myP(); if (!P) return 0; return optLive() && app.opt.bet != null ? app.opt.bet : P.bet; }
 function viewStatus() { const P = myP(); if (!P) return 'betting'; return optLive() && app.opt.status ? app.opt.status : P.status; }
-function canPlayHere() { return app.solo || (!!app.db && !!app.me && app.canWrite !== false && !app.readOnly); }
-function ctxNow() { return { now: Date.now(), present: app.solo ? new Set([SOLO_ID]) : app.present, longAway: app.solo ? null : app.longAway }; }
+function canPlayHere() { return app.solo || (!!cloud.user && app.wsOpen); }
+function ctxNow() { return { now: Date.now(), present: app.solo ? new Set([SOLO_ID]) : app.present, longAway: null }; }
 function nameOf(uid, seat) {
   if (uid === myId()) return 'You';
-  const n = app.names[uid];
-  return (n && n.name) || `Player ${seat + 1}`;
+  return app.names[uid] || `Player ${seat + 1}`;
 }
 let toastTimer = 0;
 function toast(text) {
@@ -1792,7 +1389,7 @@ function syncLock() {
   document.body.classList.toggle('locked', open);
 }
 function inviteURL(code) {
-  return ARTIFACT_URL ? `${ARTIFACT_URL}#table-${code}` : '';
+  return `${location.origin}/#table-${code}`;
 }
 function prefsLoad() {
   try { const p = JSON.parse(localStorage.getItem('bj.rooms.prefs') || '{}'); app.hints = !!p.hints; } catch (e) { /* storage unavailable */ }
@@ -1811,7 +1408,8 @@ function route() {
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
   else if (/^table-[a-z0-9]{4,12}$/.test(h)) target = { view: 'table', code: h.slice(6) };
   const net = target.view === 'lobby' || target.view === 'table';
-  const key = `${target.view}:${target.code}:${net ? app.capsReady : ''}`;
+  const who = !cloud.ready ? 'wait' : cloud.user ? cloud.user.id : 'out';   // re-enter rooms once sign-in is known
+  const key = `${target.view}:${target.code}:${net ? who : ''}`;
   if (key === app.routeKey) { render(); return; }
   app.routeKey = key;
   teardown();
@@ -1831,12 +1429,9 @@ function teardown() {
   app.unsubs = [];
   for (const t of app.timers) clearInterval(t);
   app.timers = [];
-  clearTimeout(app.hostTimer);
-  clearTimeout(app.backupTimer);
-  if (app.nroom) { app.nroom.leave().catch(() => {}); app.nroom = null; }
+  roomDisconnect();
   app.T = null; app.confirmed = false; app.missing = false; app.loadErr = ''; app.slow = false;
-  app.moves = {}; app.myQ = []; app.opt = null; app.pendingPlay = null;
-  app.lastSeen = new Map(); app.present = null; app.longAway = null; app.presentKey = 'all';
+  app.opt = null; app.pendingPlay = null; app.present = null; app.names = {}; app.seq = 0; app.wsTries = 0;
   app.inviteOpen = false; app.chipsOpen = false; app.renderedRound = -1; app.msgKey = ''; app.pending = 0;
   cardEls.clear(); handEls.clear();
   ui.dealerCards.textContent = '';
@@ -1849,35 +1444,27 @@ function enterLobby() {
   app.view = 'lobby';
   app.solo = false;
   render();
-  if (!app.capsReady || !app.db) return;
-  app.lobbyState = 'loading';
-  const t = setTimeout(() => { if (app.lobbyState === 'loading') { app.lobbyState = 'slow'; render(); } }, 10000);
-  app.unsubs.push(() => clearTimeout(t));
-  app.unsubs.push(app.db.collection('tables').orderBy('updated', 'desc').limit(30).onSnapshot(snap => {
-    app.lobby = snap.docs.map(d => d.data()).filter(Boolean);
-    if (!snap.metadata.fromCache) app.lobbyState = 'ready';
-    render();
-  }, () => { app.lobbyState = 'error'; render(); }));
-  const tick = setInterval(() => { if (app.view === 'lobby') render(); }, 30000);
-  app.timers.push(tick);
 }
 
 async function createRoom() {
-  if (!app.db || !app.me || app.canWrite === false) return;
-  const name = ui.roomName.value.replace(/\s+/g, ' ').trim().slice(0, 28) || 'Blackjack table';
-  const code = makeCode();
-  const now = Date.now();
-  const T = newTable(code, name, makeSeed(), now);
-  T.seats[0] = app.me;
-  T.players[app.me] = newPlayer();
+  if (!cloud.user) { openAuth('in'); return; }
+  const name = ui.roomName.value.replace(/\s+/g, ' ').trim().slice(0, 28);
   ui.createBtn.disabled = true;
   try {
-    await app.db.doc('tables/' + code).set(T);
+    const res = await fetch('/api/rooms', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d || !d.code) throw new Error((d && d.error) || 'failed');
     ui.roomName.value = '';
+    rememberRoom(d.code, d.name);
     app.inviteOpenNext = true;
-    go('table-' + code);
+    go('table-' + d.code);
   } catch (e) {
-    toast(e && e.code === 'quota_exceeded' ? 'This page has run out of room storage.' : 'Could not create the room. Try again.');
+    toast('Couldn’t create the room. Try again.');
   } finally {
     ui.createBtn.disabled = false;
   }
@@ -1890,62 +1477,57 @@ function joinByCode() {
   go('table-' + code);
 }
 
+/* Rooms you've played in, kept in this browser */
+function recentRooms() {
+  try {
+    const list = JSON.parse(localStorage.getItem('mini-casino.rooms') || '[]');
+    return Array.isArray(list) ? list.filter(r => r && /^[a-z0-9]{4,12}$/.test(r.code)) : [];
+  } catch (e) { return []; }
+}
+function rememberRoom(code, name) {
+  const list = [{ code, name: String(name || 'Blackjack table').slice(0, 28), at: Date.now() }, ...recentRooms().filter(r => r.code !== code)].slice(0, 8);
+  try { localStorage.setItem('mini-casino.rooms', JSON.stringify(list)); } catch (e) { /* storage unavailable */ }
+}
+function forgetRoom(code) {
+  try { localStorage.setItem('mini-casino.rooms', JSON.stringify(recentRooms().filter(r => r.code !== code))); } catch (e) { /* storage unavailable */ }
+}
+
 function renderLobby() {
   ui.lobby.hidden = false;
   ui.tableView.hidden = true;
   let note = '';
-  if (!app.capsReady) note = 'Connecting…';
-  else if (!app.db) note = 'Rooms work when this page is opened on claude.ai while signed in. You can still play solo.';
-  else if (!app.me) note = 'Sign in to claude.ai to create or join rooms. You can still play solo.';
-  else if (app.canWrite === false) note = 'You can watch rooms here. To play, ask the owner of this page to share it with you with edit access.';
+  if (!cloud.ready) note = 'Connecting…';
+  else if (!cloud.on) note = 'Rooms need an internet connection. You can still play solo.';
+  else if (!cloud.user) note = 'Sign in to start a room or join a friend’s. It’s free.';
   ui.lobbyNote.textContent = note;
   ui.lobbyNote.hidden = !note;
-  ui.roomCards.hidden = app.capsReady && !app.db;   // no rooms here at all: just the note
-  const netOK = app.capsReady && !!app.db && !!app.me && app.canWrite !== false;
-  ui.createBtn.disabled = !netOK;
-  ui.roomName.disabled = !netOK;
-  ui.joinBtn.disabled = !(app.capsReady && app.db);
-  ui.joinCode.disabled = !(app.capsReady && app.db);
+  ui.lobbySignin.hidden = !(cloud.ready && cloud.on && !cloud.user);
+  ui.roomCards.hidden = !cloud.user;
+  if (!cloud.user) return;
 
-  const cutoff = Date.now() - 24 * 3600 * 1000;
-  const rooms = app.lobby.filter(t => t && typeof t.code === 'string' && Array.isArray(t.seats) && (t.updated || 0) > cutoff);
-  ensureNames(rooms.flatMap(t => t.seats.filter(Boolean)));
+  const rooms = recentRooms();
   ui.roomList.textContent = '';
-  for (const t of rooms) {
+  for (const r of rooms) {
     const li = document.createElement('li');
     li.className = 'room-item';
     const left = document.createElement('div');
     left.style.minWidth = '0';
     const rn = document.createElement('div');
     rn.className = 'rn';
-    rn.textContent = t.name || 'Blackjack table';
+    rn.textContent = r.name || 'Blackjack table';
     const rm = document.createElement('div');
     rm.className = 'rm';
-    const pips = document.createElement('span');
-    pips.className = 'pips';
-    const seated = t.seats.filter(Boolean);
-    for (let s = 0; s < SEATS; s++) { const i = document.createElement('i'); if (t.seats[s]) i.className = 'on'; pips.appendChild(i); }
-    rm.appendChild(pips);
-    const who = seated.map(u => (u === app.me ? 'you' : (app.names[u] && app.names[u].name) || null)).filter(Boolean);
-    rm.appendChild(document.createTextNode(
-      `${seated.length}/${SEATS} seated` + (who.length ? ' · ' + who.join(', ') : '') + ` · ${String(t.code).toUpperCase()} · ${ago(t.updated)}`
-    ));
+    rm.textContent = `${r.code.toUpperCase()} · ${ago(r.at).replace('active', 'played')}`;
     left.append(rn, rm);
     const btn = document.createElement('button');
-    btn.className = 'btn small' + (t.seats.includes(app.me) ? ' primary' : '');
-    btn.textContent = t.seats.includes(app.me) ? 'Rejoin' : seated.length >= SEATS ? 'Watch' : 'Join';
-    btn.addEventListener('click', () => go('table-' + t.code));
+    btn.className = 'btn small';
+    btn.textContent = 'Open';
+    btn.addEventListener('click', () => go('table-' + r.code));
     li.append(left, btn);
     ui.roomList.appendChild(li);
   }
-  let empty = '';
-  if (!app.capsReady || (app.db && app.lobbyState === 'loading')) empty = 'Looking for rooms…';
-  else if (!app.db) empty = 'Rooms are not available here.';
-  else if (app.lobbyState === 'slow') empty = 'Rooms can’t be reached yet. Check your connection.';
-  else if (app.lobbyState === 'error') empty = 'Rooms could not be loaded. Reload the page to try again.';
-  else if (!rooms.length) empty = 'No rooms in the last day. Start one above and invite a friend.';
-  ui.roomEmpty.textContent = empty;
-  ui.roomEmpty.hidden = !empty;
+  ui.roomEmpty.textContent = rooms.length ? '' : 'Rooms you play in show up here.';
+  ui.roomEmpty.hidden = !!rooms.length;
 }
 function ago(ms) {
   const s = Math.max(0, Math.round((Date.now() - (ms || 0)) / 1000));
@@ -1993,248 +1575,95 @@ function soloApply(m) {
   return m.s;
 }
 
-/* ================= Shared room ================= */
-function enterTable(code) {
+/* ================= Multiplayer rooms =================
+   Each room runs on the server (a Durable Object, src/room.js). This page connects
+   over a WebSocket, sends your moves, and draws whatever table the room sends back. */
+async function enterTable(code) {
   app.view = 'table';
   app.solo = false;
   app.code = code;
   app.inviteOpen = !!app.inviteOpenNext;
   app.inviteOpenNext = false;
   render();
-  if (!app.capsReady || !app.db) return;
-
-  const ref = app.db.doc('tables/' + code);
-  app.tableRef = ref;
+  if (!cloud.ready || !cloud.on || !cloud.user) return;
+  try {
+    const res = await fetch(`/api/rooms/${code}`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (app.code !== code || app.view !== 'table') return;
+    if (res.status === 404) { app.missing = true; forgetRoom(code); render(); return; }
+    if (!res.ok) throw new Error('status ' + res.status);
+  } catch (e) {
+    if (app.code === code) { app.loadErr = 'Couldn’t reach the room. Check your connection.'; render(); }
+    return;
+  }
   const slow = setTimeout(() => { if (!app.T) { app.slow = true; render(); } }, 10000);
   app.unsubs.push(() => clearTimeout(slow));
-  app.unsubs.push(ref.onSnapshot(snap => {
-    clearTimeout(slow);
-    app.slow = false;
-    if (!snap.exists) {
-      if (!snap.metadata.fromCache) { app.missing = true; app.T = null; render(); }
-      return;
-    }
-    const d = snap.data();
-    if (!d || !Array.isArray(d.seats) || !d.players) { app.loadErr = 'This room’s data is damaged.'; render(); return; }
-    app.T = d;
-    if (!snap.metadata.fromCache) app.confirmed = true;
-    onTable();
-  }, err => { app.loadErr = err && err.code === 'revoked' ? '' : 'Lost the connection to this room. Reload to try again.'; render(); }));
+  // Countdowns and "away" labels tick once a second
+  app.timers.push(setInterval(() => { if (app.view === 'table' && !app.solo && app.T) render(); }, 1000));
+  roomConnect(code);
+}
 
-  app.unsubs.push(app.db.collection('moves').where('table', '==', code).onSnapshot(snap => {
-    const m = {};
-    for (const d of snap.docs) { const x = d.data(); if (x && Array.isArray(x.q)) m[d.id] = x.q; }
-    app.moves = m;
-    hostPump();
-  }, () => {}));
-
-  if (app.me) {
-    app.db.doc('moves/' + app.me).get().then(s => {
-      if (app.code !== code) return;
-      const x = s.exists ? s.data() : null;
-      const q = x && Array.isArray(x.q) ? x.q : [];
-      for (const e of q) if (e && e.s > app.seq) app.seq = e.s;
-      if (x && x.table === code && !app.myQ.length) app.myQ = q.map(e => ({ ...e }));
-      app.captured = Math.max(app.captured, ...q.map(e => (e && e.s) || 0));
-    }).catch(() => {});
-  }
-
-  const tick = setInterval(() => {
-    if (app.view !== 'table' || app.solo) return;
-    refreshPeers();
-    recomputePresence();
+function roomConnect(code) {
+  roomDisconnect();
+  const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rooms/${code}/ws`);
+  app.ws = ws;
+  ws.onopen = () => {
+    if (app.ws !== ws) return;
+    app.wsOpen = true;
+    app.wsTries = 0;
+    app.loadErr = '';
+    ws.send(JSON.stringify({ t: 'hello' }));
+    clearInterval(app.pingTimer);
+    app.pingTimer = setInterval(() => { try { ws.send('ping'); } catch (e) { /* closing */ } }, 25000);
     render();
-  }, 1000);
-  app.timers.push(tick);
-  joinRoom(code);
+  };
+  ws.onmessage = e => {
+    if (app.ws !== ws || e.data === 'pong') return;
+    let msg;
+    try { msg = JSON.parse(e.data); } catch (err) { return; }
+    if (!msg || msg.type !== 'state' || !msg.T || !Array.isArray(msg.T.seats)) return;
+    app.T = msg.T;
+    app.present = new Set(msg.present || []);
+    app.names = msg.names || {};
+    app.confirmed = true;
+    app.slow = false;
+    const seen = (msg.T.processed && msg.T.processed[myId()]) || 0;
+    if (seen > app.seq) app.seq = seen;
+    rememberRoom(code, msg.T.name);
+    render();
+  };
+  ws.onclose = () => {
+    if (app.ws !== ws) return;
+    app.ws = null;
+    app.wsOpen = false;
+    clearInterval(app.pingTimer);
+    if (app.view !== 'table' || app.code !== code) return;
+    // Try again straight away, then back off to every 10 seconds
+    const wait = Math.min(10000, 400 * 2 ** app.wsTries++);
+    if (app.wsTries > 2) app.loadErr = 'Reconnecting to the room…';
+    clearTimeout(app.wsTimer);
+    app.wsTimer = setTimeout(() => { if (app.view === 'table' && app.code === code && !document.hidden) roomConnect(code); }, wait);
+    render();
+  };
 }
+function roomDisconnect() {
+  clearTimeout(app.wsTimer);
+  clearInterval(app.pingTimer);
+  const ws = app.ws;
+  app.ws = null;
+  app.wsOpen = false;
+  if (ws) { try { ws.close(1000); } catch (e) { /* already closed */ } }
+}
+// Phones drop connections in the background; reconnect when the page comes back
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && app.view === 'table' && !app.solo && app.code && !app.ws && cloud.user && !app.missing) roomConnect(app.code);
+});
 
-async function joinRoom(code) {
-  if (!app.room) { recomputePresence(); return; }
-  try {
-    const r = await app.room.join('bj-' + code);
-    if (app.code !== code || app.view !== 'table') { r.leave().catch(() => {}); return; }
-    app.nroom = r;
-    app.joinedAt = Date.now();
-    r.presence({ uid: app.me || null }).catch(() => {});
-    app.unsubs.push(r.onPeers(() => { refreshPeers(); recomputePresence(); }, () => {}));
-    app.unsubs.push(r.on('move', msg => { if (!msg.sameTab && msg.by) refreshMoves(msg.by); }, () => {}));
-    app.unsubs.push(r.on('sync', msg => { if (!msg.sameTab) refreshTable(); }, () => {}));
-  } catch (e) {
-    app.nroom = null;
-    recomputePresence();
-  }
-}
-
-function refreshPeers() {
-  if (!app.nroom) return;
-  const now = Date.now();
-  for (const p of app.nroom.peers()) {
-    const u = p.by || (p.presence && typeof p.presence.uid === 'string' ? p.presence.uid : null);
-    if (u) app.lastSeen.set(u, now);
-  }
-}
-function recomputePresence() {
-  let present = null, longAway = null;
-  const now = Date.now();
-  if (app.nroom && now - app.joinedAt > WARM_MS) {
-    present = new Set();
-    longAway = new Set();
-    if (app.me) present.add(app.me);
-    for (const [u, t] of app.lastSeen) if (now - t < AWAY_MS) present.add(u);
-    if (app.T) {
-      for (const u of app.T.seats) {
-        if (u && !present.has(u) && now - (app.lastSeen.get(u) || app.joinedAt) > AWAY_SEAT_MS) longAway.add(u);
-      }
-    }
-  }
-  const key = present ? [...present].sort().join(',') + '|' + [...longAway].sort().join(',') : 'all';
-  if (key === app.presentKey) return;
-  app.presentKey = key;
-  app.present = present;
-  app.longAway = longAway;
-  render();
-  hostPump();
-}
-function refreshMoves(uid) {
-  if (!app.db) return;
-  const code = app.code;
-  app.db.doc('moves/' + uid).get().then(s => {
-    const x = s.exists ? s.data() : null;
-    if (app.code !== code || !x || x.table !== code || !Array.isArray(x.q)) return;
-    app.moves = { ...app.moves, [uid]: x.q };
-    hostPump();
-  }).catch(() => {});
-}
-function refreshTable() {
-  if (!app.tableRef) return;
-  const code = app.code;
-  app.tableRef.get().then(s => {
-    if (app.code !== code || !s.exists) return;
-    const d = s.data();
-    if (d && (d.rev || 0) > ((app.T && app.T.rev) || 0)) { app.T = d; onTable(); }
-  }).catch(() => {});
-}
-function onTable() {
-  const T = app.T;
-  const pm = (T.processed && T.processed[app.me]) || 0;
-  if (pm > app.seq) { app.seq = pm; app.captured = Math.max(app.captured, pm); }
-  render();
-  hostPump();
-}
-
-/* ---- Sending moves: each player appends to their own queue document ---- */
 function send(m) {
   if (app.solo) return soloApply(m);
-  if (!canPlayHere()) return 0;
-  const last = app.myQ[app.myQ.length - 1];
-  if (m.t === 'bet' && last && last.t === 'bet' && last.s > app.captured) {
-    last.a = m.a;
-    m.s = last.s;
-  } else {
-    m.s = ++app.seq;
-    app.myQ.push(m);
-    if (app.myQ.length > 20) app.myQ.splice(0, app.myQ.length - 20);
-  }
-  flushMoves();
+  if (!canPlayHere() || !app.ws) { toast('Reconnecting to the room…'); return 0; }
+  m.s = ++app.seq;
+  try { app.ws.send(JSON.stringify(m)); } catch (e) { return 0; }
   return m.s;
-}
-async function flushMoves(retry = true) {
-  if (app.writing) { app.writeAgain = true; return; }
-  app.writing = true;
-  const code = app.code;
-  let failed = null;
-  try {
-    do {
-      app.writeAgain = false;
-      const q = app.myQ.map(e => ({ ...e }));
-      const top = q.length ? q[q.length - 1].s : 0;
-      app.captured = Math.max(app.captured, top);
-      await app.db.doc('moves/' + app.me).set({ table: code, q, at: Date.now() });
-      if (app.nroom) app.nroom.emit('move', { s: top }).catch(() => {});
-    } while (app.writeAgain && app.code === code);
-  } catch (e) {
-    failed = e || {};
-  } finally {
-    app.writing = false;
-  }
-  if (!failed) return;
-  if (failed.code === 'invalid_argument') { app.readOnly = true; render(); }
-  else if (retry) setTimeout(() => { if (app.code === code) flushMoves(false); }, 900 + Math.random() * 400);
-  else toast('Your move did not reach the room. Try again.');
-}
-
-/* ---- Host: one player's browser applies everyone's moves to the table ---- */
-function hostUid() {
-  const T = app.T;
-  if (!T) return null;
-  const pres = app.present;
-  for (const u of T.seats) if (u && (!pres || pres.has(u))) return u;
-  if (pres) return [...pres].sort()[0] || null;
-  return null;
-}
-function hasWork() {
-  const T = app.T;
-  if (!T) return false;
-  const pr = T.processed || {};
-  for (const [uid, q] of Object.entries(app.moves)) {
-    for (const m of q) if (m && typeof m.s === 'number' && m.s > (pr[uid] || 0)) return true;
-  }
-  const dl = nextDeadline(T, ctxNow());
-  return !!dl && Date.now() >= dl;
-}
-function shouldProcess() {
-  if (app.solo || !app.T || !app.confirmed || !app.me || !app.tableRef || app.canWrite === false || app.readOnly) return false;
-  if (hostUid() === app.me) return true;
-  return !!app.workSince && Date.now() - app.workSince > 5000;
-}
-async function hostPump() {
-  if (app.solo || !app.T) return;
-  if (hasWork()) { if (!app.workSince) app.workSince = Date.now(); } else app.workSince = 0;
-  if (!shouldProcess()) { scheduleHost(); return; }
-  if (app.hostBusy) { app.hostAgain = true; return; }
-  app.hostBusy = true;
-  const code = app.code;
-  try {
-    do {
-      app.hostAgain = false;
-      const base = app.T;
-      const T = clone(base);
-      T.processed = T.processed || {};
-      const ctx = ctxNow();
-      for (const uid of Object.keys(app.moves).sort()) {
-        for (const m of app.moves[uid]) {
-          if (!m || typeof m.s !== 'number' || m.s <= (T.processed[uid] || 0)) continue;
-          try { applyIntent(T, uid, m, ctx); } catch (e) { /* ignore a malformed move */ }
-          T.processed[uid] = m.s;
-          autoAdvance(T, ctx);
-        }
-      }
-      autoAdvance(T, ctx);
-      if (JSON.stringify(T) !== JSON.stringify(base)) {
-        T.rev = (base.rev || 0) + 1;
-        T.updated = ctx.now;
-        app.T = T;
-        render();
-        await app.tableRef.set(T);
-        if (app.nroom) app.nroom.emit('sync', { rev: T.rev }).catch(() => {});
-      }
-      app.workSince = 0;
-    } while (app.hostAgain && app.code === code);
-  } catch (e) {
-    if (e && e.code === 'invalid_argument') { app.readOnly = true; render(); }
-  } finally {
-    app.hostBusy = false;
-  }
-  scheduleHost();
-}
-function scheduleHost() {
-  clearTimeout(app.hostTimer);
-  clearTimeout(app.backupTimer);
-  if (app.solo || !app.T) return;
-  const dl = nextDeadline(app.T, ctxNow());
-  if (dl && dl > Date.now()) app.hostTimer = setTimeout(hostPump, dl - Date.now() + 80);
-  if (app.workSince) app.backupTimer = setTimeout(hostPump, 5200);
 }
 
 /* ================= Player actions ================= */
@@ -2330,18 +1759,9 @@ function rebuy() {
 const wallet = { balance: 0, withdrawn: 0, count: 0, log: [], ready: false, ref: null, local: false, writing: false, again: false };
 
 function walletInit() {
-  if (app.db && app.me) {
-    wallet.ref = app.db.doc(`data/users/${app.me}/wallet`);
-    wallet.ref.onSnapshot(s => {
-      walletLoad(s.exists ? s.data() : null);
-      wallet.ready = true;
-      render();
-    }, () => { wallet.ready = true; render(); });
-  } else {
-    wallet.local = true;
-    try { walletLoad(JSON.parse(localStorage.getItem('mini-casino.wallet') || 'null')); } catch (e) { /* storage unavailable */ }
-    wallet.ready = true;
-  }
+  wallet.local = true;
+  try { walletLoad(JSON.parse(localStorage.getItem('mini-casino.wallet') || 'null')); } catch (e) { /* storage unavailable */ }
+  wallet.ready = true;
 }
 function walletLoad(d) {
   if (!d) return;
@@ -2951,11 +2371,11 @@ function renderRoulette() {
 /* ================= Cloud saves (Cloudflare site, Neon backend) =================
    Only the Cloudflare deployment has /api. On claude.ai the page keeps using
    claude.ai's own storage, and opened as a plain file it stays in this browser. */
-const cloud = { on: false, user: null, version: 0, timer: 0, saving: false, again: false, applying: false, state: '' };
+const cloud = { ready: false, on: false, user: null, version: 0, timer: 0, saving: false, again: false, applying: false, state: '' };
 
 async function cloudInit() {
-  if (window.claude && typeof window.claude.use === 'function') return;
-  if (!/^https?:$/.test(location.protocol)) return;
+  const done = () => { cloud.ready = true; route(); };
+  if (!/^https?:$/.test(location.protocol)) { done(); return; }
 
   // Back from "Continue with Google": trade the one-time verifier for a session cookie on this site
   const params = new URLSearchParams(location.search);
@@ -2964,7 +2384,10 @@ async function cloudInit() {
   if (verifier || googleFailed) {
     const clean = new URL(location.href);
     for (const k of [VERIFIER_PARAM, 'signin', 'error', 'error_description']) clean.searchParams.delete(k);
-    history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+    // Go back to where sign-in started (a room invite, say)
+    let back = '';
+    try { back = sessionStorage.getItem('mini-casino.return') || ''; sessionStorage.removeItem('mini-casino.return'); } catch (e) { /* storage unavailable */ }
+    history.replaceState(null, '', clean.pathname + clean.search + (clean.hash || (/^#[\w-]+$/.test(back) ? back : '')));
   }
   if (verifier) {
     try {
@@ -2974,12 +2397,12 @@ async function cloudInit() {
 
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin', headers: { accept: 'application/json' } });
-    if (!res.ok || !(res.headers.get('content-type') || '').includes('application/json')) return;
+    if (!res.ok || !(res.headers.get('content-type') || '').includes('application/json')) { done(); return; }
     const d = await res.json();
     cloud.on = true;
     cloud.user = d && d.user ? d.user : null;
-  } catch (e) { return; }
-  render();
+  } catch (e) { done(); return; }
+  done();
   if (verifier && cloud.user) toast(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
   else if (verifier || googleFailed) toast('Google sign-in didn’t finish. Try again.');
   if (cloud.user) await cloudPull();
@@ -3003,6 +2426,7 @@ async function googleSignIn() {
   const btns = document.querySelectorAll('.google-btn');
   btns.forEach(b => { b.disabled = true; });
   buzz();
+  try { sessionStorage.setItem('mini-casino.return', location.hash); } catch (e) { /* storage unavailable */ }
   try {
     const res = await fetch('/api/auth/sign-in/social', {
       method: 'POST',
@@ -3060,7 +2484,7 @@ function cloudApply(data) {
   render();
 }
 async function cloudPull() {
-  if (!cloud.on || !cloud.user) return;
+  if (!cloud.on || !cloud.user || cloud.user.dev) return;   // local test players have no cloud save
   cloud.state = 'loading';
   render();
   try {
@@ -3077,7 +2501,7 @@ async function cloudPull() {
   render();
 }
 function cloudMarkDirty() {
-  if (!cloud.on || !cloud.user || cloud.applying) return;
+  if (!cloud.on || !cloud.user || cloud.user.dev || cloud.applying) return;
   clearTimeout(cloud.timer);
   cloud.timer = setTimeout(() => cloudPush(), 1500);
   if (cloud.state !== 'saving') { cloud.state = 'saving'; if (app.view === 'home') render(); }
@@ -3213,6 +2637,7 @@ async function authSubmit(e) {
     cloud.user = { id: d.user.id, name: d.user.name || '', email: d.user.email || '' };
     cloud.version = 0;
     closeAuth();
+    route();
     toast(up ? 'Account created. Your progress now saves to it.' : `Signed in as ${cloud.user.name || cloud.user.email}`);
     await cloudPull();
   } catch (err) {
@@ -3230,7 +2655,7 @@ async function signOut() {
   cloud.version = 0;
   cloud.state = '';
   toast('Signed out. This browser keeps a copy of your progress.');
-  render();
+  route();
 }
 function myTurnHand() {
   const T = app.T;
@@ -3375,21 +2800,6 @@ function totalText(cards, showSoft) {
   return String(total);
 }
 
-function ensureNames(ids) {
-  if (!app.user || app.namesPending) return;
-  const missing = [...new Set(ids)].filter(id => id && id !== SOLO_ID && !(id in app.names));
-  if (!missing.length) return;
-  app.namesPending = true;
-  app.user.profiles(missing).then(ps => {
-    for (const id of missing) {
-      const p = ps && ps[id];
-      app.names[id] = { name: (p && p.name) || '', avatar: (p && p.avatarUrl) || '' };
-    }
-  }).catch(() => {
-    for (const id of missing) app.names[id] = { name: '', avatar: '' };
-  }).finally(() => { app.namesPending = false; render(); });
-}
-
 function render() {
   const v = app.view;
   ui.home.hidden = v !== 'home';
@@ -3461,20 +2871,22 @@ function renderTable() {
     ui.inviteLink.value = link || 'Use Share → Copy link while this room is open';
     ui.copyBtn.disabled = !link;
     ui.shareBtn.hidden = !link || typeof navigator.share !== 'function';
-    ui.inviteHelp.textContent = 'Your friend needs access to this page as well: in Claude, open Share and invite them by email with edit access. People who open it through a public link can only watch.';
+    ui.inviteHelp.textContent = 'Send this link to up to three friends. They sign in (it’s free) and pick a seat. Anyone with the link can watch.';
   }
 
   // Loading and error states
   let note = '';
   if (!app.solo) {
-    if (!app.capsReady) note = 'Connecting to the room…';
-    else if (!app.db) note = 'Rooms work when this page is opened on claude.ai while signed in.';
+    if (!cloud.ready) note = 'Connecting…';
+    else if (!cloud.on) note = 'Rooms need an internet connection.';
+    else if (!cloud.user) note = 'Sign in to join this room. It’s free.';
     else if (app.missing) note = 'This room doesn’t exist. Check the code or start a new room.';
     else if (app.loadErr) note = app.loadErr;
     else if (!T) note = app.slow ? 'The room can’t be reached yet. Check your connection.' : 'Opening the room…';
   }
   ui.tNote.textContent = note;
   ui.tNote.hidden = !note;
+  ui.tSignin.hidden = app.solo || !(cloud.ready && cloud.on && !cloud.user);
   ui.game.hidden = !T;
   ui.bankPill.hidden = !T || mySeat() < 0;
   if (!T) { ui.chipsPanel.hidden = true; return; }
@@ -3499,7 +2911,6 @@ function renderTable() {
   }
 
   // Seats
-  ensureNames(T.seats.filter(Boolean));
   renderSeats(T, R, ctx, anim);
 
   for (const k of [...cardEls.keys()]) if (!anim.used.has(k)) cardEls.delete(k);
@@ -3587,11 +2998,8 @@ function renderSeats(T, R, ctx, anim) {
     if (!uid || !P) { q('.timer').hidden = true; continue; }
 
     // Name, presence, bank, status
-    const n = app.names[uid];
-    const av = q('.avatar');
-    const url = n && n.avatar ? n.avatar : '';
-    av.style.backgroundImage = url ? `url("${url.replace(/"/g, '%22')}")` : '';
-    q('.pname').textContent = uid === me ? ((app.names[uid] && app.names[uid].name) || 'You') : nameOf(uid, s);
+    q('.avatar').textContent = (app.names[uid] || '?').charAt(0).toUpperCase();
+    q('.pname').textContent = uid === me ? 'You' : nameOf(uid, s);
     q('.you').hidden = uid !== me;
     const here = isPresent(ctx, uid);
     q('.dot').className = 'dot' + (here ? '' : ' away');
@@ -3701,8 +3109,8 @@ function renderControls(T, R, ctx) {
 
   if (!app.solo && (!playable || seat < 0)) {
     let text;
-    if (!app.me) text = 'Sign in to claude.ai to take a seat.';
-    else if (!playable) text = 'You can watch this room. To play, ask the owner of this page to share it with you with edit access.';
+    if (!cloud.user) text = 'Sign in to take a seat.';
+    else if (!playable) text = 'Connecting to the room…';
     else if (T.seats.some(u => !u)) text = 'Pick an empty seat to join the game.';
     else text = 'All four seats are taken. You’re watching.';
     ui.infoText.textContent = text;
@@ -3780,6 +3188,10 @@ ui.balanceBtn.addEventListener('click', () => go('bank'));
 ui.homeBank.addEventListener('click', () => go('bank'));
 ui.authForm.addEventListener('submit', authSubmit);
 googleButton(ui.authGoogle);
+googleButton(ui.lobbyGoogle);
+googleButton(ui.tGoogle);
+ui.lobbyEmail.addEventListener('click', () => openAuth('in'));
+ui.tEmail.addEventListener('click', () => openAuth('in'));
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
 ui.authClose.addEventListener('click', closeAuth);
 ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
@@ -3899,20 +3311,6 @@ async function boot() {
   buildTiles();
   buildRoulette();
   window.addEventListener('hashchange', () => { app.hashOverride = null; route(); });
-  route();
-  const C = window.claude;
-  if (C && typeof C.use === 'function') {
-    const safe = p => Promise.resolve(p).catch(() => null);
-    const [db, user, room] = await Promise.all([safe(C.use('db')), safe(C.use('user')), safe(C.use('room'))]);
-    app.db = db;
-    app.user = user;
-    app.room = room;
-    if (user) {
-      try { app.me = await user.id(); } catch (e) { app.me = null; }
-      try { app.canWrite = await user.can('data.write'); } catch (e) { app.canWrite = null; }
-    }
-  }
-  app.capsReady = true;
   walletInit();
   route();
   cloudInit();

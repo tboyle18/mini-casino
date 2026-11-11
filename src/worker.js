@@ -6,8 +6,15 @@
 //   /api/me      who is signed in
 //   /api/save    the signed-in player's wallet, roulette and solo-blackjack save,
 //                stored in Neon Postgres (table: saves)
+//   /api/rooms   multiplayer blackjack: POST creates a room, /api/rooms/{code} says
+//                whether it exists, /api/rooms/{code}/ws connects to it. Each room
+//                is a Durable Object (src/room.js).
 
 import { neon } from '@neondatabase/serverless';
+import { makeCode } from './rules.js';
+import { TableRoom } from './room.js';
+
+export { TableRoom };
 
 // /sign-in/social starts "Continue with Google". Neon sends the player back to this site with a
 // one-time verifier; the page trades it for a session through /get-session, still via this proxy.
@@ -22,6 +29,9 @@ export default {
       if (url.pathname.startsWith('/api/auth/')) return await proxyAuth(request, env, url);
       if (url.pathname === '/api/me') return await me(request, env, url);
       if (url.pathname === '/api/save') return await save(request, env, url);
+      if (url.pathname === '/api/rooms') return await createRoom(request, env, url);
+      const room = url.pathname.match(/^\/api\/rooms\/([a-z0-9]{4,12})(\/ws)?$/);
+      if (room) return await roomRoute(request, env, url, room[1], !!room[2]);
       return json({ error: 'not_found' }, 404);
     } catch (err) {
       console.error('api error', url.pathname, err && err.stack ? err.stack : err);
@@ -74,7 +84,19 @@ function sameOrigin(request, url) {
   return !origin || origin === url.origin;
 }
 
+/* Local testing only: with DEV_AUTH=1 in .dev.vars, a `dev_user=alice` cookie on
+   localhost signs you in as a fake player. Never active on the deployed site. */
+function devUser(request, env, url) {
+  if (env.DEV_AUTH !== '1' || !['localhost', '127.0.0.1'].includes(url.hostname)) return null;
+  const m = /(?:^|;\s*)dev_user=([a-z0-9]{1,20})/i.exec(request.headers.get('cookie') || '');
+  if (!m) return null;
+  const n = m[1].toLowerCase();
+  return { id: 'dev-' + n, name: `${n[0].toUpperCase()}${n.slice(1)} Tester`, email: '', dev: true };
+}
+
 async function currentUser(request, env, url) {
+  const dev = devUser(request, env, url);
+  if (dev) return dev;
   const cookie = request.headers.get('cookie');
   if (!cookie) return null;
   const res = await fetch(authBase(env) + '/get-session', {
@@ -88,7 +110,7 @@ async function currentUser(request, env, url) {
 /* ---------- API ---------- */
 async function me(request, env, url) {
   const user = await currentUser(request, env, url);
-  return json({ user: user ? { id: user.id, name: user.name || '', email: user.email || '' } : null });
+  return json({ user: user ? { id: user.id, name: user.name || '', email: user.email || '', ...(user.dev ? { dev: true } : {}) } : null });
 }
 
 async function save(request, env, url) {
@@ -99,6 +121,7 @@ async function save(request, env, url) {
   }
   const user = await currentUser(request, env, url);
   if (!user) return json({ error: 'signed_out' }, 401);
+  if (user.dev) return json({ error: 'dev_user' }, 403);   // test players never touch the real database
   const sql = neon(env.DATABASE_URL);
 
   if (request.method === 'GET') return json(await readSave(sql, user.id));
@@ -141,4 +164,53 @@ export async function writeSave(sql, userId, data, base) {
     returning version`;
   if (rows.length) return { ok: true, version: rows[0].version };
   return { ok: false, conflict: true, ...(await readSave(sql, userId)) };
+}
+
+/* ---------- Multiplayer rooms ---------- */
+
+// First name and last initial: shown to everyone at the table
+function displayName(user) {
+  const parts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'Player';
+  const name = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+  return name.slice(0, 24);
+}
+
+const roomStub = (env, code) => env.ROOMS.get(env.ROOMS.idFromName(code));
+const randomUnit = () => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
+const randomSeed = () => [...crypto.getRandomValues(new Uint8Array(8))].map(b => b.toString(16).padStart(2, '0')).join('');
+
+async function createRoom(request, env, url) {
+  if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!sameOrigin(request, url)) return json({ error: 'bad_origin' }, 403);
+  const user = await currentUser(request, env, url);
+  if (!user) return json({ error: 'signed_out' }, 401);
+  const body = await request.json().catch(() => ({}));
+  const name = String((body && body.name) || '').replace(/\s+/g, ' ').trim().slice(0, 28) || 'Blackjack table';
+  for (let i = 0; i < 6; i++) {
+    const code = makeCode(randomUnit);
+    const res = await roomStub(env, code).fetch('https://room/init', {
+      method: 'POST',
+      body: JSON.stringify({ code, name, seed: randomSeed(), uid: user.id, display: displayName(user) }),
+    });
+    if (res.status === 409) continue;   // that code is taken; try another
+    return json(await res.json());
+  }
+  return json({ error: 'busy' }, 503);
+}
+
+async function roomRoute(request, env, url, code, isSocket) {
+  const stub = roomStub(env, code);
+  if (!isSocket) {
+    const res = await stub.fetch('https://room/info');
+    return json(await res.json(), res.status);
+  }
+  if (request.headers.get('upgrade') !== 'websocket') return json({ error: 'websocket_required' }, 426);
+  if (request.headers.get('origin') !== url.origin) return json({ error: 'bad_origin' }, 403);
+  const user = await currentUser(request, env, url);
+  if (!user) return json({ error: 'signed_out' }, 401);
+  const headers = new Headers(request.headers);
+  headers.set('x-user-id', user.id);
+  headers.set('x-user-name', displayName(user));
+  return stub.fetch(new Request('https://room/ws', { headers }));
 }

@@ -1,12 +1,12 @@
 // Builds the static site Cloudflare serves from ./dist.
 //
-// mini-casino.html is written as a claude.ai artifact: claude.ai wraps it in a
-// document skeleton at publish time, so the file itself has no doctype, <head>
-// or viewport tag. This script adds that skeleton plus everything that makes the
-// Cloudflare site an installable PWA: the web app manifest, app icons, iOS home
-// screen tags and the service worker.
+// mini-casino.html is the page body (styles, markup and script) without a
+// document skeleton. This script adds the skeleton plus everything that makes
+// the site an installable PWA (manifest, icons, iOS home screen tags, service
+// worker), and inlines the blackjack rules from src/rules.js, which the room
+// server (src/worker.js) imports too.
 
-import { cp, mkdir, readFile, readdir, rm, writeFile, copyFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
@@ -53,13 +53,15 @@ async function listFiles(dir) {
   return files.flat();
 }
 
-const body = await readFile(join(root, 'mini-casino.html'), 'utf8');
+const page = await readFile(join(root, 'mini-casino.html'), 'utf8');
+const rules = (await readFile(join(root, 'src', 'rules.js'), 'utf8')).replace(/^export /gm, '');
+if (!page.includes('/* @@RULES@@ */')) throw new Error('mini-casino.html is missing its /* @@RULES@@ */ marker');
+const body = page.replace('/* @@RULES@@ */', () => rules);
 
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 await cp(join(root, 'public'), out, { recursive: true });
 await writeFile(join(out, 'index.html'), `${head}\n${body}\n</body>\n</html>\n`);
-await copyFile(join(root, 'blackjack.html'), join(out, 'blackjack.html'));
 
 // Version the service worker by the content of every file, its own code included
 // (hashed before the version is filled in).

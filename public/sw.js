@@ -4,7 +4,6 @@ const VERSION = '__BUILD_VERSION__';
 const CACHE = `mini-casino-${VERSION}`;
 const PRECACHE = [
   '/',
-  '/blackjack',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
