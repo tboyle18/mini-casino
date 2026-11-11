@@ -4,8 +4,8 @@
 // document skeleton. This script adds the skeleton plus everything that makes
 // the site an installable PWA (manifest, icons, iOS home screen tags, service
 // worker), and inlines the blackjack rules from src/rules.js, which the room
-// server (src/worker.js) imports too, plus video poker (src/poker.js) and baccarat
-// (src/baccarat.js).
+// server (src/worker.js) imports too, plus video poker (src/poker.js), baccarat
+// (src/baccarat.js) and Casino War (src/war.js).
 // It also bundles the graphics lab (lab/, served at /lab/) with its packages
 // (Three.js, cannon-es, GSAP, canvas-confetti).
 
@@ -65,7 +65,9 @@ const poker = (await readFile(join(root, 'src', 'poker.js'), 'utf8')).replace(/^
 if (!page.includes('/* @@POKER@@ */')) throw new Error('mini-casino.html is missing its /* @@POKER@@ */ marker');
 const baccarat = (await readFile(join(root, 'src', 'baccarat.js'), 'utf8')).replace(/^export /gm, '');
 if (!page.includes('/* @@BACCARAT@@ */')) throw new Error('mini-casino.html is missing its /* @@BACCARAT@@ */ marker');
-const body = page.replace('/* @@RULES@@ */', () => rules).replace('/* @@POKER@@ */', () => poker).replace('/* @@BACCARAT@@ */', () => baccarat);
+const war = (await readFile(join(root, 'src', 'war.js'), 'utf8')).replace(/^export /gm, '');
+if (!page.includes('/* @@WAR@@ */')) throw new Error('mini-casino.html is missing its /* @@WAR@@ */ marker');
+const body = page.replace('/* @@RULES@@ */', () => rules).replace('/* @@POKER@@ */', () => poker).replace('/* @@BACCARAT@@ */', () => baccarat).replace('/* @@WAR@@ */', () => war);
 
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
