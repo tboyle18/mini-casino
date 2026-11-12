@@ -630,9 +630,6 @@
   .floor-cta .fc-sub { grid-column: 1; color: var(--ink-2); font-size: 13px; }
   .floor-cta .fc-go { grid-column: 2; grid-row: 1 / span 3; color: var(--gold); font-size: 28px; font-weight: 700; }
   .floor-cta .fc-k { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
-  .fl-hops { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; }
-  .fl-hops[hidden] { display: none; }
-  html.fl-seat .balance-label { display: none; }   /* room for the station's name */
   /* The floor goes edge to edge, under the status bar and the home indicator. Nothing sits on a
      bar: the buttons, your balance and the Sit button float over the 3D room. */
   html.floor, html.floor body::before { background: #07040c; }
@@ -655,10 +652,6 @@
   html.floor #floor-view .dock .ag-controls > * { pointer-events: auto; }
   html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 76px); background: rgba(62, 52, 76, .82); box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .3), 0 6px 18px rgba(0, 0, 0, .4); }
   html.floor #fl-info { text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 12px rgba(0, 0, 0, .8); }
-  .fl-hop { flex: none; width: 34px; height: 34px; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .08); color: var(--gold); font: 800 20px/1 inherit; cursor: pointer; }
-  .fl-hop:active { transform: scale(.94); }
-  .fl-hop:disabled { opacity: .3; }
-  .fl-here { min-width: 0; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; font-size: 13px; text-align: center; }
   .lbw:active { transform: scale(.99); }
   .lbw-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 15px; }
   .lbw-go { color: var(--gold); font-size: 13px; font-weight: 700; }
@@ -853,7 +846,10 @@
   .felt.three { background: none; box-shadow: none; border-radius: 0; margin-bottom: 0; }
   .felt.three > .tray, .felt.three > .shoe, .felt.three > .felt-print, .felt.three > .dealer, .felt.three > .others, .felt.three > .my-seat { visibility: hidden; }
   .felt.three > .mid { position: relative; z-index: 2; }
-  .felt.three .msg:has(.title:not(:empty)) { padding: 6px 16px 8px; border-radius: 14px; background: rgba(6, 30, 18, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .felt.three .msg:has(.title:not(:empty)) { padding: 8px 18px 10px; border-radius: 14px; background: rgba(8, 22, 15, .92); box-shadow: 0 6px 20px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(240, 230, 208, .14); }
+  .felt.three.betting .msg { visibility: hidden; }
+  .felt.t3-wait { background: radial-gradient(ellipse 150% 110% at 50% 18%, #145c3c 0%, #0b4029 60%, #062a1b 100%); }
+  .felt.t3-wait > .mid { visibility: hidden; }
   .t3-labels { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
   .t3-label { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; padding: 2px 0; will-change: transform; }
   .t3-label .badge { font-size: 17px; box-shadow: 0 2px 8px rgba(0, 0, 0, .45); }
@@ -1515,7 +1511,6 @@
   <header class="appbar" id="casino-bar">
     <div class="appbar-in">
       <button class="back" id="home-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="back-label">Home</span></button>
-      <div class="fl-hops" id="fl-hops" hidden><button class="fl-hop" id="fl-prev">‹</button><span class="fl-here" id="fl-here"></span><button class="fl-hop" id="fl-next">›</button></div>
       <div class="bar-title" id="bar-title" hidden><span class="bt-main" id="t-name"></span><span class="bt-sub" id="t-code"></span></div>
       <div class="bar-right">
         <button class="barbtn help" id="help-btn" aria-label="How to play" title="How to play" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.1"/></svg></button>
@@ -2747,7 +2742,7 @@ const ui = {
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
   gateView: $('gate-view'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
   floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
-  flHops: $('fl-hops'), flPrev: $('fl-prev'), flNext: $('fl-next'), flHere: $('fl-here'),
+
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
   pfDaily: $('pf-daily'), pfLearn: $('pf-learn'), pfVibe: $('pf-vibe'), pfHints: $('pf-hints'),
@@ -2958,6 +2953,22 @@ function teardown() {
   ui.game.classList.remove('animating');
 }
 
+/* Leaving a game ends it: a finished hand's cards and result don't wait for you to come back.
+   A hand still in play (money down, a decision to make) stays, so nothing is lost. */
+function gameLeft(v) {
+  if (v === 'roulette') rlFresh();
+  else if (v === 'table') {
+    const R = soloT && soloT.round;
+    if (R && R.over) { solo.hide = R.n; soloT = { ...soloT, round: null }; }
+    app.renderedRound = -1;
+  }
+  else if (v === 'poker' && vp.phase === 'done') { vp.phase = 'bet'; vp.result = null; vp.hand = []; vp.held = [false, false, false, false, false]; vpSave(); }
+  else if (v === 'baccarat' && !bc.busy) { bcFresh(); ui.bcPcards.textContent = ''; ui.bcBcards.textContent = ''; ui.bcPt.textContent = ''; ui.bcBt.textContent = ''; }
+  else if (v === 'war') wrFresh();
+  else if (v === 'threecard') tcFresh();
+  else if (v === 'reddog') rdFresh();
+}
+
 /* ================= Lobby ================= */
 function enterLobby() {
   app.view = 'lobby';
@@ -3065,6 +3076,7 @@ const solo = { queue: Promise.resolve(), seq: 0 };
 function soloTake(T) {
   if (!T || !Array.isArray(T.seats) || !T.players || !T.players[SOLO_ID]) return;
   if (soloT && (T.rev || 0) < (soloT.rev || 0)) return;
+  if (T.round && T.round.over && T.round.n === solo.hide) T = { ...T, round: null };   // a hand you walked away from
   soloT = T;
   const seen = (T.processed && T.processed[SOLO_ID]) || 0;
   if (seen > solo.seq) solo.seq = seen;
@@ -4044,6 +4056,7 @@ async function rlSpin() {
   rl.asking = true;
   render();
   const r = await api('roulette', 'spin', { bets }, r => r.payout);   // the win shows when the ball lands
+  if (r && !rl3d.inst && !rl3d.off) await Promise.race([rl3dEnsure(), new Promise(ok => setTimeout(ok, 8000))]);   // spin on the 3D wheel, not the flat one
   rl.asking = false;
   if (!r) { render(); return; }
   rl.live = { bets, total, result: r.result, payout: r.payout };
@@ -4069,13 +4082,14 @@ async function rlSpin() {
 /* The 3D wheel (lab/roulette.js) for the full-screen spin, loaded when the roulette screen
    opens. It plays a recorded physics spin made to land on the server's number. Without
    WebGL, with reduced motion or data saver, or if it fails, the flat wheel spins instead. */
-const rl3d = { inst: null, loading: false, off: false };
+const rl3d = { inst: null, loading: null, off: false };
 async function rl3dEnsure() {
-  if (rl3d.inst || rl3d.loading || rl3d.off) return;
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const c = navigator.connection;
-  if (reduce || (c && c.saveData)) { rl3d.off = true; return; }
-  rl3d.loading = true;
+  if (rl3d.inst || rl3d.off) return;
+  if (rl3d.loading) return rl3d.loading;
+  rl3d.loading = rl3dLoad();
+  return rl3d.loading;
+}
+async function rl3dLoad() {
   try {
     const mod = await import('/lab/embed.js');
     const wheel = await mod.roulette();
@@ -4086,7 +4100,7 @@ async function rl3dEnsure() {
     if (staleReload(e)) return;   // an update went out while the app was open
     rl3d.off = true;
   } finally {
-    rl3d.loading = false;
+    rl3d.loading = null;
   }
 }
 // Leaving roulette frees the 3D wheel; a spin it was showing settles straight away
@@ -5599,15 +5613,6 @@ function floorSit(id) {
   go(FLOOR_GO[id]);
   if (id === 'cashier' && bonusReady()) claimDaily('cashier');   // the cashier pays out today's bonus
 }
-function floorHop(dir) {
-  const seat = floorSeat();
-  const to = seat && FLOOR_ORDER[FLOOR_ORDER.indexOf(seat) + dir];
-  if (!to) return;
-  buzz(8);
-  fl.start = { at: seat, hop: to };
-  app.fromFloor = null;
-  go('floor');
-}
 async function floorEnsure() {
   if (fl.inst || fl.loading) return;
   const mine = ++fl.token;
@@ -6472,6 +6477,7 @@ function totalText(cards, showSoft) {
 
 function render() {
   const v = app.view;
+  if (app.lastView !== v) { if (app.lastView) gameLeft(app.lastView); app.lastView = v; }
   ui.home.hidden = v !== 'home';
   ui.arcadeView.hidden = v !== 'arcade';
   ui.arcadeGameView.hidden = v !== 'arcadegame';
@@ -6519,16 +6525,7 @@ function render() {
     : 'Casino';
   ui.helpBtn.hidden = !HELP_FOR[v] && v !== 'arcadegame';
   ui.barTitle.hidden = v !== 'table' || !!seat;
-  ui.flHops.hidden = !seat;
   document.documentElement.classList.toggle('fl-seat', !!seat);
-  if (seat) {
-    const i = FLOOR_ORDER.indexOf(seat);
-    ui.flHere.textContent = FLOOR_NAME[seat];
-    ui.flPrev.disabled = i <= 0;
-    ui.flNext.disabled = i >= FLOOR_ORDER.length - 1;
-    ui.flPrev.setAttribute('aria-label', i > 0 ? `Move to ${FLOOR_NAME[FLOOR_ORDER[i - 1]]}` : 'Previous station');
-    ui.flNext.setAttribute('aria-label', i < FLOOR_ORDER.length - 1 ? `Move to ${FLOOR_NAME[FLOOR_ORDER[i + 1]]}` : 'Next station');
-  }
   if (v === 'floor') renderFloorHud(); else flPopClose();
   ui.homeBtn.hidden = v === 'floor';   // the floor is home: the HUD's 2D button leads out
   ui.tableTools.hidden = v !== 'table';
@@ -6796,9 +6793,12 @@ function renderTable() {
   renderMessage(T, R, ctx);
   renderControls(T, R, ctx);
 
-  const three = !!(app.solo && bj3d.inst);
+  // The 3D table is the game: while it loads the felt stays empty rather than flashing the flat cards
+  const three = !!(app.solo && !bj3d.off);
   ui.felt.classList.toggle('three', three);
-  if (three) bj3d.inst.update(bj3dView(T, R));
+  ui.felt.classList.toggle('t3-wait', three && !bj3d.inst);
+  ui.felt.classList.toggle('betting', T.phase === 'betting' && !(R && R.over));
+  if (three && bj3d.inst) bj3d.inst.update(bj3dView(T, R));
 
   const st = P ? P.stats : null;
   ui.stats.textContent = st ? `Won ${st.w} · Lost ${st.l} · Pushed ${st.p} · Blackjacks ${st.bj}` : '';
@@ -6811,9 +6811,6 @@ function renderTable() {
 const bj3d = { inst: null, loading: false, off: false };
 async function bj3dEnsure() {
   if (bj3d.inst || bj3d.loading || bj3d.off) return;
-  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const c = navigator.connection;
-  if (reduce || (c && c.saveData)) { bj3d.off = true; return; }
   bj3d.loading = true;
   try {
     const mod = await import('/lab/embed.js');
@@ -6824,12 +6821,13 @@ async function bj3dEnsure() {
   } catch (e) {
     if (staleReload(e)) return;   // an update went out while the app was open
     bj3d.off = true;
+    render();   // no WebGL here: the flat table takes over
   } finally {
     bj3d.loading = false;
   }
 }
 function bj3dDrop() {
-  ui.felt.classList.remove('three');
+  ui.felt.classList.remove('three', 't3-wait');
   if (!bj3d.inst) return;
   const inst = bj3d.inst;
   bj3d.inst = null;
@@ -7132,8 +7130,6 @@ ui.homeBtn.addEventListener('click', () => {
 });
 ui.helpBtn.addEventListener('click', openHelp);
 ui.floorCta.addEventListener('click', () => { buzz(6); go('floor'); });
-ui.flPrev.addEventListener('click', () => floorHop(-1));
-ui.flNext.addEventListener('click', () => floorHop(1));
 ui.pfLearn.addEventListener('click', () => {
   if (flPop.kind === 'acct') app.learnBack = { hash: 'floor', label: 'Floor' };   // How to play leads back to the floor
   go('learn');
