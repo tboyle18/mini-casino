@@ -12,7 +12,7 @@ import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, cas
 import { EMOJI, canvas, tex, carpetCanvas, signCanvas, duckGeometry } from './arcade.js';
 
 const TAU = Math.PI * 2;
-const ROOM = { x0: -9.2, x1: 9.2, z0: -4.4, z1: 7 };   // the part of the floor the map shows
+const ROOM = { x0: -11.6, x1: 11.6, z0: -4.4, z1: 7 };   // the part of the floor the map shows
 const MID = (ROOM.x0 + ROOM.x1) / 2, SPAN = ROOM.x1 - ROOM.x0;
 const FOV = 55;
 
@@ -21,26 +21,26 @@ const FOV = 55;
    look is the height the camera aims at; seat is [distance, height] of the seated view. */
 const CARD = { w: 2.1, h: 1.1, look: 0.72, seat: [1.25, 1.45] };   // the half-moon card tables
 const STATIONS = [
-  { id: 'table', name: 'Blackjack', blurb: 'Beat the dealer to 21', color: '#5ee08a', pos: [-7.7, -0.7], yaw: 0.35, ...CARD },
-  { id: 'threecard', name: 'Three Card Poker', blurb: 'Your three cards against the dealer’s', color: '#6bb8ff', pos: [-5.6, -1.7], yaw: 0.2, ...CARD },
-  { id: 'war', name: 'Casino War', blurb: 'One card each. High card wins', color: '#ff8a5c', pos: [-3.5, -0.6], yaw: 0.1, ...CARD },
-  { id: 'reddog', name: 'Red Dog', blurb: 'Will the third card fall between?', color: '#ff6b9a', pos: [-1.4, -1.7], yaw: 0.05, ...CARD },
-  { id: 'roulette', name: 'Roulette', blurb: 'Spin the real-physics wheel', color: '#ff5d6c', pos: [1, -1.9], yaw: 0, w: 2.5, h: 1.1, look: 0.78, seat: [1.15, 1.55] },
-  { id: 'baccarat', name: 'Baccarat', blurb: 'Player or Banker, closest to 9', color: '#c9a2ff', pos: [3.6, -0.6], yaw: -0.1, w: 2.7, h: 1.1, look: 0.72, seat: [1.3, 1.5] },
-  { id: 'poker', name: 'Video Poker', blurb: 'Hold, draw, and hope for a royal', color: '#5ee0e0', pos: [5.5, -1.7], yaw: -0.2, w: 1.3, h: 2.7, look: 1.15, seat: [1, 1.3] },
-  { id: 'slots', name: 'Lucky Duck 3000', blurb: 'Pull the lever. The duck is wild', color: '#ffd23f', pos: [7, -0.5], yaw: -0.3, w: 1.2, h: 2.3, look: 1.05, seat: [1.15, 1.35] },
+  { id: 'table', name: 'Blackjack', blurb: 'Beat the dealer to 21', color: '#5ee08a', pos: [-9.9, -0.7], yaw: 0.35, ...CARD },
+  { id: 'threecard', name: 'Three Card Poker', blurb: 'Your three cards against the dealer’s', color: '#6bb8ff', pos: [-7.1, -1.7], yaw: 0.2, ...CARD },
+  { id: 'war', name: 'Casino War', blurb: 'One card each. High card wins', color: '#ff8a5c', pos: [-4.3, -0.6], yaw: 0.1, ...CARD },
+  { id: 'reddog', name: 'Red Dog', blurb: 'Will the third card fall between?', color: '#ff6b9a', pos: [-1.5, -1.7], yaw: 0.05, ...CARD },
+  { id: 'roulette', name: 'Roulette', blurb: 'Spin the real-physics wheel', color: '#ff5d6c', pos: [1.5, -1.9], yaw: 0, w: 2.5, h: 1.1, look: 0.78, seat: [1.15, 1.55] },
+  { id: 'baccarat', name: 'Baccarat', blurb: 'Player or Banker, closest to 9', color: '#c9a2ff', pos: [4.7, -0.6], yaw: -0.1, w: 2.7, h: 1.1, look: 0.72, seat: [1.3, 1.5] },
+  { id: 'poker', name: 'Video Poker', blurb: 'Hold, draw, and hope for a royal', color: '#5ee0e0', pos: [7.3, -1.7], yaw: -0.2, w: 1.3, h: 2.7, look: 1.15, seat: [1, 1.3] },
+  { id: 'slots', name: 'Lucky Duck 3000', blurb: 'Pull the lever. The duck is wild', color: '#ffd23f', pos: [9.15, -0.5], yaw: -0.3, w: 1.2, h: 2.3, look: 1.05, seat: [1.15, 1.35] },
   // Round the corner: the arcade machines along the right-hand wall…
-  { id: 'plinko', name: 'Duck Drop', blurb: 'Drop ducks down the peg board. The edges pay big', color: '#7cff6b', pos: [8.75, 1.9], yaw: -1.35, w: 1.7, h: 4, look: 1.85, seat: [1.15, 1.6], seatLook: 1.55 },
-  { id: 'crash', name: 'Duck Rocket', blurb: 'Cash out before the rocket blows', color: '#ff8a3d', pos: [8.8, 4.1], yaw: -1.8, w: 1.2, h: 3.2, look: 1.4, seat: [0.4, 1.45], seatLook: 1.45 },
+  { id: 'plinko', name: 'Duck Drop', blurb: 'Drop ducks down the peg board. The edges pay big', color: '#7cff6b', pos: [11.15, 1.9], yaw: -1.35, w: 1.7, h: 4, look: 1.85, seat: [1.15, 1.6], seatLook: 1.55 },
+  { id: 'crash', name: 'Duck Rocket', blurb: 'Cash out before the rocket blows', color: '#ff8a3d', pos: [11.2, 4.4], yaw: -1.8, w: 1.2, h: 3.2, look: 1.4, seat: [0.4, 1.45], seatLook: 1.45 },
   // …and the cashier on the front wall, on your way out
-  { id: 'cashier', name: 'Cashier', blurb: 'Your balance and stats', color: '#e9c46a', pos: [6.4, 5.95], yaw: Math.PI + 0.45, w: 1.9, h: 2.3, look: 1.15, seat: [1.2, 1.5] },
+  { id: 'cashier', name: 'Cashier', blurb: 'Your balance and stats', color: '#e9c46a', pos: [8.8, 5.95], yaw: Math.PI + 0.45, w: 1.9, h: 2.3, look: 1.15, seat: [1.2, 1.5] },
 ];
 const LAST = STATIONS.length - 1;
 
 const CSS = `
-.floor-map { position: absolute; right: 12px; bottom: 82px; width: 140px; height: 92px; z-index: 3; border-radius: 14px; touch-action: none; cursor: pointer;
+.floor-map { position: absolute; right: 12px; bottom: 82px; width: 168px; height: 92px; z-index: 3; border-radius: 14px; touch-action: none; cursor: pointer;
   background: rgba(10, 8, 6, .72); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 6px 18px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: opacity .3s; }
-canvas.floor-map { width: 140px !important; height: 92px !important; }   /* the lab and the casino stretch every stage canvas */
+canvas.floor-map { width: 168px !important; height: 92px !important; }   /* the lab and the casino stretch every stage canvas */
 .floor-map.off { opacity: 0; pointer-events: none; }
 `;
 
@@ -299,61 +299,134 @@ export async function mount({ stage, controls, info, casino }) {
     return keep(tex(cv, renderer));
   }
   // A sign post's board: the station's name over its one-line pitch, edged in its colour
+  // ---- Sign posts: a little marquee beside each station ----
+  // A crest on top for the game's icon, chasing bulbs round the edge, the name in chunky
+  // outlined letters and the pitch on a cream ribbon. The board is cut to shape by its alpha.
+  const ICON = { table: '♠️', threecard: '♣️', war: '⚔️', reddog: '🐶', roulette: '🎡', baccarat: '💎', poker: '🃏', slots: '🎰', plinko: '🦆', crash: '🚀', cashier: '💰' };
+  const PW = 640, PH = 480;                       // the board's canvas
+  const BODY = { x: 10, y: 112, w: 620, h: 358, r: 40 }, CREST = { x: 320, y: 122, r: 104 };
+  const shade = (hex, f) => {                     // mix a #rrggbb colour toward black (f < 1) or white (f > 1)
+    const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255];
+    return `rgb(${c.map(v => Math.round(f <= 1 ? v * f : v + (255 - v) * (f - 1))).join(',')})`;
+  };
+  function boardPath(g, inset = 0) {
+    const { x, y, w, h, r } = BODY, i = inset;
+    g.beginPath();
+    g.moveTo(x + i + r, y + i);
+    g.arcTo(x + w - i, y + i, x + w - i, y + h - i, r);
+    g.arcTo(x + w - i, y + h - i, x + i, y + h - i, r);
+    g.arcTo(x + i, y + h - i, x + i, y + i, r);
+    g.arcTo(x + i, y + i, x + w - i, y + i, r);
+    g.closePath();
+    g.moveTo(CREST.x + CREST.r - i, CREST.y);
+    g.arc(CREST.x, CREST.y, CREST.r - i, 0, TAU);
+  }
   function postTex(st) {
-    const W = 640, H = 400, [cv, g] = canvas(W, H);
-    const r = 34;
-    const round = (x, y, w, h, rr) => { g.beginPath(); g.moveTo(x + rr, y); g.arcTo(x + w, y, x + w, y + h, rr); g.arcTo(x + w, y + h, x, y + h, rr); g.arcTo(x, y + h, x, y, rr); g.arcTo(x, y, x + w, y, rr); g.closePath(); };
-    round(6, 6, W - 12, H - 12, r);
-    g.fillStyle = '#16100c';
-    g.fill();
-    g.lineWidth = 10;
-    g.strokeStyle = st.color;
-    g.stroke();
-    round(26, 26, W - 52, H - 52, r - 16);
-    g.lineWidth = 2;
-    g.strokeStyle = 'rgba(240, 230, 208, .25)';
-    g.stroke();
+    const [cv, g] = canvas(PW, PH);
+    // Layered fills (no strokes, so the crest and body join without a seam): a dark rim,
+    // a thin cream line, then the station's colour from bright to deep
+    boardPath(g);
+    g.fillStyle = '#1a0f08';
+    g.fill('nonzero');
+    boardPath(g, 9);
+    g.fillStyle = 'rgba(246, 238, 220, .7)';
+    g.fill('nonzero');
+    boardPath(g, 13);
+    const grad = g.createLinearGradient(0, 0, 0, PH);
+    grad.addColorStop(0, shade(st.color, 0.62));
+    grad.addColorStop(1, shade(st.color, 0.22));
+    g.fillStyle = grad;
+    g.fill('nonzero');
+    // Candy stripes, faint
+    g.save();
+    boardPath(g, 13);
+    g.clip('nonzero');
+    g.strokeStyle = 'rgba(255, 255, 255, .07)';
+    g.lineWidth = 22;
+    for (let x = -PH; x < PW + PH; x += 64) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + PH, PH); g.stroke(); }
+    g.restore();
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    let size = 84;
-    g.font = `800 ${size}px Manrope, sans-serif`;
-    while (g.measureText(st.name).width > W - 110 && size > 40) { size -= 2; g.font = `800 ${size}px Manrope, sans-serif`; }
+    // The icon in the crest
+    g.font = `92px ${EMOJI}`;
+    g.fillText(ICON[st.id] || '★', CREST.x, CREST.y - 6);
+    // The name: chunky letters with a dark outline, tipped a touch
+    let size = 80;
+    g.font = `900 ${size}px Manrope, sans-serif`;
+    while (g.measureText(st.name).width > PW - 120 && size > 44) { size -= 2; g.font = `900 ${size}px Manrope, sans-serif`; }
+    g.save();
+    g.translate(PW / 2, 252);
+    g.rotate(-0.035);
+    g.lineJoin = 'round';
+    g.lineWidth = 16;
+    g.strokeStyle = '#1a0f08';
+    g.strokeText(st.name, 0, 0);
+    g.fillStyle = '#fff8ea';
+    g.shadowColor = st.color;
+    g.shadowBlur = 18;
+    g.fillText(st.name, 0, 0);
+    g.restore();
+    // The pitch on a cream ribbon with notched ends
+    const rx = 52, ry = 318, rw = PW - 104, rh = 118, notch = 26;
+    g.beginPath();
+    g.moveTo(rx, ry); g.lineTo(rx + rw, ry); g.lineTo(rx + rw - notch, ry + rh / 2); g.lineTo(rx + rw, ry + rh);
+    g.lineTo(rx, ry + rh); g.lineTo(rx + notch, ry + rh / 2); g.closePath();
     g.fillStyle = '#f6eedc';
-    g.fillText(st.name, W / 2, 112);
-    g.fillStyle = st.color;
-    g.fillRect(W / 2 - 60, 168, 120, 6);
-    // The pitch, wrapped to at most three lines
-    g.font = '600 44px Manrope, sans-serif';
-    g.fillStyle = 'rgba(240, 230, 208, .85)';
+    g.fill();
+    g.lineWidth = 4;
+    g.strokeStyle = '#1a0f08';
+    g.stroke();
+    g.font = '700 36px Manrope, sans-serif';
+    g.fillStyle = '#2b2418';
     const words = st.blurb.split(' '), lines = [];
     let line = '';
     for (const w of words) {
       const t = line ? line + ' ' + w : w;
-      if (g.measureText(t).width > W - 120 && line) { lines.push(line); line = w; } else line = t;
+      if (g.measureText(t).width > rw - notch * 2 - 30 && line) { lines.push(line); line = w; } else line = t;
     }
     if (line) lines.push(line);
-    const shown = lines.slice(0, 3), y0 = 258 - (shown.length - 1) * 27;
-    shown.forEach((l, i) => g.fillText(l, W / 2, y0 + i * 54));
+    const shown = lines.slice(0, 2);
+    if (shown.length === 1) g.fillText(shown[0], PW / 2, ry + rh / 2 + 2);
+    else shown.forEach((l, k) => g.fillText(l, PW / 2, ry + rh / 2 - 20 + k * 42));
     const t = keep(tex(cv, renderer));
     t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     return t;
   }
+  // Where the bulbs go, in board pixels: round the crest, then round the body
+  const BULB_AT = (() => {
+    const pts = [], inset = 26;
+    for (let k = 0; k <= 8; k++) {
+      const a = Math.PI + (k / 8) * Math.PI * 0.94 + Math.PI * 0.03;
+      pts.push([CREST.x + Math.cos(a) * (CREST.r - inset), CREST.y + Math.sin(a) * (CREST.r - inset)]);
+    }
+    const x0 = BODY.x + inset, x1 = BODY.x + BODY.w - inset, y0 = BODY.y + inset, y1 = BODY.y + BODY.h - inset;
+    const step = 40;
+    for (let x = x0; x <= x1; x += step) { if (Math.abs(x - CREST.x) > CREST.r - 10) pts.push([x, y0]); pts.push([x, y1]); }
+    for (let y = y0 + step; y < y1; y += step) { pts.push([x0, y]); pts.push([x1, y]); }
+    return pts;
+  })();
+  const POST_W = 1.02, POST_H = POST_W * PH / PW;
+  const signBulbs = [];                            // [the post's board, its local position, its colour]
   // A sign post beside the station, its board turned toward the aisle
-  const POST_W = 1.02, POST_H = POST_W * 400 / 640;
   function signPost(st) {
     const g = new THREE.Group();
-    const top = st.w > 1.8 ? 1.58 : 1.7;   // tables: up over the felt (machines' posts are scaled down to about knee height)
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, top - POST_H / 2, 10), M.chrome);
-    pole.position.y = (top - POST_H / 2) / 2;
-    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.03, 20), M.chrome);
-    foot.position.y = 0.015;
-    const back = new THREE.Mesh(new THREE.BoxGeometry(POST_W + 0.04, POST_H + 0.04, 0.03), M.woodDark);
-    back.position.set(0, top, -0.02);
-    const board = new THREE.Mesh(new THREE.PlaneGeometry(POST_W, POST_H), new THREE.MeshBasicMaterial({ map: postTex(st), toneMapped: false }));
-    board.position.set(0, top, 0);
-    board.rotation.x = 0;
-    g.add(pole, foot, back, board);
-    g.traverse(x => { if (x.isMesh) { x.castShadow = x !== board; x.receiveShadow = false; } });
+    const top = st.w > 1.8 ? 1.62 : 1.74;   // the board's centre: tables, up over the felt (machines' posts are scaled down)
+    const base = top - POST_H / 2;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, base, 10), M.gold);
+    pole.position.y = base / 2;
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.04, 20), M.gold);
+    foot.position.y = 0.02;
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), M.gold);
+    ball.position.y = 0.06;
+    const map = postTex(st);
+    const geo = new THREE.PlaneGeometry(POST_W, POST_H);
+    const board = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map, alphaTest: 0.5, toneMapped: false }));
+    const back = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map, color: 0x1a0f08, alphaTest: 0.5, side: THREE.BackSide }));
+    board.position.y = back.position.y = top;
+    g.add(pole, foot, ball, board, back);
+    g.traverse(x => { if (x.isMesh) { x.castShadow = x === pole || x === foot; x.receiveShadow = false; } });
+    const lit = new THREE.Color(st.color).lerp(new THREE.Color(0xffffff), 0.55);
+    BULB_AT.forEach(([px, py], k) => signBulbs.push([board, new THREE.Vector3((px / PW - 0.5) * POST_W, (0.5 - py / PH) * POST_H, 0.014), k % 2 ? lit : new THREE.Color(0xfff1c4)]));
     return g;
   }
   const shadowy = o => { o.traverse(x => { if (x.isMesh) { x.castShadow = true; x.receiveShadow = true; } }); return o; };
@@ -845,7 +918,7 @@ export async function mount({ stage, controls, info, casino }) {
   const POST = {
     roulette: [0.95, -0.55, -0.2], baccarat: [-1.0, -0.5, 0.2],   // baccarat's on its far side, clear of video poker
     // the machines: a small post at the cabinet's front-left corner, away from the mini map, [x, z, turn, scale]
-    poker: [-0.46, 0.42, 0.3, 0.55], slots: [-0.36, 0.9, 0.15, 0.5], plinko: [-0.66, 0.45, 0.3, 0.6], crash: [-0.5, 0.8, 0.15, 0.55], cashier: [-0.78, 0.5, 0.3, 0.6],
+    poker: [-0.46, 0.42, 0.3, 0.55], slots: [-0.3, 0.95, 0.15, 0.46], plinko: [-0.66, 0.45, 0.3, 0.6], crash: [-0.5, 0.8, 0.15, 0.55], cashier: [-0.78, 0.5, 0.3, 0.6],
   };
   const posts = [];
   const groups = [];
@@ -866,6 +939,20 @@ export async function mount({ stage, controls, info, casino }) {
     groups.push(g);
     DIRS.push(new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw)));
   });
+
+  // Every sign's bulbs in one draw: placed from the boards' final positions
+  scene.updateMatrixWorld(true);
+  const signLights = new THREE.InstancedMesh(new THREE.SphereGeometry(0.017, 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), signBulbs.length);
+  const bulbOn = signBulbs.map(b => b[2]), bulbDim = signBulbs.map(b => b[2].clone().multiplyScalar(0.28));
+  signBulbs.forEach(([board, at], k) => {
+    const wpos = at.clone().applyMatrix4(board.matrixWorld);
+    const scl = new THREE.Vector3().setFromMatrixScale(board.matrixWorld);
+    signLights.setMatrixAt(k, new THREE.Matrix4().compose(wpos, new THREE.Quaternion(), scl));
+    signLights.setColorAt(k, bulbOn[k]);
+  });
+  signLights.frustumCulled = false;
+  scene.add(signLights);
+  let bulbStep = -1;
 
   // Warm pools of light, one over each pair of stations (fewer lights keep phones fast)
   for (let k = 0; k < STATIONS.length; k += 2) {
@@ -929,7 +1016,7 @@ export async function mount({ stage, controls, info, casino }) {
   map.setAttribute('role', 'img');
   map.setAttribute('aria-label', 'Map of the casino floor');
   stage.appendChild(map);
-  const MAP_W = 140, MAP_H = 92, PAD = 7;
+  const MAP_W = 168, MAP_H = 92, PAD = 7;
   const mg = map.getContext('2d');
   const toMap = (x, z) => [PAD + ((x - ROOM.x0) / (ROOM.x1 - ROOM.x0)) * (MAP_W - PAD * 2), PAD + ((z - ROOM.z0) / (ROOM.z1 - ROOM.z0)) * (MAP_H - PAD * 2)];
   function drawMap() {
@@ -1212,7 +1299,13 @@ export async function mount({ stage, controls, info, casino }) {
     if (lockNow !== wasLocked) { wasLocked = lockNow; here = -1; changed(); }   // signed in or out
     if (owed) { bonusCoin.rotation.y = now * 2.4; bonusCoin.position.y = 1.5 + Math.sin(now * 2) * 0.03; }
     const standing = cam.seat < 0.5;
-    if (posts[0].visible !== standing) for (const p of posts) p.visible = standing;
+    if (posts[0].visible !== standing) { for (const p of posts) p.visible = standing; signLights.visible = standing; }
+    const step = Math.floor(now * 6) % 3;   // the bulbs chase: every third one dims in turn
+    if (standing && step !== bulbStep) {
+      bulbStep = step;
+      for (let k = 0; k < signBulbs.length; k++) signLights.setColorAt(k, (k + step) % 3 === 0 ? bulbDim[k] : bulbOn[k]);
+      signLights.instanceColor.needsUpdate = true;
+    }
     pose();
     renderer.render(scene, camera);
     drawMap();
