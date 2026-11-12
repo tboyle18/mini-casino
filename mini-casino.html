@@ -522,6 +522,35 @@
   .ag-controls .lab-btn.primary { flex-grow: 2; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); box-shadow: 0 2px 0 #8a6522; }
   .ag-controls .lab-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
   .ag-controls .lab-btn:disabled { opacity: .35; }
+  /* ---------- The wallet card: a real wallet that fills with cash, money drifting about ---------- */
+  .home .wallet-card { position: relative; overflow: hidden; isolation: isolate; }
+  .home .wallet-card > :not(.wc-fly):not(.wc-art) { position: relative; z-index: 2; }
+  .home .wc-label, .home .wc-amt { padding-right: 118px; }
+  .wc-art { position: absolute; z-index: 1; top: 10px; right: 8px; width: 124px; height: 112px; pointer-events: none; }
+  .wc-art svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .45)); }
+  .wc-art .bill { transform-box: fill-box; transform-origin: 50% 100%; animation: billSway 3.4s ease-in-out infinite; animation-delay: var(--bd, 0s); }
+  @keyframes billSway { 0%, 100% { transform: rotate(var(--br, 0deg)); } 50% { transform: rotate(calc(var(--br, 0deg) + 3deg)) translateY(-2px); } }
+  .wc-art .moth { animation: moth 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes moth { 0%, 100% { transform: translate(0, 0) rotate(-8deg); } 25% { transform: translate(-10px, -8px) rotate(6deg); } 50% { transform: translate(-4px, -16px) rotate(-4deg); } 75% { transform: translate(6px, -7px) rotate(10deg); } }
+  .wc-art.burst { animation: walletPop .5s ease-out; }
+  @keyframes walletPop { 0% { transform: scale(1); } 35% { transform: scale(1.12) rotate(-4deg); } 100% { transform: scale(1); } }
+  .wc-fly { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .fly { position: absolute; left: 0; top: 0; opacity: 0; animation: drift var(--dur, 9s) linear infinite; animation-delay: var(--delay, 0s); }
+  .fly.bill { width: 34px; height: 16px; border-radius: 3px; background: linear-gradient(135deg, #5fcf8e, #2e8a57); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35), 0 3px 6px rgba(0, 0, 0, .35); }
+  .fly.bill::after { content: "$"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 11px/1 var(--font-display); color: rgba(255, 255, 255, .85); }
+  .fly.chip { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle, var(--c) 0 38%, #fff 39% 46%, var(--c) 47%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7), 0 3px 6px rgba(0, 0, 0, .35); }
+  @keyframes drift {
+    0% { opacity: 0; transform: translate(var(--x0), 130%) rotate(var(--r0)); }
+    12% { opacity: var(--o, .55); }
+    88% { opacity: var(--o, .55); }
+    100% { opacity: 0; transform: translate(var(--x1), -60px) rotate(var(--r1)); }
+  }
+  .fly.out { animation: flyOut .9s cubic-bezier(.2, .7, .3, 1) forwards; opacity: 1; }
+  @keyframes flyOut {
+    0% { opacity: 1; transform: translate(var(--sx), var(--sy)) rotate(0) scale(.6); }
+    100% { opacity: 0; transform: translate(var(--ex), var(--ey)) rotate(var(--r1)) scale(1.1); }
+  }
+  @media (prefers-reduced-motion: reduce) { .fly, .wc-art .bill, .wc-art .moth { animation: none; } .fly { display: none; } }
   /* ---------- Home: neon marquee, winners ticker, leaderboard widget, living tiles ---------- */
   .marquee {
     position: relative; display: flex; align-items: center; justify-content: center; gap: 12px;
@@ -1472,7 +1501,9 @@
       </div>
     </div>
     <div class="ticker" id="ticker" aria-label="Recent wins"><div class="ticker-track" id="ticker-track"></div></div>
-    <div class="wallet-card">
+    <div class="wallet-card" id="wallet-card">
+      <div class="wc-fly" id="wc-fly" aria-hidden="true"></div>
+      <div class="wc-art" id="wc-art" aria-hidden="true"></div>
       <div class="wc-label">Your wallet balance</div>
       <div class="wc-amt" id="home-wallet">—</div>
       <div class="wc-row">
@@ -2701,7 +2732,7 @@ const ui = {
   dealerCards: $('dealer-cards'), dealerTotal: $('dealer-total'),
   msg: $('msg'), msgTitle: $('msg-title'), msgSub: $('msg-sub'), statusLine: $('status-line'), seats: $('seats'),
   betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
-  bg3d: $('bg3d'), tickerTrack: $('ticker-track'), lbw: $('lbw'), lbwList: $('lbw-list'), lbwMe: $('lbw-me'),
+  bg3d: $('bg3d'), walletCard: $('wallet-card'), wcArt: $('wc-art'), wcFly: $('wc-fly'), tickerTrack: $('ticker-track'), lbw: $('lbw'), lbwList: $('lbw-list'), lbwMe: $('lbw-me'),
   bjChips: $('bj-chips'), bjLow: $('bj-low'), bjSpot: $('bj-spot'), bjSpotHint: $('bj-spot-hint'), bjUndo: $('bj-undo'),
   clear: $('clear-btn'), betAmt: $('bet-amt'),
   out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
@@ -5577,6 +5608,107 @@ function renderLbw() {
     : d.me && d.me.rank ? `You’re #${d.me.rank} with ${signed(d.me.value)}` : 'Play a round to get on the board.';
 }
 
+/* ================= The wallet card =================
+   A leather wallet that fills with cash as the balance grows (empty: a moth and a cobweb;
+   stuffed: it can't close), with bills and chips drifting across the card, more the richer
+   you are. When the balance goes up on this screen, a burst of cash flies out. */
+const purse = { level: -1, shown: null };
+function walletLevel(bal) {
+  if (!wallet.ready || bal < 5) return 0;
+  if (bal < 500) return 1;
+  if (bal < 2500) return 2;
+  if (bal < 10000) return 3;
+  return 4;
+}
+function walletSVG(level) {
+  const bills = [0, 2, 4, 7, 11][level];
+  let notes = '';
+  for (let i = 0; i < bills; i++) {
+    const spread = bills > 1 ? (i / (bills - 1) - 0.5) : 0;
+    const x = 24 + i * (66 / Math.max(1, bills)) + (level === 4 ? (i % 2) * 4 : 0);
+    const rise = level === 4 ? 30 + (i % 3) * 8 : level === 3 ? 22 + (i % 2) * 6 : 16;
+    const rot = (spread * (level === 4 ? 34 : 20)).toFixed(1);
+    notes += `<g class="bill" style="--br:${rot}deg;--bd:${(-i * 0.37).toFixed(2)}s"><rect x="${x}" y="${52 - rise}" width="34" height="50" rx="3" fill="url(#bill)" stroke="#1f6b40" stroke-width="1.5"/>`
+      + `<rect x="${x + 4}" y="${56 - rise}" width="26" height="42" rx="2" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1"/>`
+      + `<text x="${x + 17}" y="${74 - rise + 6}" text-anchor="middle" font-size="16" font-weight="800" fill="rgba(255,255,255,.85)">$</text></g>`;
+  }
+  const flap = level === 4 ? 'rotate(-14 26 60)' : '';
+  const empty = level === 0
+    ? `<path d="M96 52 l14 -10 M100 52 l10 4 M96 52 l4 12" stroke="rgba(255,255,255,.25)" stroke-width="1" fill="none"/>
+       <text class="moth" x="58" y="40" font-size="20" text-anchor="middle">🦋</text>`
+    : '';
+  return `<svg viewBox="0 0 124 112" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a4b24"/><stop offset="1" stop-color="#5a2c12"/></linearGradient>
+      <linearGradient id="leather2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a65d2e"/><stop offset="1" stop-color="#6e3615"/></linearGradient>
+      <linearGradient id="bill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ed69a"/><stop offset="1" stop-color="#2f9160"/></linearGradient>
+    </defs>
+    <rect x="10" y="50" width="104" height="56" rx="10" fill="url(#leather)"/>
+    ${notes}
+    <g transform="${flap}">
+      <rect x="10" y="${level === 0 ? 58 : 62}" width="104" height="${level === 0 ? 48 : 44}" rx="10" fill="url(#leather2)"/>
+      <rect x="15" y="${level === 0 ? 63 : 67}" width="94" height="${level === 0 ? 38 : 34}" rx="7" fill="none" stroke="#e8b878" stroke-width="1.5" stroke-dasharray="4 3" opacity=".7"/>
+      <rect x="92" y="${level === 0 ? 74 : 76}" width="22" height="16" rx="5" fill="#4a210b"/>
+      <circle cx="104" cy="${level === 0 ? 82 : 84}" r="4" fill="#f2c75b" stroke="#a87a1e" stroke-width="1"/>
+    </g>
+    ${empty}
+  </svg>`;
+}
+const CHIP_TINTS = ['#c8303c', '#2f6fd0', '#7a3fb8', '#d9822b', '#1f8a8a'];
+function renderWalletCard() {
+  const bal = wallet.ready ? wallet.balance : 0;
+  const level = walletLevel(bal);
+  if (level !== purse.level) {
+    purse.level = level;
+    ui.wcArt.innerHTML = walletSVG(level);
+    // Money drifting across the card: more of it the fuller the wallet
+    ui.wcFly.textContent = '';
+    const bills = [0, 2, 4, 6, 9][level], chips = [0, 1, 3, 5, 7][level];
+    for (let i = 0; i < bills + chips; i++) {
+      const el = document.createElement('div');
+      const chip = i >= bills;
+      el.className = 'fly ' + (chip ? 'chip' : 'bill');
+      if (chip) el.style.setProperty('--c', CHIP_TINTS[i % CHIP_TINTS.length]);
+      const x0 = Math.round(Math.random() * 300);
+      el.style.setProperty('--x0', `${x0}px`);
+      el.style.setProperty('--x1', `${x0 + Math.round((Math.random() - 0.3) * 120)}px`);
+      el.style.setProperty('--r0', `${Math.round(Math.random() * 60 - 30)}deg`);
+      el.style.setProperty('--r1', `${Math.round(Math.random() * 360 - 180)}deg`);
+      el.style.setProperty('--dur', `${(7 + Math.random() * 6).toFixed(1)}s`);
+      el.style.setProperty('--delay', `${(-Math.random() * 12).toFixed(1)}s`);
+      el.style.setProperty('--o', (0.35 + Math.random() * 0.3).toFixed(2));
+      ui.wcFly.appendChild(el);
+    }
+  }
+  // A win while you're looking: cash flies out of the wallet
+  if (purse.shown != null && wallet.ready && bal > purse.shown + 0.5) walletBurst(Math.min(14, 4 + Math.round(Math.log10(bal - purse.shown + 1) * 3)));
+  purse.shown = wallet.ready ? bal : null;
+}
+function walletBurst(n) {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  ui.wcArt.classList.remove('burst');
+  void ui.wcArt.offsetWidth;
+  ui.wcArt.classList.add('burst');
+  const card = ui.walletCard.getBoundingClientRect();
+  const sx = card.width - 70, sy = 50;
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('div');
+    const chip = i % 3 === 2;
+    el.className = 'fly out ' + (chip ? 'chip' : 'bill');
+    if (chip) el.style.setProperty('--c', CHIP_TINTS[i % CHIP_TINTS.length]);
+    const ang = -Math.PI / 2 + (Math.random() - 0.5) * 2.4;
+    const dist = 80 + Math.random() * 120;
+    el.style.setProperty('--sx', `${sx}px`);
+    el.style.setProperty('--sy', `${sy}px`);
+    el.style.setProperty('--ex', `${Math.round(sx + Math.cos(ang) * dist)}px`);
+    el.style.setProperty('--ey', `${Math.round(sy + Math.sin(ang) * dist * 0.6)}px`);
+    el.style.setProperty('--r1', `${Math.round(Math.random() * 540 - 270)}deg`);
+    el.style.animationDelay = `${i * 0.04}s`;
+    el.addEventListener('animationend', () => el.remove());
+    ui.wcFly.appendChild(el);
+  }
+}
+
 /* ================= How to play ================= */
 const LEARN = ['blackjack', 'roulette', 'poker', 'baccarat', 'threecard', 'war', 'reddog', 'slots', 'plinko', 'crash', 'wallet'];
 // Game screens with a ? button: the article it opens, and what its back button says
@@ -6127,7 +6259,8 @@ function render() {
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
   lobbySync();
-  if (v === 'home') { renderDaily(); renderTicker(); feedLoad(); renderLbw(); lbLoad(false, 'week'); }
+  if (v !== 'home') purse.shown = wallet.ready ? wallet.balance : null;   // wins elsewhere don't burst when you come back
+  if (v === 'home') { renderDaily(); renderWalletCard(); renderTicker(); feedLoad(); renderLbw(); lbLoad(false, 'week'); }
   else if (v === 'profile') renderProfile();
   if (gated) { /* the sign-in card is all there is */ }
   else if (v === 'lobby') renderLobby();

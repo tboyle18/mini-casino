@@ -1,4 +1,4 @@
-// The casino floor behind the home screen: a long hall of slot machines in banks of five,
+// The casino floor behind the home screen: a long, roomy hall of slot machines in banks of five,
 // each bank angled toward the aisle under its own neon sign, reels spinning and topper
 // lights chasing, while the camera glides down the aisle forever. Banks that pass behind
 // the camera are moved to the far end, so the hall never runs out.
@@ -11,12 +11,12 @@ import * as THREE from 'three';
 import { canvas, carpetCanvas, EMOJI } from './arcade.js';
 
 const BANK = 5;                          // machines in a bank
-const MW = 0.62, MH = 1.5, MD = 0.6;     // machine width, height, depth
-const GAP = 0.05;
+const MW = 0.62, MH = 1.96, MD = 0.62;    // machine width, height, depth
+const GAP = 0.12;
 const BANK_W = BANK * MW + (BANK - 1) * GAP;
-const SPACING = 3.9;                     // between banks along the aisle
-const ROWS = 7;                          // banks down each side
-const AISLE = 1.25;                      // half the aisle's width
+const SPACING = 6;                       // between banks along the aisle
+const ROWS = 6;                          // banks down each side
+const AISLE = 1.7;                       // half the aisle's width
 const TURN = THREE.MathUtils.degToRad(38);   // how far each bank turns toward the camera
 const SPEED = 0.6;                       // metres a second
 const PALETTES = [
@@ -61,19 +61,47 @@ function signCanvas(text, color) {
   g.fillText(text, 256, 60);
   return c;
 }
+// The top box's screen: a jackpot panel, tinted per bank by the instance colour
+function topScreenCanvas() {
+  const [c, g] = canvas(256, 192);
+  const gr = g.createLinearGradient(0, 0, 0, 192);
+  gr.addColorStop(0, '#ffffff');
+  gr.addColorStop(1, '#8a8a8a');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 256, 192);
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#1a0a10';
+  g.font = '900 34px "Manrope", Arial, sans-serif';
+  g.fillText('JACKPOT', 128, 48);
+  g.font = '900 78px "Manrope", Arial, sans-serif';
+  g.fillStyle = '#fff6c0';
+  g.strokeStyle = '#1a0a10';
+  g.lineWidth = 8;
+  g.strokeText('777', 128, 124);
+  g.fillText('777', 128, 124);
+  return c;
+}
 /* A slot cabinet's side profile (depth on x, height on y), extruded across the machine's
-   width: a base, a sloped button deck, an upright reel face, and a cap. The front is +z. */
+   width: a recessed toe kick, the base, a button deck that juts out toward the player, an
+   upright reel face, a top box with its own screen, and a rounded cap. The front is +z. */
 function cabinetGeometry() {
   const s = new THREE.Shape();
   const d = MD;
   s.moveTo(-d / 2, 0);
-  s.lineTo(d / 2, 0);
-  s.lineTo(d / 2, 0.62);                 // base front
-  s.lineTo(d / 2 + 0.08, 0.7);           // button deck sticks out
-  s.lineTo(d / 2 - 0.02, 0.8);
-  s.lineTo(d / 2 - 0.04, MH - 0.08);     // reel face, leaning back a little
-  s.quadraticCurveTo(d / 2 - 0.06, MH, d / 2 - 0.16, MH);
-  s.lineTo(-d / 2, MH);
+  s.lineTo(d / 2 - 0.05, 0);             // toe kick
+  s.lineTo(d / 2 - 0.05, 0.08);
+  s.lineTo(d / 2, 0.1);
+  s.lineTo(d / 2, 0.66);                 // base front
+  s.lineTo(d / 2 + 0.16, 0.74);          // button deck juts out
+  s.lineTo(d / 2 + 0.15, 0.79);
+  s.lineTo(d / 2 - 0.03, 0.84);          // deck slopes back to the screen
+  s.lineTo(d / 2 - 0.03, 1.42);          // reel face
+  s.lineTo(d / 2 - 0.01, 1.46);          // top box steps out a touch
+  s.lineTo(d / 2 - 0.02, MH - 0.06);
+  s.quadraticCurveTo(d / 2 - 0.03, MH, d / 2 - 0.12, MH);
+  s.lineTo(-d / 2 + 0.08, MH);
+  s.lineTo(-d / 2, MH - 0.1);
   s.closePath();
   const g = new THREE.ExtrudeGeometry(s, { depth: MW, bevelEnabled: false, curveSegments: 6 });
   g.translate(0, 0, -MW / 2);
@@ -94,13 +122,13 @@ export function mountLobby(container, { still = false } = {}) {
   const scene = new THREE.Scene();
   const bg = new THREE.Color(0x241035);
   scene.background = bg;
-  scene.fog = new THREE.Fog(bg, 6, 30);
+  scene.fog = new THREE.Fog(bg, 7, 34);
   scene.add(new THREE.HemisphereLight(0xffe6f6, 0x3a1450, 2.2));
   const key = new THREE.DirectionalLight(0xfff0dc, 1.1);
   key.position.set(0, 4, 3);
   scene.add(key);
 
-  const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 40);
+  const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 44);
   const LEN = ROWS * SPACING;
 
   // Floor, ceiling, ceiling lights and two neon strips running down the aisle
@@ -127,12 +155,20 @@ export function mountLobby(container, { still = false } = {}) {
   const n = ROWS * 2 * BANK;
   const cabMat = new THREE.MeshLambertMaterial();
   const cab = new THREE.InstancedMesh(cabinetGeometry(), cabMat, n);
-  // The light on top: a rounded bar across the machine (its lower half hides in the cabinet)
-  const domeGeo = new THREE.CylinderGeometry(0.2, 0.2, MW * 0.92, 16);
-  domeGeo.rotateZ(Math.PI / 2);
+  // The topper: an arched light standing on the cabinet's cap, flat side down
+  const domeGeo = new THREE.CylinderGeometry(MW * 0.42, MW * 0.42, 0.1, 20, 1, false, -Math.PI / 2, Math.PI);
+  domeGeo.rotateX(-Math.PI / 2);
   const dome = new THREE.InstancedMesh(domeGeo, new THREE.MeshBasicMaterial(), n);
   const bezel = new THREE.InstancedMesh(new THREE.PlaneGeometry(MW * 0.86, 0.5), new THREE.MeshBasicMaterial({ color: 0x0a0610 }), n);
   const trim = new THREE.InstancedMesh(new THREE.PlaneGeometry(MW * 0.86, 0.035), new THREE.MeshBasicMaterial(), n * 2);
+  const topTex = keep(new THREE.CanvasTexture(topScreenCanvas()));
+  const topScreen = new THREE.InstancedMesh(new THREE.PlaneGeometry(MW * 0.8, 0.36), new THREE.MeshBasicMaterial({ map: topTex }), n);
+  // Light strips up both front edges, a lit button row on the deck, and a stool in front
+  const edge = new THREE.InstancedMesh(new THREE.BoxGeometry(0.03, 1.08, 0.03), new THREE.MeshBasicMaterial(), n * 2);
+  const buttons = new THREE.InstancedMesh(new THREE.BoxGeometry(MW * 0.7, 0.025, 0.07), new THREE.MeshBasicMaterial({ color: 0xffd86a }), n);
+  const seat = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.15, 0.09, 14), new THREE.MeshLambertMaterial({ color: 0x5a1020 }), n);
+  const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.025, 0.025, 0.58, 6), new THREE.MeshLambertMaterial({ color: 0x9a9aa8 }), n);
+  const foot = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.15, 0.17, 0.03, 12), new THREE.MeshLambertMaterial({ color: 0x2a2a32 }), n);
   const reelTex = keep(new THREE.CanvasTexture(reelCanvas()));
   reelTex.wrapT = THREE.RepeatWrapping;
   reelTex.repeat.set(1, 1.4 / SYMBOLS.length);
@@ -143,7 +179,7 @@ export function mountLobby(container, { still = false } = {}) {
     return new THREE.MeshBasicMaterial({ map: t });
   });
   const reels = reelMats.map(m => new THREE.InstancedMesh(new THREE.PlaneGeometry(MW * 0.25, 0.4), m, n));
-  const parts = [cab, dome, bezel, trim, ...reels];
+  const parts = [cab, dome, bezel, trim, topScreen, edge, buttons, seat, pole, foot, ...reels];
   for (const m of parts) { m.frustumCulled = false; scene.add(m); }
 
   // A neon sign over each bank
@@ -168,23 +204,33 @@ export function mountLobby(container, { still = false } = {}) {
     const ang = b.side < 0 ? Math.PI / 2 - TURN : -(Math.PI / 2 - TURN);
     q.setFromAxisAngle(Y, ang);
     const along = new THREE.Vector3(1, 0, 0).applyQuaternion(q);     // the line the machines stand along
-    const centre = new THREE.Vector3(b.side * (AISLE + 1.05), 0, b.z);
+    const centre = new THREE.Vector3(b.side * (AISLE + 1.4), 0, b.z);
     for (let k = 0; k < BANK; k++) {
       const i = bi * BANK + k;
       pos.copy(centre).addScaledVector(along, (k - (BANK - 1) / 2) * (MW + GAP));
       M.compose(pos, q, one);
       cab.setMatrixAt(i, M);
       cab.setColorAt(i, col.setHex(b.pal[0]));
-      put(dome, i, 0, MH + 0.04, -0.1);
-      const fz = MD / 2 - 0.03;
-      put(bezel, i, 0, 1.12, fz);
-      for (let r = 0; r < 3; r++) put(reels[r], i, (r - 1) * MW * 0.28, 1.12, fz + 0.004);
-      put(trim, i * 2, 0, 0.86, fz + 0.004);
-      put(trim, i * 2 + 1, 0, 1.4, fz - 0.01);
+      put(dome, i, 0, MH - 0.005, MD / 2 - 0.16);
+      const fz = MD / 2 - 0.025;
+      put(bezel, i, 0, 1.13, fz);
+      for (let r = 0; r < 3; r++) put(reels[r], i, (r - 1) * MW * 0.28, 1.13, fz + 0.004);
+      put(trim, i * 2, 0, 0.865, fz + 0.004);
+      put(trim, i * 2 + 1, 0, 1.43, fz + 0.012);
       trim.setColorAt(i * 2, col.setHex(b.pal[1]));
       trim.setColorAt(i * 2 + 1, col.setHex(b.pal[1]));
+      put(topScreen, i, 0, 1.69, MD / 2 - 0.012);
+      topScreen.setColorAt(i, col.setHex(b.pal[1]).lerp(new THREE.Color(0xffffff), 0.35));
+      for (const e of [0, 1]) {
+        put(edge, i * 2 + e, (e ? 1 : -1) * (MW / 2 - 0.015), 1.39, MD / 2 - 0.01);
+        edge.setColorAt(i * 2 + e, col.setHex(b.pal[1]));
+      }
+      put(buttons, i, 0, 0.78, MD / 2 + 0.07);
+      put(seat, i, 0, 0.64, MD / 2 + 0.48);
+      put(pole, i, 0, 0.32, MD / 2 + 0.48);
+      put(foot, i, 0, 0.015, MD / 2 + 0.48);
     }
-    b.sign.position.copy(centre).add(new THREE.Vector3(0, MH + 0.75, 0));
+    b.sign.position.copy(centre).add(new THREE.Vector3(0, MH + 0.62, -0.2));
     b.sign.quaternion.copy(q);
     b.dirty = false;
     for (const m of parts) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
@@ -203,7 +249,7 @@ export function mountLobby(container, { still = false } = {}) {
     let i = 0;
     for (let r = 0; r < ROWS; r++) {
       const z = Math.floor(camZ / SPACING) * SPACING - r * SPACING;
-      for (const x of [-2.4, 0, 2.4]) lamps.setMatrixAt(i++, M.compose(pos.set(x, 3.38, z), q.identity(), one));
+      for (const x of [-3.1, 0, 3.1]) lamps.setMatrixAt(i++, M.compose(pos.set(x, 3.38, z), q.identity(), one));
     }
     lamps.instanceMatrix.needsUpdate = true;
   }
