@@ -923,7 +923,7 @@ export async function mount({ stage, controls, info, casino }) {
     k = THREE.MathUtils.clamp(k, 0, LAST);
     if (glide) glide.kill();
     const d = Math.abs(k - cam.s);
-    glide = gsap.to(cam, { s: k, duration: calm ? 0.2 : Math.min(1.1, 0.4 + d * 0.22), ease: 'power2.inOut', onUpdate: changed, onComplete: () => { glide = null; } });
+    glide = gsap.to(cam, { s: k, duration: calm ? 0.25 : Math.min(1.6, 0.55 + d * 0.5), ease: 'power2.inOut', onUpdate: changed, onComplete: () => { glide = null; } });
   }
 
   // ---- Sitting down ----
@@ -937,7 +937,23 @@ export async function mount({ stage, controls, info, casino }) {
     buzz(10);
     tag.classList.add('off');
     map.classList.add('off');
-    gsap.to(cam, { s: k, seat: 1, duration: calm ? 0.2 : 0.7, ease: 'power2.inOut', onComplete: () => { if (!dead) casino.sit(STATIONS[k].id); } });
+    gsap.to(cam, { s: k, seat: 1, duration: calm ? 0.2 : 1.05, ease: 'power2.inOut', onComplete: () => { if (!dead) casino.sit(STATIONS[k].id); } });
+  }
+  // Straight to a station's seat from wherever you're standing (the casino's Tables list):
+  // along the floor and down into the seat in one movement
+  function jumpTo(id) {
+    const k = STATIONS.findIndex(st => st.id === id);
+    if (k < 0 || busy) return;
+    busy = true;
+    if (glide) { glide.kill(); glide = null; }
+    buzz(8);
+    tag.classList.add('off');
+    map.classList.add('off');
+    const t = calm ? 0.2 : Math.min(2, 0.55 + Math.abs(k - cam.s) * 0.3);
+    const down = calm ? 0.2 : 1.05;
+    gsap.timeline({ onUpdate: changed, onComplete: () => { if (!dead) casino.sit(id); } })
+      .to(cam, { s: k, duration: t, ease: 'power2.inOut' }, 0)
+      .to(cam, { seat: 1, duration: down, ease: 'power2.inOut' }, Math.max(0, t - down * 0.5));
   }
   // The casino's arrows: from one seat, up along the floor and down into the next
   function hopCasino(from, to) {
@@ -946,7 +962,7 @@ export async function mount({ stage, controls, info, casino }) {
     map.classList.add('off');
     cam.s = from;
     cam.seat = 1;
-    const t = calm ? 0.3 : Math.min(1.3, 0.6 + Math.abs(to - from) * 0.25);
+    const t = calm ? 0.3 : Math.min(2, 0.9 + Math.abs(to - from) * 0.35);
     gsap.timeline({ onUpdate: changed, onComplete: () => { if (!dead) casino.sit(STATIONS[to].id); } })
       .to(cam, { s: to, duration: t, ease: 'power2.inOut' }, 0)
       .to(cam, { seat: 0.45, duration: t / 2, ease: 'sine.out' }, 0)
@@ -959,7 +975,7 @@ export async function mount({ stage, controls, info, casino }) {
     cam.seat = 1;
     tag.classList.add('off');
     map.classList.add('off');
-    gsap.to(cam, { seat: 0, duration: calm ? 0.2 : 0.6, delay: 0.05, ease: 'power2.inOut', onComplete: () => {
+    gsap.to(cam, { seat: 0, duration: calm ? 0.2 : 0.9, delay: 0.1, ease: 'power2.inOut', onComplete: () => {
       busy = false;
       tag.classList.remove('off');
       map.classList.remove('off');
@@ -982,7 +998,7 @@ export async function mount({ stage, controls, info, casino }) {
     if (!drag.moved && Math.abs(dx) < 7) return;
     drag.moved = true;
     const w = stage.clientWidth || 1;
-    let s = drag.s0 - dx / (w * 0.4);
+    let s = drag.s0 - dx / (w * 0.6);
     if (s < 0) s *= 0.35;
     if (s > LAST) s = LAST + (s - LAST) * 0.35;
     cam.s = s;
@@ -997,8 +1013,8 @@ export async function mount({ stage, controls, info, casino }) {
     drag.on = false;
     if (drag.moved) {
       // Flick: carry on toward the next station if you swiped fast
-      const fling = -drag.vx * 1.4;
-      go(Math.round(cam.s + THREE.MathUtils.clamp(fling, -1.5, 1.5)));
+      const fling = -drag.vx * 0.9;
+      go(Math.round(cam.s + THREE.MathUtils.clamp(fling, -0.6, 0.6)));
       return;
     }
     const r = canvasEl.getBoundingClientRect();
@@ -1018,7 +1034,7 @@ export async function mount({ stage, controls, info, casino }) {
     e.preventDefault();
     if (glide) { glide.kill(); glide = null; }
     const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    cam.s = THREE.MathUtils.clamp(cam.s + d * 0.004, -0.15, LAST + 0.15);
+    cam.s = THREE.MathUtils.clamp(cam.s + d * 0.0025, -0.15, LAST + 0.15);
     changed();
     clearTimeout(wheelTimer);
     wheelTimer = setTimeout(() => go(Math.round(cam.s)), 140);
@@ -1097,6 +1113,9 @@ export async function mount({ stage, controls, info, casino }) {
   }
 
   return {
+    jumpTo,
+    // The station you're standing at, by id
+    at: () => STATIONS[Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST))].id,
     dispose() {
       dead = true;
       cancelAnimationFrame(raf);

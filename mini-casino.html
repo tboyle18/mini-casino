@@ -526,6 +526,19 @@
   .fl-btn.dot::after { content: ""; position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
   .fl-sheet-body { display: flex; flex-direction: column; gap: 12px; }
   .fl-sheet-body > * { margin: 0; }
+  .fl-sheet-body h2 { margin: 0; }
+  .fl-go { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .fl-go button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 76px; padding: 10px 6px;
+    appearance: none; border: 1px solid var(--line); border-radius: 14px; cursor: pointer;
+    background: rgba(0, 0, 0, .28); color: var(--ink); font: 700 13px/1.15 var(--font-body); text-align: center;
+  }
+  .fl-go button:active { transform: scale(.96); }
+  .fl-go button.here { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+  .fl-go.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* the four machines, two by two */
+  .fl-go.two button, .fl-go button.wide { flex-direction: row; gap: 10px; min-height: 56px; }
+  .fl-go button.wide { grid-column: 1 / -1; }
+  .fl-go .em { font-size: 26px; line-height: 1; }
   #ag-info { font-weight: 700; font-size: 14px; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
   .ag-controls { display: flex; gap: 8px; }
   .ag-controls .lab-btn {
@@ -1597,6 +1610,7 @@
     <div class="ag-stage" id="fl-stage"><div class="hud fl-hud">
       <div class="fl-btns">
         <button class="fl-btn" id="fl-acct" aria-label="Your account"><span class="fl-av" id="fl-av"></span></button>
+        <button class="fl-btn" id="fl-go" aria-label="Jump to a table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></button>
         <button class="fl-btn" id="fl-lb" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11M12 13v4M8.5 20h7M9.5 17h5v3h-5z"/></svg></button>
       </div>
       <span id="fl-info"></span>
@@ -2760,7 +2774,7 @@ const ui = {
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
   gateView: $('gate-view'), gateGoogle: $('gate-google'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
-  floorView: $('floor-view'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
+  floorView: $('floor-view'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
   flHops: $('fl-hops'), flPrev: $('fl-prev'), flNext: $('fl-next'), flHere: $('fl-here'),
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
@@ -5615,15 +5629,42 @@ function floorDrop() {
    The cards are moved into the popup while it's open and put back when it closes, so they
    keep working exactly as they do on their own tabs. */
 const flPop = { kind: '', moved: [] };
+// The Tables list: every station on the floor, one tap to go straight to its seat
+const FLOOR_ICON = { table: '🂡', threecard: '♣️', war: '⚔️', reddog: '🐶', roulette: '🎡', baccarat: '💎', poker: '🃏', slots: '🎰', plinko: '🦆', crash: '🚀', cashier: '💰' };
+const FLOOR_GROUPS = [['Table games', ['table', 'threecard', 'war', 'reddog', 'roulette', 'baccarat']], ['Machines', ['poker', 'slots', 'plinko', 'crash']], ['', ['cashier']]];
+function floorGoList() {
+  const here = fl.inst && fl.inst.at ? fl.inst.at() : '';
+  const out = [];
+  const h = document.createElement('h2');
+  h.textContent = 'Go to a table';
+  out.push(h);
+  for (const [label, ids] of FLOOR_GROUPS) {
+    if (label) { const l = document.createElement('div'); l.className = 'section-label'; l.textContent = label; out.push(l); }
+    const grid = document.createElement('div');
+    grid.className = ids.length === 4 ? 'fl-go two' : 'fl-go';
+    for (const id of ids) {
+      const b = document.createElement('button');
+      b.className = (id === here ? 'here' : '') + (id === 'cashier' ? ' wide' : '');
+      const em = document.createElement('span'); em.className = 'em'; em.textContent = FLOOR_ICON[id]; em.setAttribute('aria-hidden', 'true');
+      const nm = document.createElement('span'); nm.textContent = FLOOR_NAME[id];
+      b.append(em, nm);
+      b.setAttribute('aria-label', `Go to ${FLOOR_NAME[id]}`);
+      b.addEventListener('click', () => { flPopClose(); if (fl.inst && fl.inst.jumpTo) fl.inst.jumpTo(id); });
+      grid.appendChild(b);
+    }
+    out.push(grid);
+  }
+  return out;
+}
 function flPopOpen(kind) {
   flPopClose();
-  const nodes = kind === 'lb' ? [ui.lbList.closest('.lcard')]
+  const nodes = kind === 'go' ? floorGoList() : kind === 'lb' ? [ui.lbList.closest('.lcard')]
     : [ui.account.closest('.lcard'), ui.pfDaily.closest('.lcard'), ui.pfLearn, ui.pfVibe.closest('.lcard')];
-  flPop.moved = nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
+  flPop.moved = kind === 'go' ? [] : nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
   flPop.kind = kind;
   ui.flSheetBody.replaceChildren(...nodes);
-  ui.flSheetDialog.setAttribute('aria-label', kind === 'lb' ? 'Leaderboard' : 'Your account');
-  if (kind === 'lb') { renderBoard(); lbLoad(); } else renderProfile();
+  ui.flSheetDialog.setAttribute('aria-label', kind === 'go' ? 'Go to a table' : kind === 'lb' ? 'Leaderboard' : 'Your account');
+  if (kind === 'lb') { renderBoard(); lbLoad(); } else if (kind === 'acct') renderProfile();
   ui.flSheet.hidden = false;
   buzz(6);
   syncLock();
@@ -5634,6 +5675,7 @@ function flPopClose() {
   for (const { n, parent, next } of flPop.moved.reverse()) parent.insertBefore(n, next);
   flPop.moved = [];
   flPop.kind = '';
+  ui.flSheetBody.textContent = '';
   ui.flSheet.hidden = true;
   syncLock();
 }
@@ -7142,6 +7184,7 @@ ui.pfLearn.addEventListener('click', () => {
 });
 ui.flAcct.addEventListener('click', () => flPopOpen('acct'));
 ui.flLb.addEventListener('click', () => flPopOpen('lb'));
+ui.flGo.addEventListener('click', () => flPopOpen('go'));
 ui.flSheetClose.addEventListener('click', flPopClose);
 ui.flSheet.addEventListener('click', e => { if (e.target === ui.flSheet) flPopClose(); });
 ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? '' : t.dataset.tab); window.scrollTo(0, 0); }));
