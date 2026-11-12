@@ -36,6 +36,7 @@
     --gr: max(16px, env(safe-area-inset-right, 0px));
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --gap: 0px;   /* how far the phone's screen runs past the page's height (set by fitScreen) */
     --bar-h: 46px;
     --nav-h: 62px;
     --cw: 64px;
@@ -310,6 +311,7 @@
   .overlay {
     position: fixed;
     inset: 0;
+    bottom: calc(-1 * var(--gap));
     z-index: 30;
     display: flex;
     align-items: flex-end;
@@ -450,7 +452,7 @@
   .tabbar {
     position: fixed; z-index: 20;
     left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
-    bottom: max(12px, var(--safe-bottom));
+    bottom: calc(max(12px, var(--safe-bottom)) - var(--gap));
     max-width: 440px; margin: 0 auto;
     display: flex; justify-content: space-between; gap: 4px; padding: 6px;
     border-radius: 22px;
@@ -632,15 +634,15 @@
   html.fl-seat .balance-label { display: none; }   /* room for the station's name */
   /* The floor goes edge to edge, under the status bar and the home indicator. Nothing sits on a
      bar: the buttons, your balance and the Sit button float over the 3D room. */
-  html.floor body::before { background: #07040c; }
-  html.floor #fl-stage { position: fixed; inset: 0; margin: 0; z-index: 0; }
+  html.floor, html.floor body::before { background: #07040c; }
+  html.floor #fl-stage { position: fixed; inset: 0; bottom: calc(-1 * var(--gap)); margin: 0; z-index: 0; }
   html.floor .fl-hud { top: calc(var(--safe-top) + 8px); left: calc(var(--gl) + 2px); }
   html.floor .appbar { position: fixed; top: 0; left: 0; right: 0; margin: 0; padding: calc(var(--safe-top) + 8px) var(--gr) 0 var(--gl); pointer-events: none; }
   html.floor .appbar-in { height: 48px; }
   html.floor .appbar .bar-right { pointer-events: auto; }
   html.floor .appbar .balance-label, html.floor .appbar .balance-amt { text-shadow: 0 1px 2px rgba(0, 0, 0, .9), 0 0 12px rgba(0, 0, 0, .7); }
   html.floor .appbar .balance-label { color: rgba(245, 240, 227, .8); }
-  html.floor #floor-view .dock { position: fixed; left: 0; right: 0; bottom: 0; margin: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
+  html.floor #floor-view .dock { position: fixed; left: 0; right: 0; bottom: calc(-1 * var(--gap)); margin: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
   html.floor #floor-view .dock .ag-controls > * { pointer-events: auto; }
   html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 132px); }
   html.floor .floor-tag { bottom: calc(max(14px, var(--safe-bottom)) + 68px); background: none; -webkit-backdrop-filter: none; backdrop-filter: none; text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 14px rgba(0, 0, 0, .8); }
@@ -801,7 +803,7 @@
      Game screens never scroll. The felt takes whatever height is left between the app bar and the
      controls, and the cards size themselves to it (cqh = 1% of the felt's height). */
   html.game, html.game body { height: 100%; overflow: hidden; overscroll-behavior: none; }
-  html.game .wrap { height: 100vh; height: 100dvh; min-height: 0; }
+  html.game .wrap { height: 100vh; height: calc(100dvh + var(--gap)); min-height: 0; }
   html.game .view.has-dock { min-height: 0; }
   html.bj body::before { background: radial-gradient(ellipse 130% 70% at 50% 100%, #2c1b10 0%, #160e08 55%, #0b0705 100%); }
   html.bj .dock { background: rgba(14, 10, 7, .92); }
@@ -7177,6 +7179,22 @@ ui.rSpin.addEventListener('click', rlSpin);
 ui.rUndo.addEventListener('click', rlUndo);
 ui.rClear.addEventListener('click', rlClear);
 window.addEventListener('resize', () => { if (app.view === 'roulette' && !rl.anim) rlDraw(); });
+/* Opened from the iPhone home screen, the page can come out shorter than the screen: the
+   viewport leaves out the status bar's height even though the page draws under it, so a strip
+   at the bottom shows the page's background instead of the game. Measure that strip and let
+   full-screen layers reach past it (--gap). In Safari or on a computer it stays 0. */
+function fitScreen() {
+  let gap = 0;
+  const app = navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (app && window.innerHeight > window.innerWidth && window.screen) {
+    const tall = Math.max(screen.height, screen.width);
+    gap = Math.max(0, Math.min(80, Math.round(tall - window.innerHeight)));
+  }
+  document.documentElement.style.setProperty('--gap', gap + 'px');
+}
+fitScreen();
+window.addEventListener('resize', fitScreen);
+window.addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
 ui.inviteBtn.addEventListener('click', () => { app.inviteOpen = !app.inviteOpen; app.chipsOpen = false; render(); });
 ui.bankPill.addEventListener('click', () => {
   if (app.solo) { toast(dailyText(true)); return; }
