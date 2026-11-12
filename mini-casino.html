@@ -630,6 +630,21 @@
   .fl-hops { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; }
   .fl-hops[hidden] { display: none; }
   html.fl-seat .balance-label { display: none; }   /* room for the station's name */
+  /* The floor goes edge to edge, under the status bar and the home indicator. Nothing sits on a
+     bar: the buttons, your balance and the Sit button float over the 3D room. */
+  html.floor body::before { background: #07040c; }
+  html.floor #fl-stage { position: fixed; inset: 0; margin: 0; z-index: 0; }
+  html.floor .fl-hud { top: calc(var(--safe-top) + 8px); left: calc(var(--gl) + 2px); }
+  html.floor .appbar { position: fixed; top: 0; left: 0; right: 0; margin: 0; padding: calc(var(--safe-top) + 8px) var(--gr) 0 var(--gl); pointer-events: none; }
+  html.floor .appbar-in { height: 48px; }
+  html.floor .appbar .bar-right { pointer-events: auto; }
+  html.floor .appbar .balance-label, html.floor .appbar .balance-amt { text-shadow: 0 1px 2px rgba(0, 0, 0, .9), 0 0 12px rgba(0, 0, 0, .7); }
+  html.floor .appbar .balance-label { color: rgba(245, 240, 227, .8); }
+  html.floor #floor-view .dock { position: fixed; left: 0; right: 0; bottom: 0; margin: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
+  html.floor #floor-view .dock .ag-controls > * { pointer-events: auto; }
+  html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 132px); }
+  html.floor .floor-tag { bottom: calc(max(14px, var(--safe-bottom)) + 68px); background: none; -webkit-backdrop-filter: none; backdrop-filter: none; text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 14px rgba(0, 0, 0, .8); }
+  html.floor #fl-info { text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 12px rgba(0, 0, 0, .8); }
   .fl-hop { flex: none; width: 34px; height: 34px; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .08); color: var(--gold); font: 800 20px/1 inherit; cursor: pointer; }
   .fl-hop:active { transform: scale(.94); }
   .fl-hop:disabled { opacity: .3; }
@@ -6464,6 +6479,7 @@ function render() {
   // Game screens fill the screen exactly and never scroll
   document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog' || v === 'arcadegame' || v === 'floor');
   document.documentElement.classList.toggle('arc', v === 'arcadegame' || v === 'floor');
+  document.documentElement.classList.toggle('floor', v === 'floor');
   document.documentElement.classList.toggle('bac', v === 'baccarat');
   document.documentElement.classList.toggle('war', v === 'war');
   document.documentElement.classList.toggle('tcp', v === 'threecard');
