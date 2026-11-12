@@ -651,6 +651,18 @@
   html.floor #floor-view .dock { position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); justify-content: flex-end; margin: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
   html.floor #floor-view .dock .ag-controls > * { pointer-events: auto; }
   html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 76px); background: rgba(62, 52, 76, .82); box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .3), 0 6px 18px rgba(0, 0, 0, .4); }
+  /* Signed out: both ways in, right on the floor */
+  .fl-welcome { display: none; }
+  html.floor .fl-welcome:not([hidden]) { display: block; position: fixed; z-index: 3; top: calc(var(--safe-top) + 68px); left: max(16px, var(--gl)); right: max(16px, var(--gr)); max-width: 420px; margin: 0 auto; padding: 12px 14px 14px; border-radius: 16px;
+    background: rgba(12, 9, 16, .78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .22), 0 8px 24px rgba(0, 0, 0, .45); color: var(--fl-ink); }
+  .fl-welcome p { margin: 0 0 10px; font-size: 14px; line-height: 1.35; color: rgba(240, 230, 208, .85); text-align: center; }
+  .fl-welcome p b { color: var(--fl-ink); }
+  .fl-welcome-btns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
+  .fl-welcome button { min-height: 46px; border: 0; border-radius: 12px; font: 800 15px/1 inherit; cursor: pointer; }
+  .fl-welcome button:active { transform: scale(.98); }
+  .fl-welcome button:disabled { opacity: .6; }
+  .fl-welcome .fw-guest { background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; box-shadow: 0 2px 0 #a3957a; }
+  .fl-welcome .fw-in { background: rgba(255, 255, 255, .06); color: var(--fl-ink); box-shadow: inset 0 0 0 1.5px rgba(240, 230, 208, .55); }
   html.floor #fl-info { text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 12px rgba(0, 0, 0, .8); }
   .lbw:active { transform: scale(.99); }
   .lbw-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 15px; }
@@ -1585,6 +1597,13 @@
       </div>
       <span id="fl-info"></span>
     </div></div>
+    <div class="fl-welcome" id="fl-welcome" hidden>
+      <p><b>Welcome to Mini Casino.</b> Pull up a seat with $1,000 in play money.</p>
+      <div class="fl-welcome-btns">
+        <button class="fw-guest" id="fl-guest">Play as a guest</button>
+        <button class="fw-in" id="fl-signin">Sign in</button>
+      </div>
+    </div>
     <div class="dock ag-dock"><div class="ag-controls" id="fl-controls"></div></div>
   </section>
 
@@ -2741,7 +2760,7 @@ const ui = {
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
   gateView: $('gate-view'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
-  floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
+  floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flWelcome: $('fl-welcome'), flGuest: $('fl-guest'), flSignin: $('fl-signin'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
 
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
@@ -2954,14 +2973,27 @@ function teardown() {
 }
 
 /* Leaving a game ends it: a finished hand's cards and result don't wait for you to come back.
-   A hand still in play (money down, a decision to make) stays, so nothing is lost. */
+   A blackjack hand still in play is played out for you: no insurance, then stand on every hand. */
+async function bjWalkAway() {
+  for (let i = 0; i < 12 && signedIn(); i++) {
+    const T = soloT, R = T && T.round;
+    if (!R || R.over) break;
+    if (T.phase === 'insurance') soloSend({ t: 'ins', y: false });
+    else if (T.phase === 'player') soloSend({ t: 'stand', k: T.turn });
+    else break;
+    await solo.queue;
+    if (soloT === T) break;   // the server didn't take it: leave the hand as it is
+  }
+  const R = soloT && soloT.round;
+  if (!R || !R.over) return;
+  recordBlackjackRound(soloT);   // it still counts in your stats
+  solo.hide = R.n;
+  soloT = { ...soloT, round: null };
+  if (app.view === 'table' && app.solo) { app.T = soloT; render(); }
+}
 function gameLeft(v) {
   if (v === 'roulette') rlFresh();
-  else if (v === 'table') {
-    const R = soloT && soloT.round;
-    if (R && R.over) { solo.hide = R.n; soloT = { ...soloT, round: null }; }
-    app.renderedRound = -1;
-  }
+  else if (v === 'table') { bjWalkAway(); app.renderedRound = -1; }
   else if (v === 'poker' && vp.phase === 'done') { vp.phase = 'bet'; vp.result = null; vp.hand = []; vp.held = [false, false, false, false, false]; vpSave(); }
   else if (v === 'baccarat' && !bc.busy) { bcFresh(); ui.bcPcards.textContent = ''; ui.bcBcards.textContent = ''; ui.bcPt.textContent = ''; ui.bcBt.textContent = ''; }
   else if (v === 'war') wrFresh();
@@ -5706,6 +5738,7 @@ function renderFloorHud() {
   if (name) ui.flAv.textContent = name[0].toUpperCase();
   else ui.flAv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>';
   ui.flAcct.classList.toggle('nudge', cloud.ready && !signedIn());   // a nudge to sign in
+  ui.flWelcome.hidden = !cloud.ready || signedIn();
   ui.flGo.classList.toggle('nudge', bonusReady());   // today's bonus is waiting at the cashier
   feedLoad();
   ui.flAcct.setAttribute('aria-label', name ? `Your account: ${name}` : 'Your account: sign in');
@@ -6287,12 +6320,13 @@ async function authSubmit(e) {
 }
 // No email needed: the server gives this device a guest wallet, which an account can adopt later
 async function playAsGuest() {
-  ui.authGuest.disabled = true;
+  ui.authGuest.disabled = ui.flGuest.disabled = true;
   ui.authError.textContent = '';
+  const fail = msg => { if (ui.auth.hidden) toast(msg); else ui.authError.textContent = msg; };
   try {
     const res = await fetch('/api/guest', { method: 'POST', credentials: 'same-origin', headers: { accept: 'application/json' } });
     const d = await res.json().catch(() => null);
-    if (!res.ok || !d || !d.user) { ui.authError.textContent = 'Couldn’t start a guest game. Try again.'; return; }
+    if (!res.ok || !d || !d.user) { fail('Couldn’t start a guest game. Try again.'); return; }
     cloud.user = d.user;
     cloud.version = 0;
     closeAuth();
@@ -6303,9 +6337,9 @@ async function playAsGuest() {
     await walletFetch();
     cloudPull();
   } catch (err) {
-    ui.authError.textContent = 'Couldn’t reach the casino. Check your connection and try again.';
+    fail('Couldn’t reach the casino. Check your connection and try again.');
   } finally {
-    ui.authGuest.disabled = false;
+    ui.authGuest.disabled = ui.flGuest.disabled = false;
   }
 }
 async function signOut() {
@@ -7162,6 +7196,8 @@ ui.gateLearn.addEventListener('click', openHelp);
 ui.lobbyEmail.addEventListener('click', () => openAuth('in'));
 ui.tEmail.addEventListener('click', () => openAuth('in'));
 ui.authGuest.addEventListener('click', playAsGuest);
+ui.flGuest.addEventListener('click', playAsGuest);
+ui.flSignin.addEventListener('click', () => floorAsk(null));
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
 ui.authClose.addEventListener('click', closeAuth);
 ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
