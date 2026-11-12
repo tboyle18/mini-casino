@@ -29,6 +29,10 @@ const CSS = `
   text-shadow: 0 0 18px rgba(255, 210, 110, .8), 0 3px 0 rgba(0, 0, 0, .35); }
 .win-hint { margin-top: 14px; font-size: 13px; font-weight: 700; color: rgba(245,240,227,.55); opacity: 0; }
 .win-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+/* Over the casino: the whole screen, darkened, above everything */
+.win-layer { position: fixed; inset: 0; z-index: 1000; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.win-stage.over { background: radial-gradient(ellipse 90% 70% at 50% 42%, rgba(16, 52, 34, .9) 0%, rgba(4, 3, 2, .95) 100%); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.win-stage.over.dim::after { display: none; }
 `;
 
 const GOLDS = ['#ffe9a3', '#ffd56b', '#f4c046', '#e3a52f', '#fff6d6'];
@@ -37,10 +41,12 @@ const PARTY = ['#ffd56b', '#ff5d6c', '#4cc3ff', '#7cf29a', '#ffffff', '#c58bff']
 const FLAVOURS = {
   big: { label: 'Big win', title: 'BIG WIN', kicker: 'Roulette · 17 Black', amount: 12500, coins: 1, confetti: 1, shake: 0 },
   bj: { label: 'Blackjack!', title: 'BLACKJACK', kicker: 'Pays 3 to 2', amount: 1500, coins: 0.4, confetti: 1, suits: true, shake: 0 },
-  jackpot: { label: 'Jackpot', title: 'JACKPOT', kicker: 'All on 0 · 35 to 1', amount: 1000000, coins: 2.4, confetti: 1.8, shake: 1 },
+  jackpot: { label: 'Jackpot', title: 'JACKPOT', kicker: 'All on 0 · 35 to 1', amount: 1000000, coins: 2.4, confetti: 1.8, shake: 1, long: 1 },
 };
 
-export async function mount({ stage, controls, info }) {
+/* The celebration's layer inside parent, with play(f) and clear(). The demo below and the
+   casino's celebrate() both use it. */
+function createStage(parent, label = () => {}) {
   const style = document.createElement('style');
   style.textContent = CSS;
   document.head.appendChild(style);
@@ -57,7 +63,7 @@ export async function mount({ stage, controls, info }) {
       <div class="win-hint">Tap to collect</div>
     </div>
     <canvas class="win-canvas"></canvas>`;
-  stage.appendChild(root);
+  parent.appendChild(root);
   const rays = root.querySelector('.win-rays');
   const idle = root.querySelector('.win-idle');
   const card = root.querySelector('.win-card');
@@ -85,8 +91,7 @@ export async function mount({ stage, controls, info }) {
     fire.reset();
   }
 
-  function play(key) {
-    const f = FLAVOURS[key];
+  function play(f) {
     clear();
     idle.style.display = 'none';
     root.classList.add('dim');
@@ -96,7 +101,7 @@ export async function mount({ stage, controls, info }) {
     const letters = title.querySelectorAll('span');
     const shine = title.querySelector('.win-shine');
     amountEl.textContent = '$0';
-    info.textContent = f.label;
+    label(f.label);
     buzz([30, 40, 60]);
 
     const counter = { v: 0 };
@@ -109,7 +114,7 @@ export async function mount({ stage, controls, info }) {
         { y: 0, scale: 1, opacity: 1, rotation: 0, duration: 0.75, ease: 'back.out(3)', stagger: 0.055 }, 0.2)
       .fromTo(amountEl, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: 'back.out(2)' }, 0.55)
       .to(counter, {
-        v: f.amount, duration: key === 'jackpot' ? 3.2 : 2, ease: 'power3.out',
+        v: f.amount, duration: f.long ? 3.2 : 2, ease: 'power3.out',
         onUpdate() {
           amountEl.textContent = money(counter.v);
           const step = Math.floor((counter.v / f.amount) * 12);
@@ -161,25 +166,75 @@ export async function mount({ stage, controls, info }) {
     for (let i = 0; i < 14; i++) later(sparkle, 700 + i * 180);
   }
 
+  return { root, rays, card, hint, idle, play, clear, isPlaying: () => !!tl };
+}
+
+const STYLE_ID = 'win-style';
+function addStyle() {
+  if (document.getElementById(STYLE_ID)) return null;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = CSS;
+  document.head.appendChild(style);
+  return style;
+}
+
+// The lab demo: pick a win to watch it
+export async function mount({ stage, controls, info }) {
+  const style = addStyle();
+  const S = createStage(stage, t => { info.textContent = t; });
+  const { root, rays, card, idle } = S;
+  let back = 0;
   function dismiss() {
-    if (!tl) return;
-    clear();
+    if (!S.isPlaying()) return;
+    S.clear();
     gsap.to(card, { scale: 0.9, opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => { gsap.set(card, { scale: 1 }); } });
     gsap.to(rays, { opacity: 0, duration: 0.4 });
     root.classList.remove('dim');
-    later(() => { idle.style.display = ''; info.textContent = 'Tap a win to replay it'; }, 350);
+    back = setTimeout(() => { idle.style.display = ''; info.textContent = 'Tap a win to replay it'; }, 350);
   }
   root.addEventListener('click', dismiss);
-
-  for (const key of Object.keys(FLAVOURS)) controls.appendChild(button(FLAVOURS[key].label, () => play(key), key === 'big' ? 'primary' : ''));
+  for (const key of Object.keys(FLAVOURS)) controls.appendChild(button(FLAVOURS[key].label, () => { clearTimeout(back); S.play(FLAVOURS[key]); }, key === 'big' ? 'primary' : ''));
   info.textContent = 'Celebrations with GSAP and canvas-confetti';
-
   return {
     dispose() {
-      clear();
+      clearTimeout(back);
+      S.clear();
       root.removeEventListener('click', dismiss);
       root.remove();
-      style.remove();
+      if (style) style.remove();
     },
   };
+}
+
+/* The casino's big wins: the celebration over the whole screen, for a few seconds or until
+   tapped. kind is 'big', 'bj' or 'jackpot'; kicker is the line above the title (the game and
+   what won); amount is what you won. Only one plays at a time. */
+let current = null;
+export function celebrate({ kind = 'big', kicker = '', amount = 0 }) {
+  if (current) current.close();
+  addStyle();
+  const layer = document.createElement('div');
+  layer.className = 'win-layer';
+  document.body.appendChild(layer);
+  const S = createStage(layer);
+  S.root.classList.add('over');
+  S.idle.remove();
+  const f = { ...FLAVOURS[kind] || FLAVOURS.big, kicker, amount: Math.max(0, amount) };
+  S.play(f);
+  let shut = false;
+  const me = {
+    close() {
+      if (shut) return;
+      shut = true;
+      clearTimeout(timer);
+      S.clear();
+      if (current === me) current = null;
+      gsap.to(layer, { opacity: 0, duration: 0.3, onComplete: () => layer.remove() });
+    },
+  };
+  const timer = setTimeout(me.close, kind === 'jackpot' ? 7000 : kind === 'bj' ? 4200 : 5500);
+  layer.addEventListener('click', me.close);
+  current = me;
+  return me;
 }

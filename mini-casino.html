@@ -3282,6 +3282,20 @@ function mergeLog(newest) {
 // Keep winnings off the shown balance until the game reveals them
 function holdBack(a) { wallet.held = Math.max(0, wallet.held + (a || 0)); walletShow(); }
 function release(a) { wallet.held = Math.max(0, wallet.held - (a || 0)); walletShow(); render(); }
+/* The big-win celebration (lab/celebrate.js) over the whole screen, for a round that paid back
+   10 times the stake or more (100 times is a jackpot), or a natural blackjack (kind 'bj').
+   It starts a moment after the result shows; tap it away. */
+function bigWin(stake, payout, kicker, kind, delay = 600) {
+  const x = stake > 0 ? payout / stake : 0;
+  kind = kind || (x >= 100 ? 'jackpot' : x >= 10 ? 'big' : '');
+  if (!kind || !(payout > stake)) return;
+  setTimeout(async () => {
+    try {
+      const mod = await import('/lab/embed.js');
+      (await mod.celebrate()).celebrate({ kind, kicker, amount: Math.round((payout - stake) * 100) / 100 });
+    } catch (err) { /* no celebration on this device: the result still shows */ }
+  }, delay);
+}
 async function walletFetch() {
   if (!signedIn()) return;
   wallet.loading = true;
@@ -3733,6 +3747,11 @@ function recordBlackjackRound(T) {
   b.biggest = Math.max(b.biggest, net);
   statsStreak(net);
   statsSave();
+  // A natural blackjack gets the celebration once the cards have landed (each round once:
+  // stats.seen above)
+  const mine = R.hands.filter(x => x.uid === me);
+  const staked = mine.reduce((a, h) => a + h.bet, 0);
+  bigWin(staked, staked + net, mine.some(h => h.result === 'blackjack') ? 'Blackjack · Pays 3 to 2' : 'Blackjack', mine.some(h => h.result === 'blackjack') && net > 0 ? 'bj' : null, 1600);
 }
 
 /* ================= Roulette (single zero, solo, plays from the wallet) ================= */
@@ -4038,6 +4057,7 @@ function rlSettle() {
   rlSave();
   recordRoulette(live.result, live.total, payout);
   release(payout);
+  bigWin(live.total, payout, `Roulette · ${live.result} ${colorName(live.result)}`);
   if (net > 0) buzz([15, 60, 25]);
   if (rl.stage) {
     rl.stage = 'result';
@@ -4433,6 +4453,7 @@ async function vpDraw() {
   vpSave();
   vpReveal(swap, () => {
     release(r.payout);
+    bigWin(r.stake, r.payout, `Video Poker · ${r.rank ? r.rank.name : ''}`, null, 300);
     if (r.rank && r.rank.pays >= 25) buzz([30, 40, 60]);
     else if (r.net > 0) buzz([15, 50, 25]);
   });
@@ -4525,6 +4546,7 @@ function bcSettle() {
   bcSave();
   recordBaccarat(live);
   release(live.payout);
+  bigWin(live.total, live.payout, `Baccarat · ${live.winner === 'tie' ? 'Tie' : live.winner === 'player' ? 'Player wins' : 'Banker wins'}`);
 }
 function buildBaccarat() {
   buildChipRail(ui.bcChips, bcChip);
@@ -4721,6 +4743,7 @@ function wrSettle() {
   wrSave();
   recordWar(live, o);
   release(live.payout);
+  bigWin(live.total, live.payout, `Casino War · ${o.words}`);
 }
 function buildWar() {
   buildChipRail(ui.wrChips, wrChip);
@@ -5001,6 +5024,7 @@ function tcSettle() {
   const o = tcOutcome(live);
   recordThreeCard(live, o);
   release(live.payout);
+  bigWin(live.total, live.payout, `Three Card Poker · ${o.words}`);
 }
 function tcHandName(cards) {
   const r = tcRank(cards);
@@ -5243,6 +5267,7 @@ function rdSettle() {
   const o = rdOutcome(live);
   recordRedDog(live, o);
   release(live.payout);
+  bigWin(live.total, live.payout, `Red Dog · ${o.words}`);
 }
 function buildRedDog() {
   const cells = [['Spread 1', '5 to 1', 1], ['Spread 2', '4 to 1', 2], ['Spread 3', '2 to 1', 3], ['4 or more', '1 to 1', 4], ['Pair', 'Trips 11:1', 'pair']];

@@ -14,3 +14,6 @@ export const roulette = () => import('./roulette.js');
 
 // The 3D blackjack table for the solo game (lab/table.js, mountCasinoTable)
 export const table = () => import('./table.js');
+
+// The big-win celebration over the whole screen (lab/celebrate.js, celebrate)
+export const celebrate = () => import('./celebrate.js');
