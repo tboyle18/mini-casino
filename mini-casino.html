@@ -603,6 +603,25 @@
     -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
   .lbw[hidden] { display: none; }
+  /* The casino floor (beta): the way in from the home screen, and the seat arrows in the top bar */
+  .floor-cta {
+    appearance: none; text-align: left; color: inherit; font: inherit; cursor: pointer; width: 100%;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; padding: 14px 16px; border-radius: 20px;
+    background: linear-gradient(120deg, rgba(122, 16, 32, .75), rgba(29, 12, 42, .8)); border: 1px solid rgba(242, 199, 91, .35);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .floor-cta:active { transform: scale(.99); }
+  .floor-cta b { font-size: 17px; }
+  .floor-cta .fc-sub { grid-column: 1; color: var(--ink-2); font-size: 13px; }
+  .floor-cta .fc-go { grid-column: 2; grid-row: 1 / span 3; color: var(--gold); font-size: 28px; font-weight: 700; }
+  .floor-cta .fc-k { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  .fl-hops { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .fl-hops[hidden] { display: none; }
+  html.fl-seat .balance-label { display: none; }   /* room for the station's name */
+  .fl-hop { flex: none; width: 34px; height: 34px; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .08); color: var(--gold); font: 800 20px/1 inherit; cursor: pointer; }
+  .fl-hop:active { transform: scale(.94); }
+  .fl-hop:disabled { opacity: .3; }
+  .fl-here { min-width: 0; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; font-size: 13px; text-align: center; }
   .lbw:active { transform: scale(.99); }
   .lbw-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 15px; }
   .lbw-go { color: var(--gold); font-size: 13px; font-weight: 700; }
@@ -1493,6 +1512,7 @@
   <header class="appbar" id="casino-bar">
     <div class="appbar-in">
       <button class="back" id="home-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="back-label">Home</span></button>
+      <div class="fl-hops" id="fl-hops" hidden><button class="fl-hop" id="fl-prev">‹</button><span class="fl-here" id="fl-here"></span><button class="fl-hop" id="fl-next">›</button></div>
       <div class="bar-title" id="bar-title" hidden><span class="bt-main" id="t-name"></span><span class="bt-sub" id="t-code"></span></div>
       <div class="bar-right">
         <button class="barbtn help" id="help-btn" aria-label="How to play" title="How to play" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8M12 17.2v.1"/></svg></button>
@@ -1533,6 +1553,7 @@
       <ol class="lbw-list" id="lbw-list"></ol>
       <div class="lbw-me" id="lbw-me"></div>
     </button>
+    <button class="floor-cta" id="floor-cta"><span class="fc-k">Beta</span><b>Walk the casino floor</b><span class="fc-sub">Glide between the tables in 3D, then take a seat</span><span class="fc-go" aria-hidden="true">›</span></button>
     <div class="section-label">Table games</div>
     <div class="tiles" id="tiles"></div>
     <div class="home-foot">Play money only</div>
@@ -1553,6 +1574,12 @@
       <div class="chips" id="ag-chips" aria-label="Chip value"></div>
       <div class="ag-controls" id="ag-controls"></div>
     </div>
+  </section>
+
+  <!-- ================= Casino floor (beta): lab/floor.js ================= -->
+  <section class="view has-dock" id="floor-view" hidden>
+    <div class="ag-stage" id="fl-stage"><div class="hud"><span id="fl-info"></span></div></div>
+    <div class="dock ag-dock"><div class="ag-controls" id="fl-controls"></div></div>
   </section>
 
   <!-- ================= Transaction history ================= -->
@@ -1609,9 +1636,9 @@
       <label class="toggle-row"><span><b>Blackjack hints</b><span>Highlight the basic-strategy move</span></span><input type="checkbox" id="pf-hints"></label>
     </div>
     <div class="section-label">Experimental</div>
-    <a class="stats-link" href="/lab/">
+    <a class="stats-link" href="#floor">
       <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span>
-      <span class="sl-text"><b>Graphics lab<i class="sl-tag">Experimental</i></b><span>Lucky Duck slots and 3D test demos</span></span>
+      <span class="sl-text"><b>Casino floor<i class="sl-tag">Beta</i></b><span>Glide between the tables in 3D and sit down to play</span></span>
       <span class="sl-go" aria-hidden="true">›</span>
     </a>
     <div class="home-foot">Mini Casino · play money only</div>
@@ -1815,7 +1842,7 @@
         <span class="sl-text"><b>Duck Rocket crash</b><span>Cash out before it blows</span></span>
         <span class="sl-go" aria-hidden="true">›</span>
       </button>
-      <div class="section-label">Graphics lab · experimental</div>
+      <div class="section-label">Slots</div>
       <button class="stats-link" data-learn="slots">
         <span class="sl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6h9l-5.5 12"/></svg></span>
         <span class="sl-text"><b>Lucky Duck slots</b><span>Pull the lever, line up three</span></span>
@@ -2684,6 +2711,7 @@ const GAMES = [
 /* ================= App state ================= */
 const app = {
   view: 'home', solo: false, code: null, routeKey: '', hashOverride: null,
+  fromFloor: null,                    // the casino floor station you sat down at (see floorSeat)
   learnId: '', learnBack: null,       // the How to play article on screen, and where its back button returns to
   chipsOpen: false,
   T: null, confirmed: false, missing: false, loadErr: '', slow: false,
@@ -2702,6 +2730,8 @@ const ui = {
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
   gateView: $('gate-view'), gateGoogle: $('gate-google'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
+  floorView: $('floor-view'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
+  flHops: $('fl-hops'), flPrev: $('fl-prev'), flNext: $('fl-next'), flHere: $('fl-here'),
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
   pfDaily: $('pf-daily'), pfLearn: $('pf-learn'), pfVibe: $('pf-vibe'), pfHints: $('pf-hints'),
@@ -2856,6 +2886,7 @@ function route() {
   else if (h === 'arcade') target = { view: 'arcade', code: '' };
   else if (h === 'arcade-plinko' || h === 'arcade-crash' || h === 'arcade-slots') target = { view: 'arcadegame', code: h.slice(7) };
   else if (h === 'profile') target = { view: 'profile', code: '' };
+  else if (h === 'floor') target = { view: 'floor', code: '' };
   else if (h === 'poker') target = { view: 'poker', code: '' };
   else if (h === 'baccarat') target = { view: 'baccarat', code: '' };
   else if (h === 'war') target = { view: 'war', code: '' };
@@ -2870,6 +2901,8 @@ function route() {
   if (key === app.routeKey) { render(); return; }
   app.routeKey = key;
   if (target.view !== 'learn') app.learnBack = null;
+  // Leaving a floor seat for anywhere else (but its help page) leaves the floor behind
+  if (app.fromFloor && target.view !== 'floor' && target.view !== 'learn' && target.view !== FLOOR_TARGET[app.fromFloor]) app.fromFloor = null;
   if (app.view === 'table') bjLeaveTable();
   teardown();
   if (target.view === 'lobby') enterLobby();
@@ -5486,6 +5519,66 @@ function arcClose() {
   ui.agInfo.textContent = '';
   arc.game = '';
 }
+/* ================= Casino floor (beta) =================
+   The floor (lab/floor.js) is a way into the games: glide between the stations and tap one
+   to sit, and its own screen opens. From a seat, the top bar's Floor button stands you back
+   up on the floor, and its arrows glide you through the floor into the next seat. */
+const FLOOR_ORDER = ['table', 'threecard', 'war', 'reddog', 'roulette', 'baccarat', 'poker', 'slots', 'cashier'];   // as lab/floor.js lays them out
+const FLOOR_NAME = { table: 'Blackjack', threecard: 'Three Card', war: 'Casino War', reddog: 'Red Dog', roulette: 'Roulette', baccarat: 'Baccarat', poker: 'Video Poker', slots: 'Lucky Duck', cashier: 'Cashier' };
+const FLOOR_GO = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcade-slots', cashier: 'stats' };
+const FLOOR_TARGET = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcadegame', cashier: 'stats' };   // route()'s view for each
+const FLOOR_VIEW = { ...FLOOR_TARGET, table: 'table' };   // app.view while you're at each one
+const fl = { inst: null, loading: false, token: 0, start: null };
+// The station you're sitting at, if you came from the floor and are still at its screen
+function floorSeat() {
+  const id = app.fromFloor;
+  if (!id || app.view !== FLOOR_VIEW[id] || (id === 'table' && !app.solo)) return null;
+  return id;
+}
+function floorSit(id) {
+  if (!FLOOR_GO[id]) return;
+  app.fromFloor = id;
+  go(FLOOR_GO[id]);
+}
+function floorHop(dir) {
+  const seat = floorSeat();
+  const to = seat && FLOOR_ORDER[FLOOR_ORDER.indexOf(seat) + dir];
+  if (!to) return;
+  buzz(8);
+  fl.start = { at: seat, hop: to };
+  app.fromFloor = null;
+  go('floor');
+}
+async function floorEnsure() {
+  if (fl.inst || fl.loading) return;
+  const mine = ++fl.token;
+  fl.loading = true;
+  ui.flInfo.textContent = 'Loading…';
+  const start = fl.start;
+  fl.start = null;
+  try {
+    const mod = await import('/lab/embed.js');
+    const floor = await mod.floor();
+    if (mine !== fl.token) return;
+    const inst = await floor.mount({ stage: ui.flStage, controls: ui.flControls, info: ui.flInfo, casino: { start, sit: floorSit } });
+    if (mine !== fl.token) { inst.dispose(); return; }
+    fl.inst = inst;
+  } catch (err) {
+    console.error(err);
+    if (mine === fl.token) ui.flInfo.textContent = `The casino floor couldn’t start on this device: ${(err && err.message) || err}`;
+  } finally {
+    if (mine === fl.token) fl.loading = false;
+  }
+}
+function floorDrop() {
+  if (!fl.inst && !fl.loading) return;
+  fl.token++;
+  fl.loading = false;
+  if (fl.inst) { try { fl.inst.dispose(); } catch (e) { /* already gone */ } fl.inst = null; }
+  for (const el of [...ui.flStage.children]) if (!el.classList.contains('hud')) el.remove();
+  ui.flControls.textContent = '';
+}
+
 function renderArcadeGame() {
   const bal = wallet.ready ? wallet.balance : 0;
   if (arc.inst && arc.inst.refresh) arc.inst.refresh();
@@ -6318,6 +6411,7 @@ function render() {
   ui.home.hidden = v !== 'home';
   ui.arcadeView.hidden = v !== 'arcade';
   ui.arcadeGameView.hidden = v !== 'arcadegame';
+  ui.floorView.hidden = v !== 'floor';
   ui.profileView.hidden = v !== 'profile';
   ui.rouletteView.hidden = v !== 'roulette';
   ui.lobby.hidden = v !== 'lobby';
@@ -6335,8 +6429,8 @@ function render() {
   ui.gateView.hidden = !gated;
   if (gated) for (const el of [ui.rouletteView, ui.tableView, ui.pokerView, ui.baccaratView, ui.warView, ui.tcpView, ui.reddogView, ui.arcadeGameView]) el.hidden = true;
   // Game screens fill the screen exactly and never scroll
-  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog' || v === 'arcadegame');
-  document.documentElement.classList.toggle('arc', v === 'arcadegame');
+  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog' || v === 'arcadegame' || v === 'floor');
+  document.documentElement.classList.toggle('arc', v === 'arcadegame' || v === 'floor');
   document.documentElement.classList.toggle('bac', v === 'baccarat');
   document.documentElement.classList.toggle('war', v === 'war');
   document.documentElement.classList.toggle('tcp', v === 'threecard');
@@ -6345,19 +6439,31 @@ function render() {
   document.documentElement.classList.toggle('vp', v === 'poker');
 
   // The four tabs have the nav bar and no strip; games have the strip and no nav bar
-  const tab = TAB_OF[v];
-  const isTab = TAB_HOME.has(v);
+  const seat = floorSeat();   // in a seat taken from the casino floor: the top bar leads back to it
+  const tab = seat ? null : TAB_OF[v];
+  const isTab = TAB_HOME.has(v) && !seat;
   document.documentElement.classList.toggle('has-nav', !!tab);
   ui.tabbar.hidden = !tab;
   for (const t of ui.tabs) { t.classList.toggle('on', t.dataset.tab === tab); t.setAttribute('aria-current', t.dataset.tab === tab ? 'page' : 'false'); }
   ui.casinoBar.hidden = isTab;
-  ui.backLabel.textContent = v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms')
+  ui.backLabel.textContent = seat ? 'Floor'
+    : v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms')
     : v === 'learn' ? (app.learnBack ? app.learnBack.label : app.learnId ? 'How to play' : 'Profile')
     : v === 'arcadegame' ? 'Arcade'
     : v === 'history' ? 'Stats'
     : 'Casino';
   ui.helpBtn.hidden = !HELP_FOR[v] && v !== 'arcadegame';
-  ui.barTitle.hidden = v !== 'table';
+  ui.barTitle.hidden = v !== 'table' || !!seat;
+  ui.flHops.hidden = !seat;
+  document.documentElement.classList.toggle('fl-seat', !!seat);
+  if (seat) {
+    const i = FLOOR_ORDER.indexOf(seat);
+    ui.flHere.textContent = FLOOR_NAME[seat];
+    ui.flPrev.disabled = i <= 0;
+    ui.flNext.disabled = i >= FLOOR_ORDER.length - 1;
+    ui.flPrev.setAttribute('aria-label', i > 0 ? `Move to ${FLOOR_NAME[FLOOR_ORDER[i - 1]]}` : 'Previous station');
+    ui.flNext.setAttribute('aria-label', i < FLOOR_ORDER.length - 1 ? `Move to ${FLOOR_NAME[FLOOR_ORDER[i + 1]]}` : 'Next station');
+  }
   ui.tableTools.hidden = v !== 'table';
   ui.balanceBtn.hidden = v === 'table' || v === 'learn';
   const bal = wallet.ready ? money(wallet.balance) : '—';
@@ -6368,6 +6474,7 @@ function render() {
   if (v !== 'roulette' && rl.stage) rlStageClose();
   if (v === 'roulette') rl3dEnsure(); else rl3dDrop();
   if (v === 'table' && app.solo) bj3dEnsure(); else bj3dDrop();
+  if (v === 'floor') floorEnsure(); else floorDrop();
   lobbySync();
   if (v !== 'home') purse.shown = wallet.ready ? wallet.balance : null;   // wins elsewhere don't burst when you come back
   if (v === 'home') { renderDaily(); renderWalletCard(); renderTicker(); feedLoad(); renderLbw(); lbLoad(false, 'week'); }
@@ -6943,6 +7050,8 @@ ui.joinBtn.addEventListener('click', joinByCode);
 ui.joinCode.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
 ui.soloBtn.addEventListener('click', () => go('solo'));
 ui.homeBtn.addEventListener('click', () => {
+  const seat = floorSeat();
+  if (seat) { fl.start = { at: seat, seated: true }; app.fromFloor = null; go('floor'); return; }
   if (app.view === 'table') { go('blackjack'); return; }
   if (app.view === 'arcadegame') { go('arcade'); return; }
   if (app.view === 'history') { go('stats'); return; }
@@ -6955,6 +7064,9 @@ ui.homeBtn.addEventListener('click', () => {
   go('home');
 });
 ui.helpBtn.addEventListener('click', openHelp);
+ui.floorCta.addEventListener('click', () => { buzz(6); go('floor'); });
+ui.flPrev.addEventListener('click', () => floorHop(-1));
+ui.flNext.addEventListener('click', () => floorHop(1));
 ui.pfLearn.addEventListener('click', () => go('learn'));
 ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? '' : t.dataset.tab); window.scrollTo(0, 0); }));
 ui.pfVibe.addEventListener('change', () => { app.vibe = ui.pfVibe.checked; prefsSave(); buzz(10); });

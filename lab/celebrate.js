@@ -6,7 +6,7 @@
 
 import { gsap } from 'gsap';
 import confetti from 'canvas-confetti';
-import { button, buzz, reducedMotion } from './shared.js';
+import { buzz, reducedMotion } from './shared.js';
 
 const CSS = `
 .win-stage { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center;
@@ -177,34 +177,6 @@ function addStyle() {
   style.textContent = CSS;
   document.head.appendChild(style);
   return style;
-}
-
-// The lab demo: pick a win to watch it
-export async function mount({ stage, controls, info }) {
-  const style = addStyle();
-  const S = createStage(stage, t => { info.textContent = t; });
-  const { root, rays, card, idle } = S;
-  let back = 0;
-  function dismiss() {
-    if (!S.isPlaying()) return;
-    S.clear();
-    gsap.to(card, { scale: 0.9, opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: () => { gsap.set(card, { scale: 1 }); } });
-    gsap.to(rays, { opacity: 0, duration: 0.4 });
-    root.classList.remove('dim');
-    back = setTimeout(() => { idle.style.display = ''; info.textContent = 'Tap a win to replay it'; }, 350);
-  }
-  root.addEventListener('click', dismiss);
-  for (const key of Object.keys(FLAVOURS)) controls.appendChild(button(FLAVOURS[key].label, () => { clearTimeout(back); S.play(FLAVOURS[key]); }, key === 'big' ? 'primary' : ''));
-  info.textContent = 'Celebrations with GSAP and canvas-confetti';
-  return {
-    dispose() {
-      clearTimeout(back);
-      S.clear();
-      root.removeEventListener('click', dismiss);
-      root.remove();
-      if (style) style.remove();
-    },
-  };
 }
 
 /* The casino's big wins: the celebration over the whole screen, for a few seconds or until

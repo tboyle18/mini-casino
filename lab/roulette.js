@@ -7,8 +7,7 @@
 
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { button, buzz, makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
+import { makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
 
 const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -332,118 +331,6 @@ function buildWheel(stage, opts = {}) {
   scene.add(glow);
 
   return { renderer, envTex, scene, camera, homeView, rotor, ball, glow, felt };
-}
-
-export async function mount({ stage, controls, info }) {
-  await fontReady();
-  const { renderer, envTex, scene, camera, homeView: frameWheel, rotor, ball, glow } = buildWheel(stage);
-  const orbit = new OrbitControls(camera, renderer.domElement);
-  orbit.enableDamping = true;
-  orbit.enablePan = false;
-  orbit.minDistance = 0.35;
-  orbit.maxDistance = 4;
-  orbit.minPolarAngle = 0.12;
-  orbit.maxPolarAngle = 1.25;
-  orbit.target.set(0, 0.02, 0);
-  function homeView() {
-    frameWheel();
-    orbit.target.set(0, 0.02, 0);
-    orbit.update();
-  }
-  const phys = createWheelPhysics();
-  const { rotorBody, ballBody } = phys;
-
-  // ---- Spin logic ----
-  let follow = false;
-  const result = document.createElement('div');
-  result.style.cssText = 'position:absolute;left:50%;bottom:18px;transform:translateX(-50%) scale(.6);opacity:0;transition:transform .35s cubic-bezier(.2,.9,.3,1.4),opacity .25s;display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border-radius:16px;background:rgba(10,8,6,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;z-index:3;font-weight:800;font-size:20px;';
-  stage.appendChild(result);
-
-  function spin() {
-    phys.launch();
-    ball.visible = true;
-    glow.intensity = 0;
-    result.style.opacity = '0';
-    result.style.transform = 'translateX(-50%) scale(.6)';
-    info.textContent = 'No more bets… the ball is rolling';
-    spinBtn.disabled = true;
-    buzz(20);
-  }
-
-  function land() {
-    const n = phys.pocket();
-    info.textContent = `Landed on ${n} ${colorName(n)}`;
-    result.innerHTML = `<span style="display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:${colorHex(n)};box-shadow:inset 0 0 0 2px rgba(255,255,255,.3)">${n}</span>${colorName(n)}`;
-    result.style.opacity = '1';
-    result.style.transform = 'translateX(-50%) scale(1)';
-    glow.intensity = 0.6;
-    spinBtn.disabled = false;
-    buzz([15, 50, 25]);
-  }
-
-  // ---- Controls ----
-  const spinBtn = button('Spin', spin, 'primary');
-  const camBtn = button('Ball cam', () => {
-    follow = !follow;
-    camBtn.setAttribute('aria-pressed', String(follow));
-    orbit.enabled = !follow;
-    if (!follow) homeView();
-  });
-  camBtn.setAttribute('aria-pressed', 'false');
-  const viewBtn = button('Reset view', () => { follow = false; camBtn.setAttribute('aria-pressed', 'false'); orbit.enabled = true; homeView(); });
-  controls.append(spinBtn, camBtn, viewBtn);
-  info.textContent = 'Tap Spin. Drag to look around.';
-
-  // ---- Loop ----
-  homeView();
-  let raf = 0;
-  let last = performance.now();
-  const tmp = new THREE.Vector3();
-  const look = new THREE.Vector3();
-  function frame(now) {
-    raf = requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    if (fitRenderer(renderer, camera, stage) && !follow) orbit.update();
-
-    const status = phys.step(dt);
-    rotor.quaternion.copy(rotorBody.quaternion);
-    ball.position.copy(ballBody.position);
-    ball.quaternion.copy(ballBody.quaternion);
-    glow.position.set(ball.position.x, ball.position.y + 0.03, ball.position.z);
-    if (status === 'landed') land();
-    else if (status === 'escaped') { info.textContent = 'The ball jumped the wheel! Spinning again'; spin(); }
-
-    if (follow && ball.visible) {
-      const p = ball.position;
-      const v = ballBody.velocity;
-      const flat = Math.hypot(v.x, v.z);
-      const dir = flat > 0.05 ? tmp.set(v.x / flat, 0, v.z / flat) : tmp.set(-p.z, 0, p.x).normalize();
-      const out = new THREE.Vector3(p.x, 0, p.z).normalize();
-      const want = new THREE.Vector3(p.x, p.y, p.z).addScaledVector(dir, -0.16).addScaledVector(out, 0.1).add(new THREE.Vector3(0, 0.11, 0));
-      camera.position.lerp(want, 1 - Math.pow(0.001, dt));
-      look.lerp(new THREE.Vector3(p.x, p.y, p.z).addScaledVector(dir, 0.04), 1 - Math.pow(0.0005, dt));
-      camera.lookAt(look);
-    } else {
-      look.copy(orbit.target);
-      orbit.update();
-    }
-    renderer.render(scene, camera);
-  }
-  raf = requestAnimationFrame(frame);
-
-  return {
-    dispose() {
-      cancelAnimationFrame(raf);
-      orbit.dispose();
-      result.remove();
-      disposeScene(scene);
-      envTex.dispose();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      renderer.domElement.remove();
-    },
-  };
 }
 
 /* ================= The casino's spin screen =================

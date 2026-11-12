@@ -1,5 +1,5 @@
 // The arcade games the casino app runs itself, on the wallet (see mini-casino.html). Each one
-// exports mount({ stage, controls, info, bank }) and returns { dispose() }, like the lab demos.
+// exports mount({ stage, controls, info, bank }) and returns { dispose() }.
 export const games = {
   plinko: () => import('./plinko.js'),
   crash: () => import('./crash.js'),
@@ -17,3 +17,6 @@ export const table = () => import('./table.js');
 
 // The big-win celebration over the whole screen (lab/celebrate.js, celebrate)
 export const celebrate = () => import('./celebrate.js');
+
+// The casino floor (beta): glide between the games and take a seat (lab/floor.js)
+export const floor = () => import('./floor.js');

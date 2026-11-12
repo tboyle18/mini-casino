@@ -78,8 +78,8 @@ await mkdir(out, { recursive: true });
 await cp(join(root, 'public'), out, { recursive: true });
 await writeFile(join(out, 'index.html'), `${head}\n${body}\n</body>\n</html>\n`);
 
-// Graphics lab: each demo is its own chunk, loaded when its tab opens. embed.js is how the
-// casino app loads the arcade games (Duck Drop, Duck Rocket) that graduated from the lab.
+// The lab's modules: embed.js is how the casino app loads its 3D and arcade games, each its
+// own chunk. main.js is the old lab page, which now sends you to the casino floor.
 await esbuild({
   entryPoints: [join(root, 'lab', 'main.js'), join(root, 'lab', 'embed.js')],
   bundle: true,

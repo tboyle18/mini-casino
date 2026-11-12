@@ -1,10 +1,9 @@
 // Casino floor (beta): the games laid out on a casino floor. You don't walk around: the camera
 // glides along a fixed path from one station to the next as you swipe, and tapping a station
-// takes you down into its seat, where that station's own lab game takes over. A small 2D map
-// in the corner shows where you are on the floor; tap it to jump to a station.
+// takes you down into its seat, where the casino opens that game's screen. A small 2D map in
+// the corner shows where you are on the floor; tap it to jump to a station.
 //
-// The floor itself only draws stand-in models (they're cheap); the seated games are the real
-// lab modules, mounted on top while the floor stops drawing.
+// The floor only draws stand-in models (they're cheap); the games themselves are the casino's.
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
@@ -13,41 +12,43 @@ import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, cas
 import { EMOJI, canvas, tex, carpetCanvas, signCanvas, duckGeometry } from './arcade.js';
 
 const TAU = Math.PI * 2;
-const ROOM = { x0: -5, x1: 5, z0: -4.4, z1: 3 };   // the part of the floor the map shows
+const ROOM = { x0: -9.2, x1: 9.2, z0: -4.4, z1: 3 };   // the part of the floor the map shows
 const FOV = 55;
 
 /* The stations, left to right along the path. pos is [x, z] on the floor; yaw turns the
    station toward the aisle; w and h are how much of it the overview must fit on screen;
    look is the height the camera aims at; seat is [distance, height] of the seated view. */
+const CARD = { w: 2.1, h: 1.1, look: 0.72, seat: [1.25, 1.45] };   // the half-moon card tables
 const STATIONS = [
-  { id: 'table', name: 'Blackjack', blurb: 'Deal a hand at the 3D table', color: '#5ee08a', pos: [-2.6, -0.5], yaw: 0.45, w: 2.1, h: 1.1, look: 0.72, seat: [1.25, 1.45], load: () => import('./table.js') },
-  { id: 'roulette', name: 'Roulette', blurb: 'Spin the real-physics wheel', color: '#ff5d6c', pos: [0, -1.9], yaw: 0, w: 2.5, h: 1.1, look: 0.78, seat: [1.15, 1.55], load: () => import('./roulette.js') },
-  { id: 'slots', name: 'Lucky Duck 3000', blurb: 'Pull the lever. The duck is wild', color: '#ffd23f', pos: [2.3, -0.4], yaw: -0.3, w: 1.2, h: 2.3, look: 1.05, seat: [1.15, 1.35], load: () => import('./slots.js') },
-  { id: 'cashier', name: 'Cashier', blurb: 'Your balance and stats', color: '#e9c46a', pos: [4.3, -1.3], yaw: -0.4, w: 1.9, h: 2.3, look: 1.15, seat: [1.2, 1.5], load: () => import('./cashier.js') },
+  { id: 'table', name: 'Blackjack', blurb: 'Beat the dealer to 21', color: '#5ee08a', pos: [-7.7, -0.7], yaw: 0.35, ...CARD },
+  { id: 'threecard', name: 'Three Card Poker', blurb: 'Your three cards against the dealer’s', color: '#6bb8ff', pos: [-5.6, -1.7], yaw: 0.2, ...CARD },
+  { id: 'war', name: 'Casino War', blurb: 'One card each. High card wins', color: '#ff8a5c', pos: [-3.5, -0.6], yaw: 0.1, ...CARD },
+  { id: 'reddog', name: 'Red Dog', blurb: 'Will the third card fall between?', color: '#ff6b9a', pos: [-1.4, -1.7], yaw: 0.05, ...CARD },
+  { id: 'roulette', name: 'Roulette', blurb: 'Spin the real-physics wheel', color: '#ff5d6c', pos: [1, -1.9], yaw: 0, w: 2.5, h: 1.1, look: 0.78, seat: [1.15, 1.55] },
+  { id: 'baccarat', name: 'Baccarat', blurb: 'Player or Banker, closest to 9', color: '#c9a2ff', pos: [3.6, -0.6], yaw: -0.1, w: 2.7, h: 1.1, look: 0.72, seat: [1.3, 1.5] },
+  { id: 'poker', name: 'Video Poker', blurb: 'Hold, draw, and hope for a royal', color: '#5ee0e0', pos: [5.5, -1.7], yaw: -0.2, w: 1.3, h: 2.7, look: 1.15, seat: [1, 1.3] },
+  { id: 'slots', name: 'Lucky Duck 3000', blurb: 'Pull the lever. The duck is wild', color: '#ffd23f', pos: [7, -0.5], yaw: -0.3, w: 1.2, h: 2.3, look: 1.05, seat: [1.15, 1.35] },
+  { id: 'cashier', name: 'Cashier', blurb: 'Your balance and stats', color: '#e9c46a', pos: [8.2, -2], yaw: -0.45, w: 1.9, h: 2.3, look: 1.15, seat: [1.2, 1.5] },
 ];
 const LAST = STATIONS.length - 1;
 
 const CSS = `
-.floor-map { position: absolute; right: 12px; top: 42px; width: 132px; height: 104px; z-index: 3; border-radius: 14px; touch-action: none; cursor: pointer;
+.floor-map { position: absolute; right: 12px; top: 42px; width: 156px; height: 80px; z-index: 3; border-radius: 14px; touch-action: none; cursor: pointer;
   background: rgba(10, 8, 6, .72); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 6px 18px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: opacity .3s; }
-#stage canvas.floor-map { width: 132px; height: 104px; }   /* the lab stretches every stage canvas */
+canvas.floor-map { width: 156px !important; height: 80px !important; }   /* the lab and the casino stretch every stage canvas */
 .floor-map.off { opacity: 0; pointer-events: none; }
-.floor-seat { position: absolute; inset: 0; z-index: 2; background: #0b0907; opacity: 0; transition: opacity .35s; }
-.floor-seat.on { opacity: 1; }
 .floor-tag { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 3; pointer-events: none; text-align: center; white-space: nowrap;
   padding: 8px 14px; border-radius: 12px; background: rgba(10, 8, 6, .72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: opacity .3s; }
 .floor-tag b { display: block; font-size: 17px; }
 .floor-tag span { font-size: 13px; color: rgba(245, 240, 227, .7); }
 .floor-tag.off { opacity: 0; }
-.floor-hop { position: absolute; top: 42px; z-index: 3; appearance: none; border: 0; cursor: pointer; padding: 9px 12px; border-radius: 12px; max-width: 46%;
-  background: rgba(10, 8, 6, .72); color: #e9c46a; font: 800 14px/1.1 Manrope, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  box-shadow: inset 0 0 0 1px rgba(233, 196, 106, .35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-.floor-hop.prev { left: 12px; }
-.floor-hop.next { right: 12px; }
-.floor-hop:active { transform: scale(.96); }
 `;
 
-export async function mount({ stage, controls, info }) {
+/* Sitting down calls casino.sit(id) once the camera is in the seat, and the casino opens its
+   game screen for that station. casino.start can put the camera at a station when the floor
+   opens: { at, seated } to stand up from that seat, or { at, hop } to glide from that seat
+   into another one (the casino's seat-to-seat arrows). */
+export async function mount({ stage, controls, info, casino }) {
   await fontReady();
   const calm = reducedMotion();
   const style = document.createElement('style');
@@ -91,31 +92,31 @@ export async function mount({ stage, controls, info }) {
   key.position.set(-2, 6, 3);
   key.castShadow = true;
   key.shadow.mapSize.set(q.shadow, q.shadow);
-  Object.assign(key.shadow.camera, { left: -5, right: 5, top: 4, bottom: -4, near: 1, far: 14 });
+  Object.assign(key.shadow.camera, { left: -9.5, right: 9.5, top: 4, bottom: -4, near: 1, far: 16 });
   key.shadow.bias = -0.0005;
   key.shadow.normalBias = 0.02;
   scene.add(key, key.target);
 
   const carpet = keep(tex(carpetCanvas(), renderer));
   carpet.wrapS = carpet.wrapT = THREE.RepeatWrapping;
-  carpet.repeat.set(12, 12);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.MeshStandardMaterial({ map: carpet, roughness: 0.95 }));
+  carpet.repeat.set(20, 12);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 12), new THREE.MeshStandardMaterial({ map: carpet, roughness: 0.95 }));
   floor.rotation.x = -Math.PI / 2;
   floor.position.z = 1;
   floor.receiveShadow = true;
   scene.add(floor);
 
-  const backWall = new THREE.Mesh(new THREE.PlaneGeometry(12, 5), M.wall);
+  const backWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 5), M.wall);
   backWall.position.set(0, 2.5, ROOM.z0);
   scene.add(backWall);
   for (const side of [-1, 1]) {
     const wall = new THREE.Mesh(new THREE.PlaneGeometry(12, 5), M.wall);
-    wall.position.set(side * 5.6, 2.5, 1);
+    wall.position.set(side * 9.8, 2.5, 1);
     wall.rotation.y = -side * Math.PI / 2;
     scene.add(wall);
   }
   // Neon running along the walls
-  const neon = [[0, ROOM.z0 + 0.02, 0, 10, 0xff2bd6, 2.9], [0, ROOM.z0 + 0.02, 0, 10, 0x2be7ff, 0.35]];
+  const neon = [[0, ROOM.z0 + 0.02, 0, 19.6, 0xff2bd6, 2.9], [0, ROOM.z0 + 0.02, 0, 19.6, 0x2be7ff, 0.35]];
   for (const [x, z, , len, color, y] of neon) {
     const tube = new THREE.Mesh(new THREE.BoxGeometry(len, 0.035, 0.035), glowMat(color));
     tube.position.set(x, y, z);
@@ -123,12 +124,12 @@ export async function mount({ stage, controls, info }) {
   }
   for (const side of [-1, 1]) {
     const tube = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 7), glowMat(side < 0 ? 0xff2bd6 : 0x2be7ff));
-    tube.position.set(side * 5.58, 2.9, -0.9);
+    tube.position.set(side * 9.78, 2.9, -0.9);
     scene.add(tube);
   }
 
   // A row of slot machines along the back wall (just scenery for now: themed machines go here later)
-  const ROW = 10;
+  const ROW = 20;
   const cabGeo = new RoundedBoxGeometry(0.62, 1.55, 0.5, 2, 0.04);
   const cabs = new THREE.InstancedMesh(cabGeo, std(0xffffff, 0.4, 0.1), ROW);
   const screens = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.44, 0.32), new THREE.MeshBasicMaterial({ toneMapped: false }), ROW);
@@ -139,7 +140,7 @@ export async function mount({ stage, controls, info }) {
   const c = new THREE.Color();
   const rowX = [];
   for (let i = 0; i < ROW; i++) {
-    const x = -4.5 + i * 0.9;
+    const x = -8.55 + i * 0.9;
     rowX.push(x);
     const z = ROOM.z0 + 0.5;
     cabs.setMatrixAt(i, m4.makeTranslation(x, 0.775, z));
@@ -156,6 +157,8 @@ export async function mount({ stage, controls, info }) {
   function signTex(text, color) {
     const [cv, g] = canvas(1024, 256);
     g.font = '900 120px Manrope, sans-serif';
+    const fit = Math.min(1, 900 / g.measureText(text).width);
+    if (fit < 1) g.font = `900 ${Math.floor(120 * fit)}px Manrope, sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.shadowColor = color;
@@ -262,11 +265,45 @@ export async function mount({ stage, controls, info }) {
     g.position.set(x, 0, z);
     return g;
   }
-  function buildBlackjack() {
+  // Printing on the felt: the table's name or its bets, in gold
+  function feltTex(text) {
+    const [cv, g] = canvas(1024, 128);
+    g.font = '800 64px Manrope, sans-serif';
+    const fit = Math.min(1, 980 / g.measureText(text).width);
+    if (fit < 1) g.font = `800 ${Math.floor(64 * fit)}px Manrope, sans-serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = 'rgba(233, 196, 106, .9)';
+    g.fillText(text, 512, 66);
+    return keep(tex(cv, renderer));
+  }
+  function feltPrint(text, width, x, y, z) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 8), new THREE.MeshBasicMaterial({ map: feltTex(text), transparent: true, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(x, y, z);
+    return m;
+  }
+  const cardBack = std(0x9a1628, 0.5);
+  function card(x, y, z, turn, up = true) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.1), up ? M.white : cardBack);
+    m.rotation.set(-Math.PI / 2, 0, turn);
+    m.position.set(x, y, z);
+    return m;
+  }
+  function chipStack(col, x, y, z, h = 0.05) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, h, 16), std(col, 0.4));
+    m.position.set(x, y + h / 2, z);
+    return m;
+  }
+  const CHIP_COLS = [0x7a2bb5, 0x222222, 0x1f5fbf, 0xc8102e];
+  /* The half-moon card tables. per is how many cards sit at each of the five spots (dealt
+     side by side), dealer how many face-down in front of the dealer, middle cards dealt in a
+     row across the middle (Red Dog's spread) */
+  function buildCardTable({ felt, print, per = 2, dealer = 0, middle = 0 }) {
     const g = new THREE.Group();
     const top = 0.78;
-    const felt = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.04, 48, 1, false, -Math.PI / 2, Math.PI), M.felt);
-    felt.position.y = top;
+    const feltMesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.04, 48, 1, false, -Math.PI / 2, Math.PI), std(felt, 0.95));
+    feltMesh.position.y = top;
     const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 10, 48, Math.PI), M.leather);
     rail.rotation.x = Math.PI / 2;
     rail.position.y = top + 0.03;
@@ -280,28 +317,110 @@ export async function mount({ stage, controls, info }) {
     leg.position.set(0, 0.275, 0.35);
     const tray = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.04, 0.13), M.woodDark);
     tray.position.set(0, top + 0.035, 0.1);
-    g.add(felt, rail, back, skirt, front, leg, tray);
-    const chipCols = [0x7a2bb5, 0x7a2bb5, 0x222222, 0x222222, 0x1f5fbf, 0x1f5fbf, 0xc8102e, 0xc8102e];
-    chipCols.forEach((col, i) => {
-      const chip = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.05, 16), std(col, 0.4));
-      chip.position.set(-0.21 + i * 0.06, top + 0.07, 0.1);
-      g.add(chip);
-    });
+    g.add(feltMesh, rail, back, skirt, front, leg, tray, feltPrint(print, 1.0, 0, top + 0.021, 0.42));
+    [0, 0, 1, 1, 2, 2, 3, 3].forEach((c, i) => g.add(chipStack(CHIP_COLS[c], -0.21 + i * 0.06, top + 0.045, 0.1)));
     const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.22), std(0x5a0c18, 0.4));
     shoe.position.set(0.6, top + 0.07, 0.16);
     g.add(shoe);
+    for (let i = 0; i < dealer; i++) g.add(card((i - (dealer - 1) / 2) * 0.08, top + 0.022, 0.26, 0, false));
+    for (let i = 0; i < middle; i++) g.add(card((i - (middle - 1) / 2) * 0.09, top + 0.022, 0.32, 0, i !== 1));
     for (let i = -2; i <= 2; i++) {
       const a = i * 0.45;
-      const card = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.1), M.white);
-      card.rotation.set(-Math.PI / 2, 0, -a);
-      card.position.set(Math.sin(a) * 0.68, top + 0.022, Math.cos(a) * 0.68);
-      const card2 = card.clone();
-      card2.position.x += 0.025;
-      card2.position.z -= 0.01;
-      card2.position.y += 0.001;
-      g.add(card, card2);
+      for (let j = 0; j < per; j++) {
+        const off = (j - (per - 1) / 2) * 0.03;
+        g.add(card(Math.sin(a) * 0.68 + off * Math.cos(a), top + 0.022 + j * 0.001, Math.cos(a) * 0.68 - off * Math.sin(a), -a));
+      }
+      g.add(chipStack(CHIP_COLS[(i + 2) % 4], Math.sin(a) * 0.84, top + 0.02, Math.cos(a) * 0.84, 0.03));
       g.add(stool(Math.sin(a) * 1.35, Math.cos(a) * 1.35));
     }
+    return g;
+  }
+  const buildBlackjack = () => buildCardTable({ felt: 0x0d6b3a, print: 'BLACKJACK PAYS 3 TO 2', per: 2, dealer: 2 });
+  const buildThreeCard = () => buildCardTable({ felt: 0x123f78, print: 'PAIR PLUS · ANTE · PLAY', per: 3, dealer: 3 });
+  const buildWar = () => buildCardTable({ felt: 0x7a1f1a, print: 'CASINO WAR · TIES GO TO WAR', per: 1, dealer: 1 });
+  const buildRedDog = () => buildCardTable({ felt: 0x4b1f6e, print: 'RED DOG · THE SPREAD PAYS', per: 0, middle: 3 });
+
+  // Baccarat: a long oval table, Player and Banker boxes down the middle
+  function buildBaccarat() {
+    const g = new THREE.Group();
+    const top = 0.78, SX = 1.35, SZ = 0.72;
+    const oval = m => { m.scale.set(SX, 1, SZ); return m; };
+    const felt = oval(new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.04, 56), std(0x0b5a3a, 0.95)));
+    felt.position.y = top;
+    const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 10, 56), M.leather);
+    rail.rotation.x = Math.PI / 2;
+    rail.scale.set(SX, SZ, 1);
+    rail.position.y = top + 0.03;
+    const skirt = oval(new THREE.Mesh(new THREE.CylinderGeometry(0.94, 0.94, 0.45, 48, 1, true), M.woodDark));
+    skirt.position.y = top - 0.25;
+    const legs = [-0.7, 0.7].map(x => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 0.55, 16), M.woodDark); l.position.set(x, 0.275, 0); return l; });
+    g.add(felt, rail, skirt, ...legs, feltPrint('PLAYER', 0.8, -0.42, top + 0.021, 0.14), feltPrint('BANKER', 0.8, 0.42, top + 0.021, 0.14), feltPrint('TIE PAYS 8 TO 1', 0.9, 0, top + 0.021, 0.44));
+    for (const x of [-0.42, 0.42]) for (const d of [-0.045, 0.045]) g.add(card(x + d, top + 0.022, -0.05, 0));
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.13), M.woodDark);
+    tray.position.set(0, top + 0.035, -0.5);
+    g.add(tray);
+    [0, 0, 1, 1, 2, 2, 3, 3, 1].forEach((c, i) => g.add(chipStack(CHIP_COLS[c], -0.24 + i * 0.06, top + 0.045, -0.5)));
+    for (let i = -2; i <= 2; i++) {
+      const a = i * 0.42;
+      g.add(stool(Math.sin(a) * SX * 1.18, Math.cos(a) * SZ * 1.18 + 0.3));
+    }
+    return g;
+  }
+
+  // Video poker: a bar-top machine with a slanted screen and a row of hold buttons
+  function vpScreenTex() {
+    const [cv, g] = canvas(512, 320);
+    g.fillStyle = '#0a1f7a';
+    g.fillRect(0, 0, 512, 320);
+    g.font = '900 40px Manrope, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#ffd23f';
+    g.fillText('JACKS OR BETTER', 256, 46);
+    ['A', 'K', 'Q', 'J', '10'].forEach((r, i) => {
+      const x = 16 + i * 98;
+      g.fillStyle = '#fbf8f0';
+      g.fillRect(x, 96, 86, 124);
+      g.fillStyle = i % 2 ? '#141414' : '#c8102e';
+      g.font = '900 46px Manrope, sans-serif';
+      g.fillText(r, x + 43, 158);
+    });
+    g.font = '800 26px Manrope, sans-serif';
+    g.fillStyle = '#fff';
+    g.fillText('ROYAL FLUSH  ·  800 FOR 1', 256, 270);
+    return keep(tex(cv, renderer));
+  }
+  function buildVideoPoker() {
+    const g = new THREE.Group();
+    const blue = std(0x15306a, 0.4, 0.1);
+    const base = new THREE.Mesh(new RoundedBoxGeometry(0.72, 0.95, 0.6, 3, 0.05), blue);
+    base.position.y = 0.475;
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.05, 0.26), M.chrome);
+    deck.position.set(0, 0.97, 0.2);
+    deck.rotation.x = 0.18;
+    g.add(base, deck);
+    const btnGeo = new THREE.BoxGeometry(0.08, 0.025, 0.05);
+    const lit = glowMat(0xffd23f);
+    for (let i = 0; i < 5; i++) {
+      const b = new THREE.Mesh(btnGeo, i === 2 ? glowMat(0xff5d6c) : lit);
+      b.position.set(-0.24 + i * 0.12, 1.0, 0.24);
+      b.rotation.x = 0.18;
+      g.add(b);
+    }
+    const head = new THREE.Group();
+    head.position.set(0, 1.0, 0.0);
+    head.rotation.x = -0.22;
+    const box = new THREE.Mesh(new RoundedBoxGeometry(0.72, 0.72, 0.36, 3, 0.04), blue);
+    box.position.y = 0.36;
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.375), new THREE.MeshBasicMaterial({ map: vpScreenTex(), toneMapped: false }));
+    screen.position.set(0, 0.38, 0.182);
+    const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.42, 0.01), M.chrome);
+    bezel.position.set(0, 0.38, 0.176);
+    head.add(box, bezel, screen);
+    const topper = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.12, 0.08), glowMat(0x5ee0e0));
+    topper.position.set(0, 1.76, -0.13);
+    g.add(head, topper);
+    g.add(stool(0, 0.75));
     return g;
   }
   let rotor = null, ballPivot = null;
@@ -427,7 +546,9 @@ export async function mount({ stage, controls, info }) {
     g.add(bars, arch, lamp, shade, tray);
     return g;
   }
-  const builders = { table: buildBlackjack, roulette: buildRoulette, slots: buildSlots, cashier: buildCashier };
+  const builders = { table: buildBlackjack, threecard: buildThreeCard, war: buildWar, reddog: buildRedDog, roulette: buildRoulette, baccarat: buildBaccarat, poker: buildVideoPoker, slots: buildSlots, cashier: buildCashier };
+  // Where each sign hangs: [height, depth, width]
+  const SIGN = { roulette: [2.05, -0.7, 1.8], baccarat: [2.05, -0.75, 1.8], poker: [2.15, -0.25, 1.5], slots: [2.65, -0.3, 1.6], cashier: [2.55, 0.06, 1.8] };
   const groups = [];
   const DIRS = [];
   STATIONS.forEach((st, k) => {
@@ -435,18 +556,26 @@ export async function mount({ stage, controls, info }) {
     g.position.set(st.pos[0], 0, st.pos[1]);
     g.rotation.y = st.yaw;
     g.userData.k = k;
-    const s = sign(st.name.toUpperCase(), st.color, st.id === 'slots' ? 1.6 : 1.8);
-    s.position.set(0, st.id === 'slots' ? 2.65 : st.id === 'cashier' ? 2.55 : 2.05, st.id === 'roulette' ? -0.7 : st.id === 'cashier' ? 0.06 : -0.3);
+    const [sy, sz, sw] = SIGN[st.id] || [2.05, -0.3, 1.8];
+    const s = sign(st.name.toUpperCase(), st.color, sw);
+    s.position.set(0, sy, sz);
     s.castShadow = s.receiveShadow = false;
     g.add(s);
-    // A warm pool of light over each station
-    const spot = new THREE.SpotLight(0xffe2b0, 14, 7, 0.55, 0.7, 1.2);
-    spot.position.set(st.pos[0], 4.2, st.pos[1] + 0.6);
-    spot.target = g;
-    scene.add(spot, g);
+    scene.add(g);
     groups.push(g);
     DIRS.push(new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw)));
   });
+
+  // Warm pools of light, one over each pair of stations (fewer lights keep phones fast)
+  for (let k = 0; k < STATIONS.length; k += 2) {
+    const a = STATIONS[k].pos, b = (STATIONS[k + 1] || STATIONS[k]).pos;
+    const aim = new THREE.Object3D();
+    aim.position.set((a[0] + b[0]) / 2, 0, (a[1] + b[1]) / 2);
+    const spot = new THREE.SpotLight(0xffe2b0, 18, 8, 0.75, 0.7, 1.2);
+    spot.position.set(aim.position.x, 4.4, aim.position.z + 0.8);
+    spot.target = aim;
+    scene.add(spot, aim);
+  }
 
   // ---- The camera path ----
   // Each station has a stop in front of it, far enough back that the station fits the screen
@@ -502,7 +631,7 @@ export async function mount({ stage, controls, info }) {
   map.setAttribute('role', 'img');
   map.setAttribute('aria-label', 'Map of the casino floor');
   stage.appendChild(map);
-  const MAP_W = 132, MAP_H = 104, PAD = 9;
+  const MAP_W = 156, MAP_H = 80, PAD = 8;
   const mg = map.getContext('2d');
   const toMap = (x, z) => [PAD + ((x - ROOM.x0) / (ROOM.x1 - ROOM.x0)) * (MAP_W - PAD * 2), PAD + ((z - ROOM.z0) / (ROOM.z1 - ROOM.z0)) * (MAP_H - PAD * 2)];
   function drawMap() {
@@ -518,7 +647,7 @@ export async function mount({ stage, controls, info }) {
     mg.moveTo(ax, bz); mg.lineTo(ax, az); mg.lineTo(bx, az); mg.lineTo(bx, bz);
     mg.stroke();
     mg.fillStyle = 'rgba(255, 255, 255, .22)';
-    for (const x of rowX) { const [mx, mz] = toMap(x, ROOM.z0 + 0.5); mg.fillRect(mx - 3, mz - 2.5, 6, 5); }
+    for (const x of rowX) { const [mx, mz] = toMap(x, ROOM.z0 + 0.5); mg.fillRect(mx - 2.5, mz - 2, 5, 4); }
     // The path
     mg.setLineDash([2, 3]);
     mg.strokeStyle = 'rgba(233, 196, 106, .45)';
@@ -540,10 +669,11 @@ export async function mount({ stage, controls, info }) {
       mg.fillStyle = st.color;
       mg.globalAlpha = k === here ? 1 : 0.6;
       mg.beginPath();
-      if (st.id === 'table') { mg.arc(0, 0, 9, 0, Math.PI); mg.closePath(); }
-      else if (st.id === 'roulette') { mg.rect(-11, -4.5, 22, 9); }
-      else if (st.id === 'cashier') { mg.rect(-9, -3, 18, 6); }
-      else { mg.rect(-4.5, -4.5, 9, 9); }
+      if (st.id === 'roulette') mg.rect(-9.5, -4, 19, 8);
+      else if (st.id === 'baccarat') mg.ellipse(0, 0, 10, 5.5, 0, 0, TAU);
+      else if (st.id === 'cashier') mg.rect(-7, -2.5, 14, 5);
+      else if (st.id === 'slots' || st.id === 'poker') mg.rect(-3.5, -3.5, 7, 7);
+      else { mg.arc(0, 0, 7.5, 0, Math.PI); mg.closePath(); }   // the half-moon card tables
       mg.fill();
       if (k === here) { mg.strokeStyle = '#fff'; mg.lineWidth = 1.5; mg.stroke(); }
       mg.restore();
@@ -569,7 +699,7 @@ export async function mount({ stage, controls, info }) {
     mg.stroke();
   }
   function onMapTap(e) {
-    if (seated || busy) return;
+    if (busy) return;
     const r = map.getBoundingClientRect();
     const x = e.clientX - r.left, y = e.clientY - r.top;
     let best = -1, bd = Infinity;
@@ -605,112 +735,44 @@ export async function mount({ stage, controls, info }) {
     glide = gsap.to(cam, { s: k, duration: calm ? 0.25 : Math.min(1.6, 0.55 + d * 0.5), ease: 'power2.inOut', onUpdate: changed, onComplete: () => { glide = null; } });
   }
 
-  // ---- Sitting down and getting up ----
-  let seated = null, busy = false;
-  async function sit() {
-    if (seated || busy) return;
+  // ---- Sitting down ----
+  // The camera drops into the seat, then the casino opens that station's game screen
+  let busy = false;
+  function sit() {
+    if (busy) return;
     busy = true;
     if (glide) { glide.kill(); glide = null; }
     const k = Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST));
-    const st = STATIONS[k];
     buzz(10);
     tag.classList.add('off');
     map.classList.add('off');
-    const loading = st.load();
-    await new Promise(done => gsap.to(cam, { s: k, seat: 1, duration: calm ? 0.2 : 1.05, ease: 'power2.inOut', onComplete: done }));
-    if (dead) return;
-    await seatAt(k, loading);
+    gsap.to(cam, { s: k, seat: 1, duration: calm ? 0.2 : 1.05, ease: 'power2.inOut', onComplete: () => { if (!dead) casino.sit(STATIONS[k].id); } });
   }
-  // The seated game for station k goes on top, and the floor stops drawing underneath
-  async function seatAt(k, loading) {
-    const st = STATIONS[k];
-    const overlay = document.createElement('div');
-    overlay.className = 'floor-seat';
-    stage.appendChild(overlay);
-    controls.textContent = '';
-    controls.append(button('‹ Floor', stand));
-    info.textContent = 'Loading…';
-    seated = { k, overlay, inst: null };
-    try {
-      const mod = await loading;
-      const inst = await mod.mount({ stage: overlay, controls, info });
-      if (dead || !seated || seated.overlay !== overlay) { inst.dispose(); return; }
-      seated.inst = inst;
-    } catch (err) {
-      console.error(err);
-      info.textContent = `${st.name} couldn’t start here: ${(err && err.message) || err}`;
-    }
-    requestAnimationFrame(() => overlay.classList.add('on'));
-    hops(k);
-    await new Promise(done => setTimeout(done, 380));
-    if (seated && seated.overlay === overlay) pause();
-    busy = false;
-  }
-  // Get up from this game, leaving its view to fade out over the floor
-  function leaveSeat() {
-    const { overlay, inst } = seated;
-    seated = null;
-    hops(-1);
-    resume();
-    overlay.classList.remove('on');
-    setTimeout(() => {
-      if (inst) { try { inst.dispose(); } catch (e) { /* already gone */ } }
-      overlay.remove();
-    }, 360);
-  }
-  // Straight to the next seat over: up a little, along the floor, and down into it
-  async function hop(dir) {
-    if (!seated || busy) return;
-    const k = seated.k + dir;
-    if (k < 0 || k > LAST) return;
+  // The casino's arrows: from one seat, up along the floor and down into the next
+  function hopCasino(from, to) {
     busy = true;
-    buzz(8);
-    leaveSeat();
-    controls.textContent = '';   // the last game's buttons go with it
-    info.textContent = `Over to ${STATIONS[k].name}…`;
-    const loading = STATIONS[k].load();
-    const t = calm ? 0.3 : 1.25;
-    await new Promise(done => gsap.timeline({ onComplete: done })
-      .to(cam, { s: k, duration: t, ease: 'power2.inOut' }, 0)
+    tag.classList.add('off');
+    map.classList.add('off');
+    cam.s = from;
+    cam.seat = 1;
+    const t = calm ? 0.3 : Math.min(2, 0.9 + Math.abs(to - from) * 0.35);
+    gsap.timeline({ onUpdate: changed, onComplete: () => { if (!dead) casino.sit(STATIONS[to].id); } })
+      .to(cam, { s: to, duration: t, ease: 'power2.inOut' }, 0)
       .to(cam, { seat: 0.45, duration: t / 2, ease: 'sine.out' }, 0)
-      .to(cam, { seat: 1, duration: t / 2, ease: 'sine.in' }, t / 2));
-    if (dead) return;
-    await seatAt(k, loading);
+      .to(cam, { seat: 1, duration: t / 2, ease: 'sine.in' }, t / 2);
   }
-  const hopPrev = document.createElement('button'), hopNext = document.createElement('button');
-  hopPrev.className = 'floor-hop prev';
-  hopNext.className = 'floor-hop next';
-  hopPrev.addEventListener('click', () => hop(-1));
-  hopNext.addEventListener('click', () => hop(1));
-  stage.append(hopPrev, hopNext);
-  function hops(k) {
-    hopPrev.hidden = k < 1;
-    hopNext.hidden = k < 0 || k >= LAST;
-    if (k > 0) { hopPrev.textContent = `‹ ${STATIONS[k - 1].name}`; hopPrev.setAttribute('aria-label', `Move to ${STATIONS[k - 1].name}`); }
-    if (k >= 0 && k < LAST) { hopNext.textContent = `${STATIONS[k + 1].name} ›`; hopNext.setAttribute('aria-label', `Move to ${STATIONS[k + 1].name}`); }
-  }
-  hops(-1);
-  // A sideways swipe on a trackpad hops seats too (the games use up and down for zoom)
-  let sideways = 0, sideTimer = 0;
-  function onSeatWheel(e) {
-    if (!seated || busy || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
-    e.preventDefault();
-    sideways += e.deltaX;
-    clearTimeout(sideTimer);
-    sideTimer = setTimeout(() => { sideways = 0; }, 250);
-    if (Math.abs(sideways) > 90) { const d = Math.sign(sideways); sideways = 0; hop(d); }
-  }
-  stage.addEventListener('wheel', onSeatWheel, { passive: false, capture: true });
-  function stand() {
-    if (!seated || busy) return;
+  // Coming back from a game: start in its seat and stand up
+  function standUpFrom(k) {
     busy = true;
-    leaveSeat();
-    floorControls();
-    here = -1;
-    changed();
-    tag.classList.remove('off');
-    map.classList.remove('off');
-    gsap.to(cam, { seat: 0, duration: calm ? 0.2 : 0.9, ease: 'power2.inOut', delay: 0.15, onComplete: () => { busy = false; } });
+    cam.s = k;
+    cam.seat = 1;
+    tag.classList.add('off');
+    map.classList.add('off');
+    gsap.to(cam, { seat: 0, duration: calm ? 0.2 : 0.9, delay: 0.1, ease: 'power2.inOut', onComplete: () => {
+      busy = false;
+      tag.classList.remove('off');
+      map.classList.remove('off');
+    } });
   }
 
   // ---- Input: swipe, tap, wheel, keys ----
@@ -718,7 +780,7 @@ export async function mount({ stage, controls, info }) {
   const ndc = new THREE.Vector2();
   const drag = { on: false, id: 0, x: 0, s0: 0, moved: false, vx: 0, lx: 0, lt: 0 };
   function onDown(e) {
-    if (seated || busy) return;
+    if (busy) return;
     if (glide) { glide.kill(); glide = null; }
     Object.assign(drag, { on: true, id: e.pointerId, x: e.clientX, s0: cam.s, moved: false, vx: 0, lx: e.clientX, lt: performance.now() });
     try { canvasEl.setPointerCapture(e.pointerId); } catch (err) { /* released */ }
@@ -761,7 +823,7 @@ export async function mount({ stage, controls, info }) {
   }
   let wheelTimer = 0;
   function onWheel(e) {
-    if (seated || busy) return;
+    if (busy) return;
     e.preventDefault();
     if (glide) { glide.kill(); glide = null; }
     const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
@@ -771,7 +833,7 @@ export async function mount({ stage, controls, info }) {
     wheelTimer = setTimeout(() => go(Math.round(cam.s)), 140);
   }
   function onKey(e) {
-    if (seated || busy) return;
+    if (busy) return;
     if (e.key === 'ArrowLeft') go(Math.round(cam.s) - 1);
     else if (e.key === 'ArrowRight') go(Math.round(cam.s) + 1);
     else if (e.key === 'Enter' && !(e.target instanceof HTMLButtonElement)) sit();
@@ -792,15 +854,12 @@ export async function mount({ stage, controls, info }) {
   prevBtn.setAttribute('aria-label', 'Previous station');
   nextBtn.setAttribute('aria-label', 'Next station');
   prevBtn.style.flex = nextBtn.style.flex = '0 0 64px';
-  function floorControls() {
-    controls.textContent = '';
-    controls.append(prevBtn, sitBtn, nextBtn);
-  }
-  floorControls();
+  controls.textContent = '';
+  controls.append(prevBtn, sitBtn, nextBtn);
 
   // ---- Loop ----
   const governor = frameGovernor(renderer, scene);
-  let raf = 0, last = performance.now(), paused = false, dead = false, aspect = 0;
+  let raf = 0, last = performance.now(), dead = false, aspect = 0;
   function fit() {
     const w = stage.clientWidth || 1, h = stage.clientHeight || 1;
     const px = renderer.getPixelRatio();
@@ -814,7 +873,7 @@ export async function mount({ stage, controls, info }) {
   }
   function frame(nowMs) {
     raf = 0;
-    if (paused || dead) return;
+    if (dead) return;
     raf = requestAnimationFrame(frame);
     const dt = Math.min(0.05, (nowMs - last) / 1000);
     last = nowMs;
@@ -830,14 +889,19 @@ export async function mount({ stage, controls, info }) {
     renderer.render(scene, camera);
     drawMap();
   }
-  function pause() { paused = true; if (raf) cancelAnimationFrame(raf); raf = 0; governor.idle(); }
-  function resume() { if (!paused) return; paused = false; last = performance.now(); raf = requestAnimationFrame(frame); }
-
+  const start = casino.start;
+  const at = start ? STATIONS.findIndex(st => st.id === start.at) : -1;
+  if (at >= 0) { cam.s = at; if (start.seated || start.hop) cam.seat = 1; }
   fit();
   changed();
   pose();
   if (renderer.compileAsync) { try { await renderer.compileAsync(scene, camera); } catch (e) { /* draws anyway */ } }
   raf = requestAnimationFrame(frame);
+  if (at >= 0) {
+    const to = start.hop ? STATIONS.findIndex(st => st.id === start.hop) : -1;
+    if (to >= 0) hopCasino(at, to);
+    else if (start.seated) standUpFrom(at);
+  }
 
   return {
     dispose() {
@@ -845,16 +909,11 @@ export async function mount({ stage, controls, info }) {
       cancelAnimationFrame(raf);
       clearTimeout(wheelTimer);
       gsap.killTweensOf(cam);
-      if (seated) { try { seated.inst && seated.inst.dispose(); } catch (e) { /* already gone */ } seated.overlay.remove(); seated = null; }
       canvasEl.removeEventListener('pointerdown', onDown);
       canvasEl.removeEventListener('pointermove', onMove);
       canvasEl.removeEventListener('pointerup', onUp);
       canvasEl.removeEventListener('pointercancel', onUp);
       canvasEl.removeEventListener('wheel', onWheel);
-      stage.removeEventListener('wheel', onSeatWheel, { capture: true });
-      clearTimeout(sideTimer);
-      hopPrev.remove();
-      hopNext.remove();
       window.removeEventListener('keydown', onKey);
       map.remove();
       tag.remove();
