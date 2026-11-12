@@ -510,6 +510,22 @@
   .ag-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; margin: 0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl)); }
   .ag-stage canvas { display: block; width: 100%; height: 100%; }
   .ag-stage .hud { position: absolute; top: 8px; left: 12px; right: 12px; z-index: 3; pointer-events: none; }
+  /* The casino floor's floating buttons, top left (the map is top right) */
+  .ag-stage .fl-hud { right: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .fl-btns { display: flex; gap: 8px; pointer-events: auto; }
+  .fl-btn {
+    position: relative; display: grid; place-items: center; flex: none; width: 48px; min-width: 48px; height: 48px; padding: 0;
+    appearance: none; border: 0; border-radius: 14px; cursor: pointer; color: var(--gold);
+    background: rgba(10, 8, 6, .72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    box-shadow: inset 0 0 0 1px rgba(233, 196, 106, .35), 0 6px 18px rgba(0, 0, 0, .4);
+  }
+  .fl-btn:active { transform: scale(.94); }
+  .fl-btn svg { width: 24px; height: 24px; }
+  .fl-av { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); font: 800 17px/1 var(--font-display); }
+  .fl-av svg { width: 20px; height: 20px; }
+  .fl-btn.dot::after { content: ""; position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
+  .fl-sheet-body { display: flex; flex-direction: column; gap: 12px; }
+  .fl-sheet-body > * { margin: 0; }
   #ag-info { font-weight: 700; font-size: 14px; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
   .ag-controls { display: flex; gap: 8px; }
   .ag-controls .lab-btn {
@@ -1578,7 +1594,13 @@
 
   <!-- ================= Casino floor (beta): lab/floor.js ================= -->
   <section class="view has-dock" id="floor-view" hidden>
-    <div class="ag-stage" id="fl-stage"><div class="hud"><span id="fl-info"></span></div></div>
+    <div class="ag-stage" id="fl-stage"><div class="hud fl-hud">
+      <div class="fl-btns">
+        <button class="fl-btn" id="fl-acct" aria-label="Your account"><span class="fl-av" id="fl-av"></span></button>
+        <button class="fl-btn" id="fl-lb" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11M12 13v4M8.5 20h7M9.5 17h5v3h-5z"/></svg></button>
+      </div>
+      <span id="fl-info"></span>
+    </div></div>
     <div class="dock ag-dock"><div class="ag-controls" id="fl-controls"></div></div>
   </section>
 
@@ -2622,6 +2644,14 @@
   </div>
 </div>
 
+<!-- The casino floor's popups: the account and leaderboard cards, borrowed from Profile and Stats -->
+<div class="overlay" id="fl-sheet" hidden>
+  <div class="sheet fl-sheet" role="dialog" aria-modal="true" id="fl-sheet-dialog">
+    <div class="fl-sheet-body" id="fl-sheet-body"></div>
+    <button class="btn block" id="fl-sheet-close">Done</button>
+  </div>
+</div>
+
 <div class="overlay top" id="auth" hidden>
   <form class="auth-card" id="auth-form" novalidate>
     <h2 id="auth-title">Sign in</h2>
@@ -2730,7 +2760,7 @@ const ui = {
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
   gateView: $('gate-view'), gateGoogle: $('gate-google'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
-  floorView: $('floor-view'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
+  floorView: $('floor-view'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
   flHops: $('fl-hops'), flPrev: $('fl-prev'), flNext: $('fl-next'), flHere: $('fl-here'),
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
@@ -2861,7 +2891,7 @@ function buzz(pattern) {
   try { if (navigator.vibrate) navigator.vibrate(pattern || 8); } catch (e) { /* not allowed in this frame */ }
 }
 function syncLock() {
-  const open = !ui.auth.hidden || !ui.chipsPanel.hidden || !ui.invitePanel.hidden || !ui.rStage.hidden;
+  const open = !ui.auth.hidden || !ui.chipsPanel.hidden || !ui.invitePanel.hidden || !ui.rStage.hidden || !ui.flSheet.hidden;
   document.body.classList.toggle('locked', open);
 }
 function inviteURL(code) {
@@ -5580,6 +5610,43 @@ function floorDrop() {
   ui.flControls.textContent = '';
 }
 
+/* The floor's floating buttons open popups over the floor: your account (the Profile tab's
+   account, daily bonus, help and settings cards) and the leaderboard (the Stats tab's card).
+   The cards are moved into the popup while it's open and put back when it closes, so they
+   keep working exactly as they do on their own tabs. */
+const flPop = { kind: '', moved: [] };
+function flPopOpen(kind) {
+  flPopClose();
+  const nodes = kind === 'lb' ? [ui.lbList.closest('.lcard')]
+    : [ui.account.closest('.lcard'), ui.pfDaily.closest('.lcard'), ui.pfLearn, ui.pfVibe.closest('.lcard')];
+  flPop.moved = nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
+  flPop.kind = kind;
+  ui.flSheetBody.replaceChildren(...nodes);
+  ui.flSheetDialog.setAttribute('aria-label', kind === 'lb' ? 'Leaderboard' : 'Your account');
+  if (kind === 'lb') { renderBoard(); lbLoad(); } else renderProfile();
+  ui.flSheet.hidden = false;
+  buzz(6);
+  syncLock();
+}
+function flPopClose() {
+  if (!flPop.kind) return;
+  // Back where they came from, last first (an earlier card can sit just before a later one)
+  for (const { n, parent, next } of flPop.moved.reverse()) parent.insertBefore(n, next);
+  flPop.moved = [];
+  flPop.kind = '';
+  ui.flSheet.hidden = true;
+  syncLock();
+}
+function renderFloorHud() {
+  const name = signedIn() ? (cloud.user.name || cloud.user.email || '').trim() : '';
+  if (name) ui.flAv.textContent = name[0].toUpperCase();
+  else ui.flAv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>';
+  ui.flAcct.classList.toggle('dot', cloud.ready && !signedIn());   // a nudge to sign in
+  ui.flAcct.setAttribute('aria-label', name ? `Your account: ${name}` : 'Your account: sign in');
+  if (flPop.kind === 'acct') renderProfile();
+  if (flPop.kind === 'lb') renderBoard();
+}
+
 function renderArcadeGame() {
   const bal = wallet.ready ? wallet.balance : 0;
   if (arc.inst && arc.inst.refresh) arc.inst.refresh();
@@ -5641,7 +5708,7 @@ async function lbLoad(force, board = lb.board) {
     if (!lb.data[board]) lb.data[board] = { error: true };
   } finally {
     lb.loading = false;
-    if (app.view === 'stats') renderBoard();
+    if (app.view === 'stats' || flPop.kind === 'lb') renderBoard();
     if (app.view === 'home') renderLbw();
   }
 }
@@ -6114,7 +6181,7 @@ async function cloudPush(keepalive = false) {
 /* The account button in the top right of the home bar: "Sign in" when signed out, the
    player's initial when signed in. It opens the account sheet. */
 function renderAccount() {
-  if (app.view !== 'profile') return;
+  if (app.view !== 'profile' && flPop.kind !== 'acct') return;
   const u = cloud.user;
   const el = ui.account;
   el.textContent = '';
@@ -6465,6 +6532,7 @@ function render() {
     ui.flPrev.setAttribute('aria-label', i > 0 ? `Move to ${FLOOR_NAME[FLOOR_ORDER[i - 1]]}` : 'Previous station');
     ui.flNext.setAttribute('aria-label', i < FLOOR_ORDER.length - 1 ? `Move to ${FLOOR_NAME[FLOOR_ORDER[i + 1]]}` : 'Next station');
   }
+  if (v === 'floor') renderFloorHud(); else flPopClose();
   ui.tableTools.hidden = v !== 'table';
   ui.balanceBtn.hidden = v === 'table' || v === 'learn';
   const bal = wallet.ready ? money(wallet.balance) : '—';
@@ -7068,7 +7136,14 @@ ui.helpBtn.addEventListener('click', openHelp);
 ui.floorCta.addEventListener('click', () => { buzz(6); go('floor'); });
 ui.flPrev.addEventListener('click', () => floorHop(-1));
 ui.flNext.addEventListener('click', () => floorHop(1));
-ui.pfLearn.addEventListener('click', () => go('learn'));
+ui.pfLearn.addEventListener('click', () => {
+  if (flPop.kind === 'acct') app.learnBack = { hash: 'floor', label: 'Floor' };   // How to play leads back to the floor
+  go('learn');
+});
+ui.flAcct.addEventListener('click', () => flPopOpen('acct'));
+ui.flLb.addEventListener('click', () => flPopOpen('lb'));
+ui.flSheetClose.addEventListener('click', flPopClose);
+ui.flSheet.addEventListener('click', e => { if (e.target === ui.flSheet) flPopClose(); });
 ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? '' : t.dataset.tab); window.scrollTo(0, 0); }));
 ui.pfVibe.addEventListener('change', () => { app.vibe = ui.pfVibe.checked; prefsSave(); buzz(10); });
 ui.pfHints.addEventListener('change', () => { app.hints = ui.pfHints.checked; prefsSave(); render(); });
@@ -7111,6 +7186,7 @@ ui.rStage.addEventListener('click', () => {
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!ui.auth.hidden) closeAuth();
+  else if (flPop.kind) flPopClose();
   else if (app.chipsOpen) closeChips();
   else if (app.inviteOpen) closeInvite();
   else if (rl.stage === 'result') rlStageClose();
