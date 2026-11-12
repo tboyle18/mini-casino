@@ -42,11 +42,6 @@ const CSS = `
   background: rgba(10, 8, 6, .72); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 6px 18px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: opacity .3s; }
 canvas.floor-map { width: 140px !important; height: 92px !important; }   /* the lab and the casino stretch every stage canvas */
 .floor-map.off { opacity: 0; pointer-events: none; }
-.floor-tag { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 3; pointer-events: none; text-align: center; white-space: nowrap;
-  padding: 8px 14px; border-radius: 12px; background: rgba(10, 8, 6, .72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: opacity .3s; }
-.floor-tag b { display: block; font-size: 17px; }
-.floor-tag span { font-size: 13px; color: rgba(245, 240, 227, .7); }
-.floor-tag.off { opacity: 0; }
 `;
 
 /* Sitting down calls casino.sit(id) once the camera is in the seat, and the casino opens its
@@ -303,9 +298,63 @@ export async function mount({ stage, controls, info, casino }) {
     g.fillRect(0, 124, 512, 6);
     return keep(tex(cv, renderer));
   }
-  function sign(text, color, width) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 4), new THREE.MeshBasicMaterial({ map: signTex(text, color), transparent: true, toneMapped: false, depthWrite: false }));
-    return m;
+  // A sign post's board: the station's name over its one-line pitch, edged in its colour
+  function postTex(st) {
+    const W = 640, H = 400, [cv, g] = canvas(W, H);
+    const r = 34;
+    const round = (x, y, w, h, rr) => { g.beginPath(); g.moveTo(x + rr, y); g.arcTo(x + w, y, x + w, y + h, rr); g.arcTo(x + w, y + h, x, y + h, rr); g.arcTo(x, y + h, x, y, rr); g.arcTo(x, y, x + w, y, rr); g.closePath(); };
+    round(6, 6, W - 12, H - 12, r);
+    g.fillStyle = '#16100c';
+    g.fill();
+    g.lineWidth = 10;
+    g.strokeStyle = st.color;
+    g.stroke();
+    round(26, 26, W - 52, H - 52, r - 16);
+    g.lineWidth = 2;
+    g.strokeStyle = 'rgba(240, 230, 208, .25)';
+    g.stroke();
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    let size = 84;
+    g.font = `800 ${size}px Manrope, sans-serif`;
+    while (g.measureText(st.name).width > W - 110 && size > 40) { size -= 2; g.font = `800 ${size}px Manrope, sans-serif`; }
+    g.fillStyle = '#f6eedc';
+    g.fillText(st.name, W / 2, 112);
+    g.fillStyle = st.color;
+    g.fillRect(W / 2 - 60, 168, 120, 6);
+    // The pitch, wrapped to at most three lines
+    g.font = '600 44px Manrope, sans-serif';
+    g.fillStyle = 'rgba(240, 230, 208, .85)';
+    const words = st.blurb.split(' '), lines = [];
+    let line = '';
+    for (const w of words) {
+      const t = line ? line + ' ' + w : w;
+      if (g.measureText(t).width > W - 120 && line) { lines.push(line); line = w; } else line = t;
+    }
+    if (line) lines.push(line);
+    const shown = lines.slice(0, 3), y0 = 258 - (shown.length - 1) * 27;
+    shown.forEach((l, i) => g.fillText(l, W / 2, y0 + i * 54));
+    const t = keep(tex(cv, renderer));
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+  // A sign post beside the station, its board turned toward the aisle
+  const POST_W = 1.02, POST_H = POST_W * 400 / 640;
+  function signPost(st) {
+    const g = new THREE.Group();
+    const top = st.w > 1.8 ? 1.58 : 1.7;   // tables: up over the felt (machines' posts are scaled down to about knee height)
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, top - POST_H / 2, 10), M.chrome);
+    pole.position.y = (top - POST_H / 2) / 2;
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.03, 20), M.chrome);
+    foot.position.y = 0.015;
+    const back = new THREE.Mesh(new THREE.BoxGeometry(POST_W + 0.04, POST_H + 0.04, 0.03), M.woodDark);
+    back.position.set(0, top, -0.02);
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(POST_W, POST_H), new THREE.MeshBasicMaterial({ map: postTex(st), toneMapped: false }));
+    board.position.set(0, top, 0);
+    board.rotation.x = 0;
+    g.add(pole, foot, back, board);
+    g.traverse(x => { if (x.isMesh) { x.castShadow = x !== board; x.receiveShadow = false; } });
+    return g;
   }
   const shadowy = o => { o.traverse(x => { if (x.isMesh) { x.castShadow = true; x.receiveShadow = true; } }); return o; };
 
@@ -790,8 +839,15 @@ export async function mount({ stage, controls, info, casino }) {
     return g;
   }
   const builders = { table: buildBlackjack, threecard: buildThreeCard, war: buildWar, reddog: buildRedDog, roulette: buildRoulette, baccarat: buildBaccarat, poker: buildVideoPoker, slots: buildSlots, plinko: buildPlinko, crash: buildRocket, cashier: buildCashier };
-  // Where each sign hangs: [height, depth, width]
-  const SIGN = { roulette: [2.05, -0.7, 1.8], baccarat: [2.05, -0.75, 1.8], poker: [2.15, -0.25, 1.5], slots: [2.65, -0.3, 1.6], plinko: [3.55, -0.2, 1.7], crash: [2.75, -0.2, 1.6], cashier: [2.55, 0.06, 1.8] };
+  // Where each sign post stands, beside the station and toward the aisle: [x, z] in the
+  // station's own frame (it faces +z), and how far the board turns back toward the camera
+  // (portrait phones only frame the station itself, so the posts stand inside that frame)
+  const POST = {
+    roulette: [0.95, -0.55, -0.2], baccarat: [-1.0, -0.5, 0.2],   // baccarat's on its far side, clear of video poker
+    // the machines: a small post at the cabinet's front-left corner, away from the mini map, [x, z, turn, scale]
+    poker: [-0.46, 0.42, 0.3, 0.55], slots: [-0.36, 0.9, 0.15, 0.5], plinko: [-0.66, 0.45, 0.3, 0.6], crash: [-0.5, 0.8, 0.15, 0.55], cashier: [-0.78, 0.5, 0.3, 0.6],
+  };
+  const posts = [];
   const groups = [];
   const DIRS = [];
   STATIONS.forEach((st, k) => {
@@ -799,11 +855,13 @@ export async function mount({ stage, controls, info, casino }) {
     g.position.set(st.pos[0], 0, st.pos[1]);
     g.rotation.y = st.yaw;
     g.userData.k = k;
-    const [sy, sz, sw] = SIGN[st.id] || [2.05, -0.3, 1.8];
-    const s = sign(st.name.toUpperCase(), st.color, sw);
-    s.position.set(0, sy, sz);
-    s.castShadow = s.receiveShadow = false;
-    g.add(s);
+    const [px, pz, turn, size = 1] = POST[st.id] || [st.w / 2 - 0.45, -0.45, -0.2];   // card tables: the back corner, beside the dealer
+    const post = signPost(st);
+    post.position.set(px, 0, pz);
+    post.scale.setScalar(size);
+    post.rotation.y = turn;
+    g.add(post);
+    posts.push(post);
     scene.add(g);
     groups.push(g);
     DIRS.push(new THREE.Vector3(Math.sin(st.yaw), 0, Math.cos(st.yaw)));
@@ -866,10 +924,6 @@ export async function mount({ stage, controls, info, casino }) {
   }
 
   // ---- Overlay: the station's name, and the map ----
-  const tag = document.createElement('div');
-  tag.className = 'floor-tag';
-  tag.innerHTML = '<b></b><span></span>';
-  stage.appendChild(tag);
   const map = document.createElement('canvas');
   map.className = 'floor-map';
   map.setAttribute('role', 'img');
@@ -965,10 +1019,6 @@ export async function mount({ stage, controls, info, casino }) {
     if (k === here) return;
     here = k;
     const st = STATIONS[k];
-    tag.querySelector('b').textContent = st.name;
-    tag.querySelector('span').textContent = locked() ? `${st.blurb} · sign in to play`
-      : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Your $1,000 daily bonus is ready · tap to collect' : `${st.blurb} · tap to sit`;
-    info.textContent = 'Swipe to move around the floor';
     prevBtn.disabled = k === 0;
     nextBtn.disabled = k === LAST;
     sitBtn.textContent = locked() ? 'Sign in to play' : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : `Sit at ${st.name}`;
@@ -993,7 +1043,6 @@ export async function mount({ stage, controls, info, casino }) {
     if (glide) { glide.kill(); glide = null; }
     const k = Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST));
     buzz(10);
-    tag.classList.add('off');
     map.classList.add('off');
     gsap.to(cam, { s: k, seat: 1, duration: calm ? 0.2 : 1.05, ease: 'power2.inOut', onComplete: () => { if (!dead) casino.sit(STATIONS[k].id); } });
   }
@@ -1006,7 +1055,6 @@ export async function mount({ stage, controls, info, casino }) {
     busy = true;
     if (glide) { glide.kill(); glide = null; }
     buzz(8);
-    tag.classList.add('off');
     map.classList.add('off');
     const t = calm ? 0.2 : Math.min(2, 0.55 + Math.abs(k - cam.s) * 0.3);
     const down = calm ? 0.2 : 1.05;
@@ -1017,7 +1065,6 @@ export async function mount({ stage, controls, info, casino }) {
   // The casino's arrows: from one seat, up along the floor and down into the next
   function hopCasino(from, to) {
     busy = true;
-    tag.classList.add('off');
     map.classList.add('off');
     cam.s = from;
     cam.seat = 1;
@@ -1032,11 +1079,9 @@ export async function mount({ stage, controls, info, casino }) {
     busy = true;
     cam.s = k;
     cam.seat = 1;
-    tag.classList.add('off');
     map.classList.add('off');
     gsap.to(cam, { seat: 0, duration: calm ? 0.2 : 0.9, delay: 0.1, ease: 'power2.inOut', onComplete: () => {
       busy = false;
-      tag.classList.remove('off');
       map.classList.remove('off');
     } });
   }
@@ -1114,8 +1159,14 @@ export async function mount({ stage, controls, info, casino }) {
   window.addEventListener('keydown', onKey);
 
   // ---- Controls ----
-  const prevBtn = button('‹', () => go(Math.round(cam.s) - 1));
-  const nextBtn = button('›', () => go(Math.round(cam.s) + 1));
+  // Bold chevrons (the ‹ › characters were thin and hard to see over the room)
+  const chevron = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+  const prevBtn = button('', () => go(Math.round(cam.s) - 1), 'fl-arrow');
+  const nextBtn = button('', () => go(Math.round(cam.s) + 1), 'fl-arrow');
+  prevBtn.innerHTML = chevron('M15 5l-7 7 7 7');
+  nextBtn.innerHTML = chevron('M9 5l7 7-7 7');
+  prevBtn.setAttribute('aria-label', 'Previous station');
+  nextBtn.setAttribute('aria-label', 'Next station');
   const sitBtn = button('Sit down', sit, 'primary');
   prevBtn.setAttribute('aria-label', 'Previous station');
   nextBtn.setAttribute('aria-label', 'Next station');
@@ -1160,6 +1211,8 @@ export async function mount({ stage, controls, info, casino }) {
     const lockNow = locked();
     if (lockNow !== wasLocked) { wasLocked = lockNow; here = -1; changed(); }   // signed in or out
     if (owed) { bonusCoin.rotation.y = now * 2.4; bonusCoin.position.y = 1.5 + Math.sin(now * 2) * 0.03; }
+    const standing = cam.seat < 0.5;
+    if (posts[0].visible !== standing) for (const p of posts) p.visible = standing;
     pose();
     renderer.render(scene, camera);
     drawMap();
@@ -1196,7 +1249,6 @@ export async function mount({ stage, controls, info, casino }) {
       canvasEl.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKey);
       map.remove();
-      tag.remove();
       style.remove();
       disposeScene(scene);
       for (const t of textures) t.dispose();

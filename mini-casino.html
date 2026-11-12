@@ -645,11 +645,15 @@
   html.floor .appbar .balance-label { color: rgba(245, 240, 227, .8); }
   html.floor .appbar .balance-amt { color: var(--fl-ink); }
   html.floor #floor-view .ag-controls .lab-btn { color: var(--fl-ink); }
+  html.floor #floor-view .ag-controls .lab-btn.fl-arrow { flex: none; width: 54px; min-width: 54px; height: 54px; min-height: 54px; padding: 0; align-self: center; border-radius: 50%;
+    background: rgba(10, 8, 6, .7); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    box-shadow: inset 0 0 0 1.5px rgba(240, 230, 208, .6), 0 6px 18px rgba(0, 0, 0, .45); display: grid; place-items: center; }
+  html.floor #floor-view .ag-controls .lab-btn.fl-arrow svg { width: 26px; height: 26px; }
+  html.floor #floor-view .ag-controls .lab-btn.fl-arrow:disabled { opacity: .3; }
   html.floor #floor-view .ag-controls .lab-btn.primary { background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; box-shadow: 0 2px 0 #a3957a; }
   html.floor #floor-view .dock { position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); justify-content: flex-end; margin: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
   html.floor #floor-view .dock .ag-controls > * { pointer-events: auto; }
-  html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 132px); }
-  html.floor .floor-tag { bottom: calc(max(14px, var(--safe-bottom)) + 68px); background: none; -webkit-backdrop-filter: none; backdrop-filter: none; text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 14px rgba(0, 0, 0, .8); }
+  html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 76px); background: rgba(62, 52, 76, .82); box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .3), 0 6px 18px rgba(0, 0, 0, .4); }
   html.floor #fl-info { text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 12px rgba(0, 0, 0, .8); }
   .fl-hop { flex: none; width: 34px; height: 34px; border: 0; border-radius: 10px; background: rgba(255, 255, 255, .08); color: var(--gold); font: 800 20px/1 inherit; cursor: pointer; }
   .fl-hop:active { transform: scale(.94); }
@@ -5619,6 +5623,7 @@ async function floorEnsure() {
     inst.setTicker && inst.setTicker(floorTickerLines());
     if (mine !== fl.token) { inst.dispose(); return; }
     fl.inst = inst;
+    ui.flInfo.textContent = '';   // loaded: the room speaks for itself
   } catch (err) {
     if (staleReload(err)) return;   // an update went out while the app was open
     console.error(err);
