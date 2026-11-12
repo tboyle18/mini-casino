@@ -519,7 +519,7 @@
   .fl-btn.fl-2d { font: 800 15px/1 var(--font-display); letter-spacing: .02em; }
   .fl-av { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); font: 800 17px/1 var(--font-display); }
   .fl-av svg { width: 20px; height: 20px; }
-  .fl-btn.dot::after { content: ""; position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
+  .fl-btn.nudge::after { content: ""; position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
   .fl-sheet-body { display: flex; flex-direction: column; gap: 12px; }
   .fl-sheet-body > * { margin: 0; }
   .fl-sheet-body h2 { margin: 0; }
@@ -5721,8 +5721,8 @@ function renderFloorHud() {
   const name = signedIn() ? (cloud.user.name || cloud.user.email || '').trim() : '';
   if (name) ui.flAv.textContent = name[0].toUpperCase();
   else ui.flAv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>';
-  ui.flAcct.classList.toggle('dot', cloud.ready && !signedIn());   // a nudge to sign in
-  ui.flGo.classList.toggle('dot', bonusReady());   // today's bonus is waiting at the cashier
+  ui.flAcct.classList.toggle('nudge', cloud.ready && !signedIn());   // a nudge to sign in
+  ui.flGo.classList.toggle('nudge', bonusReady());   // today's bonus is waiting at the cashier
   feedLoad();
   ui.flAcct.setAttribute('aria-label', name ? `Your account: ${name}` : 'Your account: sign in');
   if (flPop.kind === 'acct') renderProfile();
