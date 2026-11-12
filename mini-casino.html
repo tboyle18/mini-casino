@@ -312,8 +312,6 @@
   .overlay {
     position: fixed;
     inset: 0;
-    bottom: auto;
-    height: var(--app-h);
     z-index: 30;
     display: flex;
     align-items: flex-end;
@@ -454,7 +452,7 @@
   .tabbar {
     position: fixed; z-index: 20;
     left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
-    bottom: calc(max(12px, var(--safe-bottom)) - var(--gap));
+    bottom: max(12px, var(--safe-bottom));
     max-width: 440px; margin: 0 auto;
     display: flex; justify-content: space-between; gap: 4px; padding: 6px;
     border-radius: 22px;
@@ -805,7 +803,12 @@
      Game screens never scroll. The felt takes whatever height is left between the app bar and the
      controls, and the cards size themselves to it (cqh = 1% of the felt's height). */
   html.game, html.game body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  /* From the iPhone home screen the page draws from the top of the glass but iOS sizes and
+     clips it as screen-minus-status-bar, cutting off the bottom 59px. A root that much taller
+     lifts the cut (S&B's fix). env() is 0 everywhere else, so nothing else changes. */
+  html.game { height: calc(100% + var(--safe-top)); }
   html.game .wrap { height: 100vh; height: var(--app-h); min-height: 0; }
+  html.game .overlay { bottom: auto; height: var(--app-h); }
   html.game .view.has-dock { min-height: 0; }
   html.bj body::before { background: radial-gradient(ellipse 130% 70% at 50% 100%, #2c1b10 0%, #160e08 55%, #0b0705 100%); }
   html.bj .dock { background: rgba(14, 10, 7, .92); }
