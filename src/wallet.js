@@ -64,7 +64,7 @@ export async function loadWallet(sql, userId, name) {
     const day = d.daily && typeof d.daily.day === 'string' ? d.daily.day : '';
     rows = await sql`
       insert into wallets (user_id, name, balance, daily_day, log)
-      values (${userId}, ${name || 'Player'}, ${old}, ${day}, ${JSON.stringify([{ a: old, w: 'Wallet opened', at: Date.now() }])}::jsonb)
+      values (${userId}, ${name || 'Player'}, ${old}, ${day}, ${JSON.stringify([{ a: old, w: 'Wallet opened', at: Date.now(), b: old }])}::jsonb)
       on conflict (user_id) do update set user_id = excluded.user_id
       returning *`;
   }
@@ -75,7 +75,7 @@ async function saveWallet(sql, userId, w, name) {
     update wallets set
       name = ${name || w.name || 'Player'}, balance = ${w.balance}, daily_day = ${w.dailyDay},
       week = ${w.week}, week_net = ${w.weekNet}, last_week = ${w.lastWeek}, last_week_net = ${w.lastWeekNet},
-      log = ${JSON.stringify(w.log.slice(0, 12))}::jsonb, rounds = ${JSON.stringify(w.rounds)}::jsonb,
+      log = ${JSON.stringify(w.log.slice(0, 200))}::jsonb, rounds = ${JSON.stringify(w.rounds)}::jsonb,
       version = version + 1, updated_at = now()
     where user_id = ${userId} and version = ${w.version}
     returning version`;

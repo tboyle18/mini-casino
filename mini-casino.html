@@ -516,6 +516,28 @@
   .ag-controls .lab-btn.primary { flex-grow: 2; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); box-shadow: 0 2px 0 #8a6522; }
   .ag-controls .lab-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
   .ag-controls .lab-btn:disabled { opacity: .35; }
+  /* ---------- Transaction history: a bank-statement page ---------- */
+  .hist-card { margin-top: 0; }
+  .hist-sum { display: flex; gap: 18px; margin-top: 8px; font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .hist-sum b { color: var(--ink); font-weight: 700; }
+  .hist-sum .up { color: var(--win); } .hist-sum .down { color: var(--lose); }
+  .hist-day { margin: 10px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .hist-group { border-radius: 18px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
+  .hist-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 14px; }
+  .hist-row + .hist-row { border-top: 1px solid var(--line); }
+  .hist-ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 17px; background: rgba(255, 255, 255, .07); }
+  .hist-row.in .hist-ico { background: rgba(134, 232, 176, .14); }
+  .hist-row.out .hist-ico { background: rgba(255, 154, 154, .12); }
+  .hist-what { min-width: 0; }
+  .hist-what b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .seg.hist-filter { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hist-what span { font-size: 12px; color: var(--ink-3); }
+  .hist-amt { text-align: right; font-variant-numeric: tabular-nums; }
+  .hist-amt b { display: block; font-size: 16px; font-weight: 800; }
+  .hist-row.in .hist-amt b { color: var(--win); }
+  .hist-row.out .hist-amt b { color: var(--lose); }
+  .hist-amt span { font-size: 12px; color: var(--ink-3); }
+  .hist-empty { padding: 26px 10px; text-align: center; color: var(--ink-3); }
   /* ---------- Leaderboard ---------- */
   .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(0, 0, 0, .28); }
   .seg button { appearance: none; border: 0; border-radius: 9px; padding: 9px 6px; cursor: pointer; background: none; color: var(--ink-2); font: 700 14px/1 var(--font-body); }
@@ -1362,6 +1384,22 @@
     </div>
   </section>
 
+  <!-- ================= Transaction history ================= -->
+  <section class="view" id="history-view" hidden>
+    <div class="page-head"><h1>Transaction history</h1><p>Your last 200 wallet changes</p></div>
+    <div class="wallet-card hist-card">
+      <div class="wc-label">Available balance</div>
+      <div class="wc-amt" id="hist-balance">—</div>
+      <div class="hist-sum" id="hist-sum"></div>
+    </div>
+    <div class="seg hist-filter" role="tablist" aria-label="Show">
+      <button role="tab" data-f="all" aria-selected="true">All</button>
+      <button role="tab" data-f="in" aria-selected="false">Money in</button>
+      <button role="tab" data-f="out" aria-selected="false">Money out</button>
+    </div>
+    <div class="hist-list" id="hist-list"></div>
+  </section>
+
   <!-- ================= Sign in to play (any game, signed out) ================= -->
   <section class="view gate" id="gate-view" hidden>
     <div class="gate-card">
@@ -1533,9 +1571,10 @@
       <p class="fine" id="cr-line">No flights yet</p>
     </div>
     <div class="lcard stat-card">
-      <div class="sc-head"><h2>Wallet statement</h2></div>
+      <div class="sc-head"><h2>Transaction history</h2></div>
       <p class="fine" id="ledger-summary"></p>
       <ul class="ledger-list" id="ledger-list"></ul>
+      <button class="btn block" id="ledger-all">See all transactions</button>
     </div>
     <p class="fine center" id="st-where"></p>
     <button class="linkbtn st-reset" id="st-reset">Reset stats</button>
@@ -2435,7 +2474,7 @@ const TEXT_VS = '︎';
 const SOLO_ID = 'solo';
 const WALLET_MAX = 1e15;              // the vault's idea of infinity
 // Which tab each screen belongs to (games have none: they hide the nav bar), and the tabs themselves
-const TAB_OF = { home: 'casino', lobby: 'casino', arcade: 'arcade', stats: 'stats', profile: 'profile', learn: 'profile' };
+const TAB_OF = { home: 'casino', lobby: 'casino', arcade: 'arcade', stats: 'stats', history: 'stats', profile: 'profile', learn: 'profile' };
 const TAB_HOME = new Set(['home', 'arcade', 'stats', 'profile']);
 const GAME_VIEWS = new Set(['table', 'roulette', 'poker', 'baccarat', 'war', 'threecard', 'reddog', 'arcadegame']);
 const ARCADE = [
@@ -2514,6 +2553,7 @@ const ui = {
   helpBtn: $('help-btn'),
   rlLucky: $('rl-lucky'), rlLuckySub: $('rl-lucky-sub'), rlCommon: $('rl-common'), rlCommonSub: $('rl-common-sub'),
   lbWhen: $('lb-when'), lbInvite: $('lb-invite'), lbList: $('lb-list'), lbMe: $('lb-me'), lbPodium: $('lb-podium'), lbTabs: [...document.querySelectorAll('.lb .seg button')],
+  historyView: $('history-view'), histBalance: $('hist-balance'), histSum: $('hist-sum'), histList: $('hist-list'), histTabs: [...document.querySelectorAll('.hist-filter button')], ledgerAll: $('ledger-all'),
   ledgerSummary: $('ledger-summary'), ledgerList: $('ledger-list'), stWhere: $('st-where'), stReset: $('st-reset'), felt: $('felt'), mySeatBox: $('my-seat'), roomCards: $('room-cards'),
   cpTable: $('cp-table'), cpClose: $('cp-close'), inviteClose: $('invite-close'), shareBtn: $('share-btn'),
   rSlot: $('r-slot'), rStage: $('r-stage'), rStageWheel: $('r-stage-wheel'),
@@ -2628,6 +2668,7 @@ function route() {
   else if (h === 'blackjack') target = { view: 'lobby', code: '' };
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
   else if (h === 'stats') target = { view: 'stats', code: '' };
+  else if (h === 'history') target = { view: 'history', code: '' };
   else if (h === 'arcade') target = { view: 'arcade', code: '' };
   else if (h === 'arcade-plinko' || h === 'arcade-crash') target = { view: 'arcadegame', code: h.slice(7) };
   else if (h === 'profile') target = { view: 'profile', code: '' };
@@ -3042,10 +3083,17 @@ function walletShow() {
 function walletFrom(d) {
   if (!d || !Number.isFinite(d.balance)) return;
   wallet.real = d.balance;
-  if (Array.isArray(d.log)) wallet.log = d.log.filter(e => e && Number.isFinite(e.a)).slice(0, 12);
+  if (Array.isArray(d.log)) wallet.log = d.log.filter(e => e && Number.isFinite(e.a)).slice(0, 200);
   if (typeof d.daily === 'string' && d.daily > daily.day) daily.day = d.daily;
   wallet.ready = true;
   walletShow();
+}
+// A bet's reply carries the newest few history lines: add any this page hasn't got
+function mergeLog(newest) {
+  const key = e => `${e.at}|${e.w}|${e.a}`;
+  const have = new Set(wallet.log.map(key));
+  const add = newest.filter(e => e && Number.isFinite(e.a) && !have.has(key(e)));
+  if (add.length) wallet.log = [...add, ...wallet.log].sort((x, y) => y.at - x.at).slice(0, 200);
 }
 // Keep winnings off the shown balance until the game reveals them
 function holdBack(a) { wallet.held = Math.max(0, wallet.held + (a || 0)); walletShow(); }
@@ -3089,7 +3137,7 @@ async function api(game, action, args, hold) {
   }
   if (res.status === 401) { cloud.user = null; wallet.ready = false; toast('You were signed out. Sign in to keep playing.'); render(); return null; }
   if (!d) { toast('Something went wrong. Try again.'); return null; }
-  if (Number.isFinite(d.balance)) { wallet.real = d.balance; if (Array.isArray(d.log)) wallet.log = d.log; }
+  if (Number.isFinite(d.balance)) { wallet.real = d.balance; if (Array.isArray(d.log)) mergeLog(d.log); }
   if (!res.ok) {
     walletShow();
     toast(d.message && d.error !== 'bad_request' ? d.message : 'That didn’t go through. Try again.');
@@ -3159,10 +3207,12 @@ function paintLow(el, show) {
   el.hidden = !show || !cloud.ready;
   if (!el.hidden) el.textContent = `Out of chips? ${dailyText()}`;
 }
+// The Stats tab shows the latest three; the full history has its own page
 function renderLedger() {
-  ui.ledgerSummary.textContent = wallet.log.length ? 'Your last few wallet changes.' : 'Nothing yet.';
+  ui.ledgerSummary.textContent = !signedIn() ? 'Sign in to see your transactions.' : wallet.log.length ? '' : 'Nothing yet.';
+  ui.ledgerSummary.hidden = !ui.ledgerSummary.textContent;
   ui.ledgerList.textContent = '';
-  for (const e of wallet.log) {
+  for (const e of wallet.log.slice(0, 3)) {
     const li = document.createElement('li');
     const left = document.createElement('div');
     left.style.minWidth = '0';
@@ -3175,9 +3225,85 @@ function renderLedger() {
     left.append(what, when);
     const amt = document.createElement('div');
     amt.className = 'amt ' + (e.a > 0 ? 'plus' : 'minus');
-    amt.textContent = (e.a > 0 ? '+' : '') + money(e.a);
+    amt.textContent = (e.a > 0 ? '+' : e.a < 0 ? '−' : '') + money(Math.abs(e.a));
     li.append(left, amt);
     ui.ledgerList.appendChild(li);
+  }
+  ui.ledgerAll.hidden = !signedIn() || !wallet.log.length;
+}
+
+/* ================= Transaction history =================
+   Every bet, win, daily bonus and table result, newest first, grouped by day, with the
+   balance after each like a bank statement. The server keeps the last 200. */
+const hist = { filter: 'all', at: 0 };
+const HIST_ICON = [
+  [/^Daily bonus|^Wallet opened/, '🎁'], [/^Blackjack/, '🂡'], [/^Roulette/, '🎡'], [/^Video poker/, '🃏'],
+  [/^Baccarat/, '♦'], [/^Casino War/, '⚔'], [/^Three Card/, '🂮'], [/^Red Dog/, '🐕'], [/^Duck Drop/, '🦆'], [/^Duck Rocket/, '🚀'],
+];
+const histIcon = w => (HIST_ICON.find(([re]) => re.test(w || '')) || [null, '•'])[1];
+function histDay(ms) {
+  const d = new Date(ms), now = new Date();
+  const day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' });
+}
+function renderHistory() {
+  if (Date.now() - hist.at > 15000 && signedIn()) { hist.at = Date.now(); walletFetch(); }   // fresh from the server
+  for (const b of ui.histTabs) b.setAttribute('aria-selected', String(b.dataset.f === hist.filter));
+  ui.histBalance.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
+  const log = wallet.log;
+  const ins = log.filter(e => e.a > 0).reduce((t, e) => t + e.a, 0);
+  const outs = log.filter(e => e.a < 0).reduce((t, e) => t - e.a, 0);
+  ui.histSum.innerHTML = log.length ? `<span>In <b class="up"></b></span><span>Out <b class="down"></b></span>` : '';
+  if (log.length) { ui.histSum.querySelector('.up').textContent = '+' + money(ins); ui.histSum.querySelector('.down').textContent = (outs ? '−' : '') + money(outs); }
+  const shown = log.filter(e => hist.filter === 'all' || (hist.filter === 'in' ? e.a > 0 : e.a < 0));
+  ui.histList.textContent = '';
+  if (!shown.length) {
+    const p = document.createElement('div');
+    p.className = 'hist-empty';
+    p.textContent = !signedIn() ? 'Sign in to see your transactions.' : log.length ? 'Nothing here.' : 'No transactions yet. Play a round and it shows up here.';
+    ui.histList.appendChild(p);
+    return;
+  }
+  let day = '', group = null;
+  for (const e of shown) {
+    const d = histDay(e.at);
+    if (d !== day) {
+      day = d;
+      const h = document.createElement('div');
+      h.className = 'hist-day';
+      h.textContent = d;
+      group = document.createElement('div');
+      group.className = 'hist-group';
+      ui.histList.append(h, group);
+    }
+    const row = document.createElement('div');
+    row.className = 'hist-row ' + (e.a > 0 ? 'in' : e.a < 0 ? 'out' : 'even');
+    const ico = document.createElement('div');
+    ico.className = 'hist-ico';
+    ico.setAttribute('aria-hidden', 'true');
+    ico.textContent = histIcon(e.w);
+    const what = document.createElement('div');
+    what.className = 'hist-what';
+    const name = document.createElement('b');
+    name.textContent = e.w || (e.a > 0 ? 'Win' : 'Bet');
+    const time = document.createElement('span');
+    time.textContent = new Date(e.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    what.append(name, time);
+    const amt = document.createElement('div');
+    amt.className = 'hist-amt';
+    const a = document.createElement('b');
+    a.textContent = (e.a > 0 ? '+' : e.a < 0 ? '−' : '') + moneyFull(Math.abs(e.a));
+    amt.appendChild(a);
+    if (Number.isFinite(e.b)) {
+      const b = document.createElement('span');
+      b.textContent = `Balance ${moneyFull(e.b)}`;
+      amt.appendChild(b);
+    }
+    row.append(ico, what, amt);
+    group.appendChild(row);
   }
 }
 
@@ -5731,6 +5857,7 @@ function render() {
   ui.lobby.hidden = v !== 'lobby';
   ui.tableView.hidden = v !== 'table';
   ui.statsView.hidden = v !== 'stats';
+  ui.historyView.hidden = v !== 'history';
   ui.pokerView.hidden = v !== 'poker';
   ui.baccaratView.hidden = v !== 'baccarat';
   ui.warView.hidden = v !== 'war';
@@ -5761,6 +5888,7 @@ function render() {
   ui.backLabel.textContent = v === 'table' ? (app.solo ? 'Blackjack' : 'Rooms')
     : v === 'learn' ? (app.learnBack ? app.learnBack.label : app.learnId ? 'How to play' : 'Profile')
     : v === 'arcadegame' ? 'Arcade'
+    : v === 'history' ? 'Stats'
     : 'Casino';
   ui.helpBtn.hidden = !HELP_FOR[v] && v !== 'arcadegame';
   ui.barTitle.hidden = v !== 'table';
@@ -5777,6 +5905,7 @@ function render() {
   if (gated) { /* the sign-in card is all there is */ }
   else if (v === 'lobby') renderLobby();
   else if (v === 'stats') { renderStats(); renderBoard(); lbLoad(); }
+  else if (v === 'history') renderHistory();
   else if (v === 'roulette') renderRoulette();
   else if (v === 'table') renderTable();
   else if (v === 'poker') renderPoker();
@@ -6290,6 +6419,7 @@ ui.soloBtn.addEventListener('click', () => go('solo'));
 ui.homeBtn.addEventListener('click', () => {
   if (app.view === 'table') { go('blackjack'); return; }
   if (app.view === 'arcadegame') { go('arcade'); return; }
+  if (app.view === 'history') { go('stats'); return; }
   if (app.view === 'learn') {
     const back = app.learnBack;
     app.learnBack = null;
@@ -6310,6 +6440,8 @@ ui.bcClear.addEventListener('click', bcClear);
 ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
 ui.dailyBtn.addEventListener('click', () => openAuth('in'));
 ui.stReset.addEventListener('click', resetStats);
+ui.ledgerAll.addEventListener('click', () => go('history'));
+ui.histTabs.forEach(b => b.addEventListener('click', () => { hist.filter = b.dataset.f; buzz(4); renderHistory(); }));
 ui.lbInvite.addEventListener('click', inviteFriends);
 ui.lbTabs.forEach(b => b.addEventListener('click', () => { lb.board = b.dataset.board; buzz(4); renderBoard(); lbLoad(); }));
 ui.authForm.addEventListener('submit', authSubmit);

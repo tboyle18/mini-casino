@@ -212,7 +212,8 @@ export class TableRoom extends DurableObject {
         try {
           await withWallet(sql, uid, this.names[uid], (w, now) => {
             w.weekNet = Math.round((w.weekNet + net) * 100) / 100;
-            note(w, net, `Blackjack · ${this.T.name || 'Room'} · ${net > 0 ? 'Won' : net < 0 ? 'Lost' : 'Push'}`, now);
+            // No balance on this line: the chips come home to the wallet a moment later
+            note(w, net, `Blackjack · ${this.T.name || 'Room'} · ${net > 0 ? 'Won' : net < 0 ? 'Lost' : 'Push'}`, now, false);
           });
           this.netDone[uid] = R.n;
         } catch (e) { /* next time */ }

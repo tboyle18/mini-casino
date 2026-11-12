@@ -23,7 +23,7 @@ export class PlayError extends Error {
 const r2 = n => Math.round(n * 100) / 100;
 const MAX_BET = 1e9;
 const okAmount = a => Number.isInteger(a) && a >= 1 && a <= MAX_BET;
-export const LOG_MAX = 12;
+export const LOG_MAX = 200;   // the transaction history keeps this many
 
 function take(w, amount) {
   if (!okAmount(amount)) throw new PlayError('bad_bet', 'That bet isn’t a whole number of dollars.');
@@ -31,8 +31,11 @@ function take(w, amount) {
   w.balance = r2(w.balance - amount);
 }
 // Pay out a finished round: the payout goes in, and its net counts toward this week
-export function note(w, a, line, now) {
-  w.log = [{ a: r2(a), w: String(line).slice(0, 60), at: now }, ...(w.log || [])].slice(0, LOG_MAX);
+// A line in the transaction history: what happened, the money in or out, and the balance after
+export function note(w, a, line, now, withBalance = true) {
+  const e = { a: r2(a), w: String(line).slice(0, 60), at: now };
+  if (withBalance) e.b = r2(w.balance);
+  w.log = [e, ...(w.log || [])].slice(0, LOG_MAX);
 }
 function settle(w, staked, payout, line, now, quiet) {
   w.balance = r2(w.balance + payout);
@@ -238,16 +241,20 @@ function plinko(w, action, args, ctx) {
   const risk = RISKS[args.risk] ? args.risk : 'medium';
   if (!okAmount(args.bet)) throw new PlayError('bad_bet');
   const drops = [];
+  let net = 0, best = 0;
   for (let i = 0; i < n && w.balance >= args.bet; i++) {
     take(w, args.bet);
     const seed = ctx.randInt(4294967296);
     const bucket = plinkoBucket(seed);
     const mult = RISKS[risk].pays[bucket];
     const payout = Math.round(args.bet * mult);
-    settle(w, args.bet, payout, `Duck Drop · ${mult}×`, ctx.now, payout < args.bet * 10);   // only big ones on the statement
+    net += settle(w, args.bet, payout, '', ctx.now, true);
+    best = Math.max(best, mult);
     drops.push({ seed, bucket, mult, payout });
   }
   if (!drops.length) throw new PlayError('funds', 'Not enough in your wallet.');
+  // One line in the history for the whole drop
+  note(w, net, drops.length > 1 ? `Duck Drop · ${drops.length} ducks · best ${best}×` : `Duck Drop · ${best}×`, ctx.now);
   return { drops, bet: args.bet, risk };
 }
 

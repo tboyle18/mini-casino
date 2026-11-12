@@ -247,7 +247,7 @@ async function playRoute(request, env, url) {
   const sql = neon(env.DATABASE_URL);
   try {
     const { w, result } = await withWallet(sql, user.id, displayName(user), (w, now) => play(w, body.game, body.action, body.args, gameCtx(now)));
-    return json({ result, balance: w.balance, weekNet: w.weekNet, log: w.log });
+    return json({ result, balance: w.balance, weekNet: w.weekNet, log: w.log.slice(0, 10) });   // the newest; the page merges them in
   } catch (err) {
     if (err instanceof PlayError) {
       const w = await loadWallet(sql, user.id, displayName(user));
