@@ -41,6 +41,7 @@ const PARTY = ['#ffd56b', '#ff5d6c', '#4cc3ff', '#7cf29a', '#ffffff', '#c58bff']
 const FLAVOURS = {
   big: { label: 'Big win', title: 'BIG WIN', kicker: 'Roulette · 17 Black', amount: 12500, coins: 1, confetti: 1, shake: 0 },
   bj: { label: 'Blackjack!', title: 'BLACKJACK', kicker: 'Pays 3 to 2', amount: 1500, coins: 0.4, confetti: 1, suits: true, shake: 0 },
+  payday: { label: 'Payday', title: 'PAYDAY', kicker: 'Daily bonus', amount: 1000, coins: 1, confetti: 0.6, shake: 0 },
   jackpot: { label: 'Jackpot', title: 'JACKPOT', kicker: 'All on 0 · 35 to 1', amount: 1000000, coins: 2.4, confetti: 1.8, shake: 1, long: 1 },
 };
 

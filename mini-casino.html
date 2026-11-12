@@ -3442,11 +3442,13 @@ function dailyText(long) {
   if (!cloud.ready) return '';
   if (!signedIn()) return long ? 'Sign in to get $1,000 every day.' : 'Sign in for $1,000 every day.';
   if (dailyClaimed()) return `Next $1,000 in ${untilMidnight()}`;
-  return daily.claiming ? 'Collecting today’s $1,000…' : 'Today’s $1,000 is on its way.';
+  return daily.claiming ? 'Collecting today’s $1,000…' : 'Today’s $1,000 is ready to collect.';
 }
-/* Claim today's bonus, once we know who's signed in. The server decides, and the reply
-   carries the wallet with the money already in it. */
-async function claimDaily() {
+/* Collect today's bonus: at the cashier on the casino floor, or with the Collect button on
+   the Casino tab. The server decides, and the reply carries the wallet with the money already
+   in it. at is where it was collected ('cashier' gets the big-win celebration). */
+const bonusReady = () => !!(cloud.ready && cloud.on && signedIn() && !dailyClaimed());
+async function claimDaily(at) {
   if (!cloud.on || !signedIn() || daily.claiming || dailyClaimed()) return;
   daily.claiming = true;
   try {
@@ -3460,7 +3462,11 @@ async function claimDaily() {
     if (!res.ok && !(d && d.claimed)) throw new Error('daily ' + res.status);
     if (d.day) daily.day = d.day;
     if (d.wallet) walletFrom(d.wallet);
-    if (d.ok) { toast('Daily bonus: +$1,000. See you tomorrow.'); buzz([15, 50, 25]); }
+    if (d.ok) {
+      buzz([15, 50, 25]);
+      if (at === 'cashier') bigWin(0, 1000, 'Cashier · Daily bonus', 'payday', 250);
+      else toast('Daily bonus: +$1,000. See you tomorrow.');
+    }
   } catch (e) {
     /* tried again next time the app comes back to the front */
   } finally {
@@ -3468,14 +3474,15 @@ async function claimDaily() {
     render();
   }
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') claimDaily(); });
 
 function renderDaily() {
   ui.dailyLine.textContent = !cloud.ready ? ''
     : !signedIn() ? 'Sign in to play: you start with $1,000 and get another $1,000 every day.'
     : dailyClaimed() ? `Today’s $1,000 is in. Next one in ${untilMidnight()}.`
     : dailyText();
-  ui.dailyBtn.hidden = !cloud.ready || !cloud.on || signedIn();
+  ui.dailyBtn.hidden = !cloud.ready || !cloud.on || (signedIn() && !bonusReady());
+  ui.dailyBtn.textContent = signedIn() ? 'Collect $1,000' : 'Sign in';
+  ui.dailyBtn.disabled = daily.claiming;
 }
 // Every game's "out of money" line
 function paintLow(el, show) {
@@ -5584,6 +5591,7 @@ function floorSit(id) {
   if (!FLOOR_GO[id]) return;
   app.fromFloor = id;
   go(FLOOR_GO[id]);
+  if (id === 'cashier' && bonusReady()) claimDaily('cashier');   // the cashier pays out today's bonus
 }
 function floorHop(dir) {
   const seat = floorSeat();
@@ -5605,7 +5613,8 @@ async function floorEnsure() {
     const mod = await import('/lab/embed.js');
     const floor = await mod.floor();
     if (mine !== fl.token) return;
-    const inst = await floor.mount({ stage: ui.flStage, controls: ui.flControls, info: ui.flInfo, casino: { start, sit: floorSit } });
+    const inst = await floor.mount({ stage: ui.flStage, controls: ui.flControls, info: ui.flInfo, casino: { start, sit: floorSit, bonusReady } });
+    inst.setTicker && inst.setTicker(floorTickerLines());
     if (mine !== fl.token) { inst.dispose(); return; }
     fl.inst = inst;
   } catch (err) {
@@ -5646,7 +5655,7 @@ function floorGoList() {
       const b = document.createElement('button');
       b.className = (id === here ? 'here' : '') + (id === 'cashier' ? ' wide' : '');
       const em = document.createElement('span'); em.className = 'em'; em.textContent = FLOOR_ICON[id]; em.setAttribute('aria-hidden', 'true');
-      const nm = document.createElement('span'); nm.textContent = FLOOR_NAME[id];
+      const nm = document.createElement('span'); nm.textContent = id === 'cashier' && bonusReady() ? 'Cashier · collect $1,000' : FLOOR_NAME[id];
       b.append(em, nm);
       b.setAttribute('aria-label', `Go to ${FLOOR_NAME[id]}`);
       b.addEventListener('click', () => { flPopClose(); if (fl.inst && fl.inst.jumpTo) fl.inst.jumpTo(id); });
@@ -5684,6 +5693,8 @@ function renderFloorHud() {
   if (name) ui.flAv.textContent = name[0].toUpperCase();
   else ui.flAv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>';
   ui.flAcct.classList.toggle('dot', cloud.ready && !signedIn());   // a nudge to sign in
+  ui.flGo.classList.toggle('dot', bonusReady());   // today's bonus is waiting at the cashier
+  feedLoad();
   ui.flAcct.setAttribute('aria-label', name ? `Your account: ${name}` : 'Your account: sign in');
   if (flPop.kind === 'acct') renderProfile();
   if (flPop.kind === 'lb') renderBoard();
@@ -5862,6 +5873,13 @@ async function feedLoad() {
     if (res.ok) feed.wins = (await res.json()).wins || [];
   } catch (e) { /* the ticker keeps what it had */ }
   if (app.view === 'home') renderTicker();
+  if (fl.inst && fl.inst.setTicker) fl.inst.setTicker(floorTickerLines());
+}
+// The floor's LED ticker: the same wins, as plain lines
+function floorTickerLines() {
+  const wins = feed.wins || [];
+  return wins.length ? wins.map(w => `${w.name} won +${money(w.amount)} on ${w.game}`)
+    : ['Big wins show up here. Go make some noise', 'Weekly leaderboard resets every Monday'];
 }
 function renderTicker() {
   const wins = feed.wins || [];
@@ -6094,7 +6112,7 @@ async function cloudInit() {
   done();
   if (verifier && cloud.user) toast(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
   else if (verifier || googleFailed) toast('Google sign-in didn’t finish. Try again.');
-  if (cloud.user) { await walletFetch(); claimDaily(); cloudPull(); }
+  if (cloud.user) { await walletFetch(); cloudPull(); }
   render();
 }
 
@@ -6277,7 +6295,7 @@ function renderProfile() {
   renderAccount();
   ui.pfDaily.textContent = !cloud.ready ? '' : !signedIn() ? 'Signed-in players get $1,000 the first time they open the casino each day. Sign in above to start collecting.'
     : dailyClaimed() ? `Today’s $1,000 is in your wallet. The next one arrives in ${untilMidnight()}, at midnight your time.`
-    : 'Today’s $1,000 is on its way.';
+    : 'Today’s $1,000 is ready. Collect it from the cashier on the casino floor, or on the Casino tab.';
   ui.pfVibe.checked = app.vibe !== false;
   ui.pfHints.checked = !!app.hints;
 }
@@ -6341,7 +6359,6 @@ async function authSubmit(e) {
     route();
     toast(up ? 'Account created. You start with $1,000.' : `Signed in as ${cloud.user.name || cloud.user.email}`);
     await walletFetch();
-    claimDaily();
     cloudPull();
   } catch (err) {
     ui.authError.textContent = 'Couldn’t reach the sign-in service. Check your connection and try again.';
@@ -7195,7 +7212,7 @@ ui.bcGo.addEventListener('click', bcDeal);
 ui.bcUndo.addEventListener('click', bcUndo);
 ui.bcClear.addEventListener('click', bcClear);
 ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
-ui.dailyBtn.addEventListener('click', () => openAuth('in'));
+ui.dailyBtn.addEventListener('click', () => { if (signedIn()) claimDaily(); else openAuth('in'); });
 ui.stReset.addEventListener('click', resetStats);
 ui.ledgerAll.addEventListener('click', () => go('history'));
 ui.lbw.addEventListener('click', () => { lb.board = 'week'; go('stats'); });

@@ -163,6 +163,53 @@ export async function mount({ stage, controls, info, casino }) {
   cabs.castShadow = cabs.receiveShadow = true;
   scene.add(cabs, screens, toppers);
 
+  // An LED ticker along the back wall, above the machines, scrolling everyone's recent big wins.
+  // The text is drawn once into a strip that repeats; scrolling just slides the texture.
+  const TICK = { len: SPAN + 0.6, h: 0.3, px: 96 };   // px: texture pixels per metre of board
+  const tickMat = new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true });
+  const tickBoard = new THREE.Mesh(new THREE.PlaneGeometry(TICK.len, TICK.h), tickMat);
+  tickBoard.position.set(MID, 2.3, ROOM.z0 + 0.04);
+  const tickFrame = new THREE.Mesh(new THREE.BoxGeometry(TICK.len + 0.08, TICK.h + 0.08, 0.05), std(0x0a0806, 0.5, 0.3));
+  tickFrame.position.set(MID, 2.3, ROOM.z0 + 0.01);
+  scene.add(tickFrame, tickBoard);
+  let tickTex = null;
+  function setTicker(lines) {
+    const H = 64;
+    const [probe, pg] = canvas(8, 8);
+    pg.font = `800 40px Manrope, sans-serif`;
+    // As many wins as fit in one strip (phones cap textures at 8192 pixels wide)
+    let text = '';
+    for (const l of (lines && lines.length ? lines : ['Mini Casino'])) {
+      const next = `${text}  ✦  ${l}`;
+      if (text && pg.measureText(next + '  ').width > 8000) break;
+      text = next;
+    }
+    text += '  ';
+    const w = Math.min(8192, Math.max(512, Math.ceil(pg.measureText(text).width / 8) * 8));
+    const [cv, g] = canvas(w, H);
+    g.fillStyle = '#120a02';
+    g.fillRect(0, 0, w, H);
+    g.font = `800 40px Manrope, sans-serif`;
+    g.textBaseline = 'middle';
+    g.fillStyle = '#ffb43d';
+    g.shadowColor = '#ff8a1f';
+    g.shadowBlur = 10;
+    g.fillText(text, 0, H / 2 + 2);
+    // LED dots: a dark grid over the lit text
+    g.shadowBlur = 0;
+    g.fillStyle = 'rgba(18, 10, 2, .55)';
+    for (let x = 0; x < w; x += 4) g.fillRect(x, 0, 1, H);
+    for (let y = 0; y < H; y += 4) g.fillRect(0, y, w, 1);
+    probe.width = probe.height = 0;
+    if (tickTex) tickTex.dispose();
+    tickTex = tex(cv, renderer);
+    tickTex.wrapS = THREE.RepeatWrapping;
+    tickTex.repeat.x = (TICK.len * TICK.px) / w * (H / (TICK.h * TICK.px));   // keep letters their natural shape
+    tickMat.map = tickTex;
+    tickMat.needsUpdate = true;
+  }
+  setTicker(null);
+
   // ---- Small canvas artwork ----
   function signTex(text, color) {
     const [cv, g] = canvas(1024, 256);
@@ -694,6 +741,7 @@ export async function mount({ stage, controls, info, casino }) {
   }
 
   // The cashier's cage: a wood booth with brass bars, a window and a counter
+  let bonusCoin = null;
   function buildCashier() {
     const g = new THREE.Group();
     const W = 1.8, H = 2.3, D = 0.9;
@@ -733,6 +781,12 @@ export async function mount({ stage, controls, info, casino }) {
       g.add(stack);
     });
     g.add(bars, arch, lamp, shade, tray);
+    bonusCoin = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.03, 32), [M.gold, glowMat(0xffd84a), glowMat(0xffd84a)]);
+    bonusCoin.rotation.order = 'YXZ';   // stood on its edge, then spun about the vertical
+    bonusCoin.rotation.x = Math.PI / 2;
+    bonusCoin.position.set(0, 1.5, 0.3);   // in the cage's window, being handed over
+    bonusCoin.visible = false;
+    g.add(bonusCoin);
     return g;
   }
   const builders = { table: buildBlackjack, threecard: buildThreeCard, war: buildWar, reddog: buildRedDog, roulette: buildRoulette, baccarat: buildBaccarat, poker: buildVideoPoker, slots: buildSlots, plinko: buildPlinko, crash: buildRocket, cashier: buildCashier };
@@ -912,11 +966,11 @@ export async function mount({ stage, controls, info, casino }) {
     here = k;
     const st = STATIONS[k];
     tag.querySelector('b').textContent = st.name;
-    tag.querySelector('span').textContent = `${st.blurb} · tap to sit`;
+    tag.querySelector('span').textContent = st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Your $1,000 daily bonus is ready · tap to collect' : `${st.blurb} · tap to sit`;
     info.textContent = 'Swipe to move around the floor';
     prevBtn.disabled = k === 0;
     nextBtn.disabled = k === LAST;
-    sitBtn.textContent = `Sit at ${st.name}`;
+    sitBtn.textContent = st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : `Sit at ${st.name}`;
   }
   let glide = null;
   function go(k) {
@@ -1094,6 +1148,11 @@ export async function mount({ stage, controls, info, casino }) {
     if (duck) duck.position.y = 2.14 + Math.sin(now * 2.2) * 0.01;
     if (dropDuck) dropAt(now * 0.45);
     if (rocketGlow) rocketGlow.intensity = 0.5 + Math.sin(now * 3) * 0.2;
+    if (tickTex) tickTex.offset.x = (tickTex.offset.x + dt * 0.35 * tickTex.repeat.x / (TICK.len)) % 1;
+    // Today's bonus waiting at the cashier: a gold coin spinning in the window
+    const owed = !!(casino.bonusReady && casino.bonusReady());
+    if (bonusCoin.visible !== owed) { bonusCoin.visible = owed; here = -1; changed(); }
+    if (owed) { bonusCoin.rotation.y = now * 2.4; bonusCoin.position.y = 1.5 + Math.sin(now * 2) * 0.03; }
     pose();
     renderer.render(scene, camera);
     drawMap();
@@ -1114,11 +1173,13 @@ export async function mount({ stage, controls, info, casino }) {
 
   return {
     jumpTo,
+    setTicker,
     // The station you're standing at, by id
     at: () => STATIONS[Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST))].id,
     dispose() {
       dead = true;
       cancelAnimationFrame(raf);
+      if (tickTex) tickTex.dispose();
       clearTimeout(wheelTimer);
       gsap.killTweensOf(cam);
       canvasEl.removeEventListener('pointerdown', onDown);
