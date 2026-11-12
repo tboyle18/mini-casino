@@ -67,6 +67,16 @@ export function score(cards) {
 }
 export const isBJ = h => !h.split && h.cards.length === 2 && score(h.cards).total === 21;
 
+/* The table as players may see it: without the shoe's seed (it would let anyone work out
+   the cards to come) and with the dealer's hole card blank ('??') until it's turned over. */
+export function publicTable(T) {
+  if (!T) return null;
+  const { seed, ...out } = T;
+  const R = out.round;
+  if (R && !R.holeUp && R.dealer.length > 1) out.round = { ...R, dealer: [R.dealer[0], '??', ...R.dealer.slice(2)] };
+  return out;
+}
+
 export function newTable(code, name, seed, now) {
   return {
     v: TABLE_VERSION, code, name, seed, created: now, updated: now, rev: 0,

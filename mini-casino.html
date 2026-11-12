@@ -6566,7 +6566,7 @@ function renderTable() {
   const initial = !!R && R.n !== app.renderedRound;
 
   // Dealer
-  const ditems = R ? R.dealer.map((c, i) => ({ key: `${R.n}:d:${i}:${c}`, card: c, up: i !== 1 || R.holeUp })) : [];
+  const ditems = R ? R.dealer.map((c, i) => ({ key: `${R.n}:d:${i}`, card: c, up: i !== 1 || R.holeUp })) : [];
   syncCards(ui.dealerCards, ditems, anim, { dealer: 1, hi: 0 });
   ui.dealerCards.classList.toggle('long', ditems.length > 5);
   const visible = R ? R.dealer.filter((c, i) => i !== 1 || R.holeUp) : [];

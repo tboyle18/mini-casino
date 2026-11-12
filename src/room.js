@@ -13,7 +13,7 @@
 
 import { DurableObject } from 'cloudflare:workers';
 import { neon } from '@neondatabase/serverless';
-import { newTable, newPlayer, migrateTable, applyMove, autoAdvance, nextDeadline, AWAY_MS, AWAY_SEAT_MS } from './rules.js';
+import { newTable, newPlayer, migrateTable, applyMove, autoAdvance, nextDeadline, AWAY_MS, AWAY_SEAT_MS, publicTable } from './rules.js';
 import { walletDebit, walletCredit, withWallet } from './wallet.js';
 import { note } from './play.js';
 
@@ -174,7 +174,7 @@ export class TableRoom extends DurableObject {
   }
 
   snapshot(ctx) {
-    const { seed, ...T } = this.T;   // the seed would let anyone work out the cards to come
+    const T = publicTable(this.T);   // no seed, and the hole card stays blank until it's turned
     return JSON.stringify({ type: 'state', T, present: [...ctx.present], names: this.names, now: ctx.now });
   }
 

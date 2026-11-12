@@ -12,7 +12,7 @@ import { bacShoe, bacCoup, bacPayout } from './baccarat.js';
 import { warRank, warDeal, warBattle, warPayout } from './war.js';
 import { tcDealCards, tcRank, tcPayout, TC_PAIR_PLUS } from './threecard.js';
 import { rdDeal, rdSpread, rdThird, rdPayout, rdVal } from './reddog.js';
-import { newTable, newPlayer, applyIntent, autoAdvance, migrateTable, mulberry32 } from './rules.js';
+import { newTable, newPlayer, applyIntent, autoAdvance, migrateTable, mulberry32, publicTable } from './rules.js';
 import { RISKS, pegLayout, makeBall, stepBall } from '../lab/plinko-physics.js';
 import { crashPoint, multAt, timeTo } from '../lab/crash-math.js';
 import { randomSymbol, evaluate } from '../lab/slots-math.js';
@@ -332,11 +332,7 @@ function crashResolve(w, st, now, cashOut) {
    and after it the wallet becomes whatever the chips are. The shoe's seed never leaves the
    server. */
 const SOLO = 'solo';
-export function soloView(T) {
-  if (!T) return null;
-  const { seed, ...rest } = T;
-  return rest;
-}
+export const soloView = publicTable;
 const BJ_MOVES = new Set(['bet', 'ready', 'unready', 'ins', 'hit', 'stand', 'double', 'split']);
 function blackjack(w, action, args, ctx) {
   let T = w.rounds.bj;
@@ -350,6 +346,10 @@ function blackjack(w, action, args, ctx) {
   if (action !== 'move' || !args.m || !BJ_MOVES.has(args.m.t)) throw new PlayError('bad_action');
   const P = T.players[SOLO];
   const before = w.balance;
+  // Money that came or went elsewhere mid-hand (the daily bonus, another game in another tab)
+  // isn't this hand's: move the hand's starting point by it, so only the hand counts as won or lost
+  const R0 = T.round;
+  if (R0 && !R0.over && SOLO in R0.start && Number.isFinite(T.bal)) R0.start[SOLO] = r2(R0.start[SOLO] + before - T.bal);
   P.bank = before;
   const n = T.n, wasOver = !!(T.round && T.round.over);
   const c = { now: ctx.now, present: new Set([SOLO]), longAway: null };
@@ -359,6 +359,7 @@ function blackjack(w, action, args, ctx) {
   T.rev = (T.rev || 0) + 1;
   T.updated = ctx.now;
   w.balance = r2(P.bank);
+  T.bal = w.balance;   // what the wallet held after this move (see above)
   P.bank = 0;   // the wallet holds the money; the table only remembers the bet
   const R = T.round;
   if (R && R.over && (R.n !== n || !wasOver) && SOLO in R.net) {
