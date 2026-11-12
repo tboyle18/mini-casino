@@ -450,26 +450,32 @@
   .acct-actions { display: flex; gap: 8px; }
   .acct-actions .btn { flex: 1; }
   /* ---------- Bottom tab bar ---------- */
+  /* A floating bar: inset from the edges, rounded, see-through and blurred, with the open tab
+     sitting on a soft gold highlight */
   .tabbar {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-    display: flex; justify-content: center;
-    padding: 0 max(8px, env(safe-area-inset-right, 0px)) var(--safe-bottom) max(8px, env(safe-area-inset-left, 0px));
-    background: rgba(4, 26, 16, .94);
-    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-    border-top: 1px solid rgba(255, 255, 255, .08);
+    position: fixed; z-index: 20;
+    left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: max(12px, var(--safe-bottom));
+    max-width: 440px; margin: 0 auto;
+    display: flex; justify-content: space-between; gap: 4px; padding: 6px;
+    border-radius: 22px;
+    background: rgba(16, 10, 24, .72);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid rgba(255, 255, 255, .12);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .5), 0 2px 0 rgba(255, 255, 255, .05) inset;
   }
   .tab {
     appearance: none; background: none; border: none; cursor: pointer;
-    flex: 1; max-width: 130px; height: var(--nav-h);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    flex: 1; height: calc(var(--nav-h) - 12px); border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
     color: var(--ink-3); font: 700 11px/1 var(--font-body); letter-spacing: .04em;
-    transition: color .15s;
+    transition: color .2s, background .2s;
   }
-  .tab svg { width: 25px; height: 25px; transition: transform .15s; }
-  .tab.on { color: var(--gold); }
+  .tab svg { width: 23px; height: 23px; transition: transform .2s; }
+  .tab.on { color: var(--gold); background: linear-gradient(180deg, rgba(242, 199, 91, .22), rgba(242, 199, 91, .1)); box-shadow: inset 0 0 0 1px rgba(242, 199, 91, .35); }
   .tab.on svg { transform: translateY(-1px) scale(1.06); }
   .tab:active svg { transform: scale(.9); }
-  html.has-nav .view { padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 22px); }
+  html.has-nav .view { padding-bottom: calc(var(--nav-h) + max(12px, var(--safe-bottom)) + 26px); }
   .tab-head { padding: calc(var(--safe-top) + 18px) 2px 0; }
   .tab-head h1 { margin: 0; font: 800 32px/1.1 var(--font-display); letter-spacing: -.02em; color: var(--ink); }
   .tab-head p { margin: 6px 0 0; color: var(--ink-3); font-size: 13px; }
@@ -516,6 +522,110 @@
   .ag-controls .lab-btn.primary { flex-grow: 2; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); box-shadow: 0 2px 0 #8a6522; }
   .ag-controls .lab-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--gold); color: var(--gold); }
   .ag-controls .lab-btn:disabled { opacity: .35; }
+  /* ---------- Home: neon marquee, winners ticker, leaderboard widget, living tiles ---------- */
+  .marquee {
+    position: relative; display: flex; align-items: center; justify-content: center; gap: 12px;
+    margin: 0 auto; padding: 14px 22px 12px; width: fit-content; max-width: 100%;
+    border-radius: 18px; background: linear-gradient(180deg, rgba(46, 8, 34, .92), rgba(20, 4, 18, .92));
+    border: 2px solid #f2c75b;
+    box-shadow: 0 0 0 4px rgba(20, 4, 18, .85), 0 0 26px rgba(255, 70, 160, .55), 0 0 60px rgba(242, 199, 91, .25), inset 0 0 22px rgba(255, 60, 150, .35);
+  }
+  /* Two rings of bulbs that blink in turn, like a chase */
+  .marquee::before, .marquee::after {
+    content: ""; position: absolute; inset: -9px; border-radius: 24px; padding: 6px; pointer-events: none;
+    background: radial-gradient(circle, #fff3c4 0 2.4px, rgba(255, 220, 120, .9) 2.6px 3.4px, transparent 3.8px) 0 0 / 14px 14px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    filter: drop-shadow(0 0 3px rgba(255, 210, 90, .9));
+    animation: bulbs 1s steps(1) infinite;
+  }
+  .marquee::after { background-position: 7px 7px; animation-delay: -.5s; }
+  @keyframes bulbs { 0%, 100% { opacity: 1; } 50% { opacity: .18; } }
+  .mq-title { display: flex; flex-direction: column; align-items: center; line-height: .9; }
+  .mq-mini { font: 800 13px/1 var(--font-display); letter-spacing: .55em; margin-right: -.55em; text-transform: uppercase; color: #ff9fd6; text-shadow: 0 0 8px rgba(255, 80, 170, .9); }
+  .mq-casino {
+    margin-top: 5px; font: 800 clamp(34px, 11vw, 46px)/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase;
+    background: linear-gradient(180deg, #fff6d6 0%, #ffd76a 45%, #e0a22e 55%, #fff0b8 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 200, 80, .6)) drop-shadow(0 2px 0 rgba(120, 60, 0, .9));
+  }
+  .mq-star { color: #ffd76a; font-size: 20px; text-shadow: 0 0 10px rgba(255, 200, 80, .9); animation: twinkle 1.6s ease-in-out infinite; }
+  .mq-star:last-child { animation-delay: -.8s; }
+  @keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8) rotate(20deg); } }
+  .home .tab-head { padding-top: calc(var(--safe-top) + 22px); }
+
+  .ticker {
+    position: relative; overflow: hidden; height: 34px; margin: 2px calc(-1 * var(--gr)) 0 calc(-1 * var(--gl));
+    background: rgba(10, 4, 16, .72); border-top: 1px solid rgba(242, 199, 91, .35); border-bottom: 1px solid rgba(242, 199, 91, .35);
+    -webkit-mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .ticker[hidden] { display: none; }
+  .ticker-track { position: absolute; top: 0; left: 0; display: flex; height: 100%; align-items: center; white-space: nowrap; animation: tick var(--tick-s, 40s) linear infinite; }
+  .ticker-item { display: inline-flex; align-items: center; gap: 6px; padding: 0 18px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .ticker-item b { color: var(--ink); }
+  .ticker-item .amt { color: #7dffb2; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .ticker-item .dot { color: var(--gold); }
+  @keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  .lbw {
+    appearance: none; text-align: left; color: inherit; font: inherit; cursor: pointer; width: 100%;
+    display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 20px;
+    background: rgba(14, 8, 22, .62); border: 1px solid rgba(242, 199, 91, .28);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .lbw[hidden] { display: none; }
+  .lbw:active { transform: scale(.99); }
+  .lbw-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 15px; }
+  .lbw-go { color: var(--gold); font-size: 13px; font-weight: 700; }
+  .lbw-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .lbw-list li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 14px; }
+  .lbw-list .m { font-size: 17px; text-align: center; }
+  .lbw-list .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .lbw-list .v { font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .lbw-list .v.down { color: var(--lose); }
+  .lbw-list li.me .n { color: var(--gold); }
+  .lbw-me { font-size: 12px; color: var(--ink-3); }
+  .lbw-me:empty { display: none; }
+
+  /* The game tiles come alive: cards bob and fan, the wheel turns */
+  @keyframes bobA { 0%, 100% { transform: rotate(-10deg); } 50% { transform: translateY(-4px) rotate(-14deg); } }
+  @keyframes bobB { 0%, 100% { transform: rotate(8deg); } 50% { transform: translateY(-6px) rotate(13deg); } }
+  @keyframes fan1 { 0%, 100% { transform: rotate(-26deg); } 50% { transform: rotate(-34deg); } }
+  @keyframes fan2 { 0%, 100% { transform: rotate(-13deg); } 50% { transform: rotate(-17deg); } }
+  @keyframes fan4 { 0%, 100% { transform: rotate(13deg); } 50% { transform: rotate(17deg); } }
+  @keyframes fan5 { 0%, 100% { transform: rotate(26deg); } 50% { transform: rotate(34deg); } }
+  @keyframes three1 { 0%, 100% { transform: rotate(-14deg); } 50% { transform: translateX(-3px) rotate(-20deg); } }
+  @keyframes three2 { 0%, 100% { transform: rotate(0); } 50% { transform: translateY(-6px); } }
+  @keyframes three3 { 0%, 100% { transform: rotate(14deg); } 50% { transform: translateX(3px) rotate(20deg); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes floaty { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
+  @media (prefers-reduced-motion: no-preference) {
+    .home .tile-art .card { animation: 3.2s ease-in-out infinite both; animation-delay: var(--d, 0s); }
+    .home .tile-art:not(.fan):not(.three) .card:nth-child(1) { animation-name: bobA; }
+    .home .tile-art:not(.fan):not(.three) .card:nth-child(2) { animation-name: bobB; }
+    .home .tile-art.fan .card:nth-child(1) { animation-name: fan1; }
+    .home .tile-art.fan .card:nth-child(2) { animation-name: fan2; }
+    .home .tile-art.fan .card:nth-child(4) { animation-name: fan4; }
+    .home .tile-art.fan .card:nth-child(5) { animation-name: fan5; }
+    .home .tile-art.three .card:nth-child(1) { animation-name: three1; }
+    .home .tile-art.three .card:nth-child(2) { animation-name: three2; }
+    .home .tile-art.three .card:nth-child(3) { animation-name: three3; }
+    .home .mini-wheel { animation: spin 14s linear infinite; }
+    .arcade-art { animation: floaty 3s ease-in-out infinite; }
+  }
+  @media (prefers-reduced-motion: reduce) { .marquee::before, .marquee::after, .mq-star, .ticker-track { animation: none; } }
+  /* ---------- The slot-machine hall behind the Casino tab (lab/lobby.js) ----------
+     It fades in once it has loaded; a dark wash on top keeps the tiles easy to read. */
+  .bg3d { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .8s ease; }
+  .bg3d canvas { display: block; width: 100%; height: 100%; }
+  .bg3d::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 4, 14, .35) 0%, rgba(8, 4, 14, .05) 22%, rgba(8, 4, 14, .3) 45%, rgba(8, 4, 14, .7) 100%); }
+  html.lobby3d .bg3d.ready { opacity: 1; }
+  html.lobby3d .home .tile { background: rgba(14, 8, 22, .5); border-color: rgba(255, 255, 255, .14); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  /* A window onto the casino floor above the wallet */
+  html.lobby3d .home .tab-head { padding-bottom: clamp(70px, 16vh, 150px); }
+  html.lobby3d .home .tab-head .brand { font-size: 17px; text-shadow: 0 2px 10px rgba(0, 0, 0, .9); }
+  html.lobby3d .home .wallet-card { background: radial-gradient(120% 140% at 0% 0%, rgba(233, 196, 106, .22), transparent 55%), rgba(14, 8, 22, .7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  html.lobby3d .home .section-label, html.lobby3d .home .home-foot { color: rgba(245, 240, 227, .7); text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
+
   /* ---------- Transaction history: a bank-statement page ---------- */
   .hist-card { margin-top: 0; }
   .hist-sum { display: flex; gap: 18px; margin-top: 8px; font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
@@ -1331,6 +1441,7 @@
   }
 </style>
 
+<div class="bg3d" id="bg3d" aria-hidden="true"></div>
 <div class="wrap" id="app">
 
   <header class="appbar" id="casino-bar">
@@ -1353,7 +1464,14 @@
 
   <!-- ================= Casino (home tab) ================= -->
   <section class="view home" id="home" hidden>
-    <div class="tab-head"><span class="brand">Mini Casino</span></div>
+    <div class="tab-head">
+      <div class="marquee" role="img" aria-label="Mini Casino">
+        <span class="mq-star" aria-hidden="true">★</span>
+        <span class="mq-title"><span class="mq-mini">Mini</span><span class="mq-casino">Casino</span></span>
+        <span class="mq-star" aria-hidden="true">★</span>
+      </div>
+    </div>
+    <div class="ticker" id="ticker" aria-label="Recent wins"><div class="ticker-track" id="ticker-track"></div></div>
     <div class="wallet-card">
       <div class="wc-label">Your wallet balance</div>
       <div class="wc-amt" id="home-wallet">—</div>
@@ -1362,6 +1480,11 @@
         <button class="btn primary small" id="daily-btn" hidden>Sign in</button>
       </div>
     </div>
+    <button class="lbw" id="lbw" aria-label="This week's leaderboard">
+      <div class="lbw-head"><span>🏆 This week's leaders</span><span class="lbw-go">See all ›</span></div>
+      <ol class="lbw-list" id="lbw-list"></ol>
+      <div class="lbw-me" id="lbw-me"></div>
+    </button>
     <div class="section-label">Table games</div>
     <div class="tiles" id="tiles"></div>
     <div class="home-foot">Play money only</div>
@@ -2578,6 +2701,7 @@ const ui = {
   dealerCards: $('dealer-cards'), dealerTotal: $('dealer-total'),
   msg: $('msg'), msgTitle: $('msg-title'), msgSub: $('msg-sub'), statusLine: $('status-line'), seats: $('seats'),
   betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
+  bg3d: $('bg3d'), tickerTrack: $('ticker-track'), lbw: $('lbw'), lbwList: $('lbw-list'), lbwMe: $('lbw-me'),
   bjChips: $('bj-chips'), bjLow: $('bj-low'), bjSpot: $('bj-spot'), bjSpotHint: $('bj-spot-hint'), bjUndo: $('bj-undo'),
   clear: $('clear-btn'), betAmt: $('bet-amt'),
   out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
@@ -3351,6 +3475,7 @@ function buildTiles() {
     const art = document.createElement('div');
     art.className = 'tile-art';
     art.setAttribute('aria-hidden', 'true');
+    art.style.setProperty('--d', `${-i * 0.45}s`);   // each tile moves on its own beat
     if (GAMES.length % 2 && i === GAMES.length - 1) b.classList.add('wide');   // an odd one out gets the full width
     if (g.art === 'fan') {
       art.classList.add('fan');
@@ -5275,8 +5400,7 @@ function resumeRounds(r) {
    From the server (/api/leaderboard): this week's net winnings (Monday to Sunday, UTC), or
    everyone's balance. Fetched when the Stats tab opens, at most every 20 seconds. */
 const lb = { board: 'week', data: {}, at: {}, loading: false };
-async function lbLoad(force) {
-  const board = lb.board;
+async function lbLoad(force, board = lb.board) {
   if (lb.loading || (!force && Date.now() - (lb.at[board] || 0) < 20000)) return;
   lb.loading = true;
   try {
@@ -5289,6 +5413,7 @@ async function lbLoad(force) {
   } finally {
     lb.loading = false;
     if (app.view === 'stats') renderBoard();
+    if (app.view === 'home') renderLbw();
   }
 }
 // Share a link to the casino (the phone's share sheet, or copy it)
@@ -5349,6 +5474,107 @@ function renderBoard() {
       ui.lbPodium.appendChild(line);
     });
   }
+}
+
+/* ================= The slot-machine hall behind the Casino tab =================
+   A 3D background (lab/lobby.js), loaded after the page is up and only shown on the Casino
+   tab. It pauses on every other screen and while the app is in the background, and stays
+   off if the phone asks to save data or can't do WebGL. Reduced motion gets a still frame. */
+const lobbyBg = { inst: null, loading: false, off: false };
+function lobbyWanted() { return app.view === 'home' && document.visibilityState === 'visible'; }
+async function lobbyEnsure() {
+  if (lobbyBg.inst || lobbyBg.loading || lobbyBg.off) return;
+  const c = navigator.connection;
+  if (c && c.saveData) { lobbyBg.off = true; return; }
+  lobbyBg.loading = true;
+  try {
+    const mod = await import('/lab/embed.js');
+    const lobby = await mod.lobby();
+    lobbyBg.inst = lobby.mountLobby(ui.bg3d, { still: !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) });
+    ui.bg3d.classList.add('ready');
+    lobbySync();
+  } catch (e) {
+    lobbyBg.off = true;   // no WebGL, or the code didn't load: the felt stays
+  } finally {
+    lobbyBg.loading = false;
+  }
+}
+function lobbySync() {
+  const on = lobbyWanted() && !lobbyBg.off;
+  document.documentElement.classList.toggle('lobby3d', on && !!lobbyBg.inst);
+  if (!lobbyBg.inst) { if (on) setTimeout(lobbyEnsure, 300); return; }
+  if (on) lobbyBg.inst.resume(); else lobbyBg.inst.pause();
+}
+document.addEventListener('visibilitychange', lobbySync);
+
+/* ================= Home: winners ticker and leaderboard widget =================
+   The ticker scrolls the biggest recent wins across everyone (/api/feed, refreshed every
+   minute while the Casino tab is open); the widget shows this week's top three and where
+   you stand, and opens the full leaderboard. */
+const feed = { wins: null, at: 0, key: '' };
+async function feedLoad() {
+  if (Date.now() - feed.at < 60000) return;
+  feed.at = Date.now();
+  try {
+    const res = await fetch('/api/feed', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (res.ok) feed.wins = (await res.json()).wins || [];
+  } catch (e) { /* the ticker keeps what it had */ }
+  if (app.view === 'home') renderTicker();
+}
+function renderTicker() {
+  const wins = feed.wins || [];
+  const items = wins.length
+    ? wins.map(w => ({ icon: histIcon(w.game), name: w.name, text: ` won `, amt: '+' + money(w.amount), tail: ` on ${w.game} · ${ago(w.at).replace('active ', '')}` }))
+    : [{ icon: '🎰', name: '', text: 'Big wins show up here. Go make some noise.', amt: '', tail: '' }, { icon: '🏆', name: '', text: 'Weekly leaderboard resets every Monday', amt: '', tail: '' }];
+  const key = JSON.stringify(items);
+  if (key === feed.key) return;
+  feed.key = key;
+  ui.tickerTrack.textContent = '';
+  // Two copies side by side, so the scroll loops without a gap
+  for (let copy = 0; copy < 2; copy++) {
+    for (const it of items) {
+      const el = document.createElement('span');
+      el.className = 'ticker-item';
+      if (copy) el.setAttribute('aria-hidden', 'true');
+      const icon = document.createElement('span');
+      icon.textContent = it.icon;
+      el.appendChild(icon);
+      if (it.name) { const b = document.createElement('b'); b.textContent = it.name; el.appendChild(b); }
+      el.append(it.text);
+      if (it.amt) { const a = document.createElement('span'); a.className = 'amt'; a.textContent = it.amt; el.appendChild(a); }
+      if (it.tail) el.append(it.tail);
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.textContent = '✦';
+      el.appendChild(dot);
+      ui.tickerTrack.appendChild(el);
+    }
+  }
+  ui.tickerTrack.style.setProperty('--tick-s', `${Math.max(18, items.length * 6)}s`);
+}
+function renderLbw() {
+  const d = lb.data.week;
+  ui.lbwList.textContent = '';
+  if (!d || d.error) { ui.lbw.hidden = !d; ui.lbwMe.textContent = d ? 'Couldn’t load the leaderboard.' : ''; return; }
+  ui.lbw.hidden = false;
+  if (!d.rows.length) {
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="m">👑</span><span class="n">Nobody yet this week. Be the first.</span><span></span>';
+    ui.lbwList.appendChild(li);
+  }
+  d.rows.slice(0, 3).forEach((r, i) => {
+    const li = document.createElement('li');
+    li.classList.toggle('me', !!r.me);
+    const m = document.createElement('span'); m.className = 'm'; m.textContent = ['🥇', '🥈', '🥉'][i];
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = r.me ? `${r.name} (you)` : r.name;
+    const v = document.createElement('span'); v.className = 'v' + (r.value < 0 ? ' down' : ''); v.textContent = signed(r.value);
+    li.append(m, n, v);
+    ui.lbwList.appendChild(li);
+  });
+  const mine = d.rows.slice(0, 3).some(r => r.me);
+  ui.lbwMe.textContent = !signedIn() ? 'Sign in to get on the board.'
+    : mine ? ''
+    : d.me && d.me.rank ? `You’re #${d.me.rank} with ${signed(d.me.value)}` : 'Play a round to get on the board.';
 }
 
 /* ================= How to play ================= */
@@ -5900,7 +6126,8 @@ function render() {
 
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
-  if (v === 'home') renderDaily();
+  lobbySync();
+  if (v === 'home') { renderDaily(); renderTicker(); feedLoad(); renderLbw(); lbLoad(false, 'week'); }
   else if (v === 'profile') renderProfile();
   if (gated) { /* the sign-in card is all there is */ }
   else if (v === 'lobby') renderLobby();
@@ -6441,6 +6668,7 @@ ui.balanceBtn.addEventListener('click', () => toast(dailyText(true)));
 ui.dailyBtn.addEventListener('click', () => openAuth('in'));
 ui.stReset.addEventListener('click', resetStats);
 ui.ledgerAll.addEventListener('click', () => go('history'));
+ui.lbw.addEventListener('click', () => { lb.board = 'week'; go('stats'); });
 ui.histTabs.forEach(b => b.addEventListener('click', () => { hist.filter = b.dataset.f; buzz(4); renderHistory(); }));
 ui.lbInvite.addEventListener('click', inviteFriends);
 ui.lbTabs.forEach(b => b.addEventListener('click', () => { lb.board = b.dataset.board; buzz(4); renderBoard(); lbLoad(); }));

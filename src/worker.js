@@ -11,6 +11,7 @@
 //                money lives in the wallets table (src/wallet.js)
 //   /api/daily   claims the signed-in player's $1,000 daily bonus, once per calendar day
 //   /api/leaderboard  this week's net winnings, or everyone's balance
+//   /api/feed    recent big wins across everyone, for the home screen's ticker
 //   /api/rooms   multiplayer blackjack: POST creates a room, /api/rooms/{code} says
 //                whether it exists, /api/rooms/{code}/ws connects to it. Each room
 //                is a Durable Object (src/room.js).
@@ -19,7 +20,7 @@ import { neon } from '@neondatabase/serverless';
 import { makeCode } from './rules.js';
 import { TableRoom } from './room.js';
 import { play, roundsView, PlayError } from './play.js';
-import { loadWallet, withWallet, leaderboard, rollWeek, DAILY_BONUS } from './wallet.js';
+import { loadWallet, withWallet, leaderboard, recentWins, rollWeek, DAILY_BONUS } from './wallet.js';
 import { note } from './play.js';
 
 export { TableRoom };
@@ -41,6 +42,7 @@ export default {
       if (url.pathname === '/api/wallet') return await walletRoute(request, env, url);
       if (url.pathname === '/api/play') return await playRoute(request, env, url);
       if (url.pathname === '/api/leaderboard') return await boardRoute(request, env, url);
+      if (url.pathname === '/api/feed') return await feedRoute(request, env, url);
       if (url.pathname === '/api/rooms') return await createRoom(request, env, url);
       const room = url.pathname.match(/^\/api\/rooms\/([a-z0-9]{4,12})(\/ws)?$/);
       if (room) return await roomRoute(request, env, url, room[1], !!room[2]);
@@ -255,6 +257,13 @@ async function playRoute(request, env, url) {
     }
     throw err;
   }
+}
+
+// Recent big wins for the home screen's ticker; public, like the leaderboard
+async function feedRoute(request, env, url) {
+  if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  const sql = neon(env.DATABASE_URL);
+  return json({ wins: await recentWins(sql, Date.now(), env.DEV_AUTH === '1') });
 }
 
 async function boardRoute(request, env, url) {

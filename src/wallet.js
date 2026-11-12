@@ -160,3 +160,19 @@ export async function leaderboard(sql, board, userId, now, withTest) {
     podium: podium.map(p => ({ name: p.name, value: Number(p.value) })),
   };
 }
+
+/* The winners ticker on the home screen: the biggest recent wins across everyone, newest
+   first, from each player's transaction history. Bonuses don't count. */
+export async function recentWins(sql, now, withTest) {
+  const test = withTest ? 'zzz' : 'dev-';
+  const rows = await sql`
+    select w.name, e->>'w' as what, (e->>'a')::numeric as amount, (e->>'at')::bigint as at
+    from wallets w, jsonb_array_elements(w.log) e
+    where w.user_id not like ${test + '%'}
+      and (e->>'a')::numeric >= 20
+      and (e->>'at')::bigint > ${now - 3 * 86400000}
+      and e->>'w' not like 'Daily bonus%' and e->>'w' not like 'Wallet opened%'
+    order by (e->>'at')::bigint desc
+    limit 24`;
+  return rows.map(r => ({ name: r.name, game: String(r.what || '').split(' · ')[0], amount: Number(r.amount), at: Number(r.at) }));
+}

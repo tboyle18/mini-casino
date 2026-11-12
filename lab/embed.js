@@ -4,3 +4,6 @@ export const games = {
   plinko: () => import('./plinko.js'),
   crash: () => import('./crash.js'),
 };
+
+// The slot-machine hall behind the home screen (lab/lobby.js)
+export const lobby = () => import('./lobby.js');
