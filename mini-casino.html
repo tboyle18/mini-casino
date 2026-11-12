@@ -522,6 +522,16 @@
   .fl-btn.fl-2d { font: 800 15px/1 var(--font-display); letter-spacing: .02em; }
   .fl-av { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; font: 800 17px/1 var(--font-display); }
   .fl-av svg { width: 20px; height: 20px; }
+  /* All games: its own labelled button under the round ones, so it doesn't blend in */
+  .fl-all {
+    position: relative; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 12px; pointer-events: auto;
+    appearance: none; border: 0; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; box-shadow: 0 2px 0 #a3957a, 0 6px 18px rgba(0, 0, 0, .4);
+    font: 800 13px/1 var(--font-display); letter-spacing: .12em; text-transform: uppercase;
+  }
+  .fl-all svg { width: 18px; height: 18px; }
+  .fl-all:active { transform: scale(.96); }
+  .fl-all.nudge::after { content: ""; position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
   .fl-btn.nudge::after { content: ""; position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
   .fl-sheet-body { display: flex; flex-direction: column; gap: 12px; }
   .fl-sheet-body > * { margin: 0; }
@@ -653,7 +663,7 @@
   html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 76px); background: rgba(62, 52, 76, .82); box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .3), 0 6px 18px rgba(0, 0, 0, .4); }
   /* Signed out: both ways in, right on the floor */
   .fl-welcome { display: none; }
-  html.floor .fl-welcome:not([hidden]) { display: block; position: fixed; z-index: 3; top: calc(var(--safe-top) + 68px); left: max(16px, var(--gl)); right: max(16px, var(--gr)); max-width: 420px; margin: 0 auto; padding: 12px 14px 14px; border-radius: 16px;
+  html.floor .fl-welcome:not([hidden]) { display: block; position: fixed; z-index: 3; top: calc(var(--safe-top) + 118px); left: max(16px, var(--gl)); right: max(16px, var(--gr)); max-width: 420px; margin: 0 auto; padding: 12px 14px 14px; border-radius: 16px;
     background: rgba(12, 9, 16, .78); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .22), 0 8px 24px rgba(0, 0, 0, .45); color: var(--fl-ink); }
   .fl-welcome p { margin: 0 0 10px; font-size: 14px; line-height: 1.35; color: rgba(240, 230, 208, .85); text-align: center; }
   .fl-welcome p b { color: var(--fl-ink); }
@@ -1592,9 +1602,9 @@
       <div class="fl-btns">
         <button class="fl-btn" id="fl-acct" aria-label="Your account"><span class="fl-av" id="fl-av"></span></button>
         <button class="fl-btn fl-2d" id="fl-2d" aria-label="Open the 2D casino">2D</button>
-        <button class="fl-btn" id="fl-go" aria-label="Jump to a table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></button>
         <button class="fl-btn" id="fl-lb" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11M12 13v4M8.5 20h7M9.5 17h5v3h-5z"/></svg></button>
       </div>
+      <button class="fl-all" id="fl-go" aria-label="All games: jump to a table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>All games</button>
       <span id="fl-info"></span>
     </div></div>
     <div class="fl-welcome" id="fl-welcome" hidden>
@@ -5690,7 +5700,7 @@ function floorGoList() {
   const here = fl.inst && fl.inst.at ? fl.inst.at() : '';
   const out = [];
   const h = document.createElement('h2');
-  h.textContent = 'Go to a table';
+  h.textContent = 'All games';
   out.push(h);
   for (const [label, ids] of FLOOR_GROUPS) {
     if (label) { const l = document.createElement('div'); l.className = 'section-label'; l.textContent = label; out.push(l); }
@@ -5717,7 +5727,7 @@ function flPopOpen(kind) {
   flPop.moved = kind === 'go' ? [] : nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
   flPop.kind = kind;
   ui.flSheetBody.replaceChildren(...nodes);
-  ui.flSheetDialog.setAttribute('aria-label', kind === 'go' ? 'Go to a table' : kind === 'lb' ? 'Leaderboard' : 'Your account');
+  ui.flSheetDialog.setAttribute('aria-label', kind === 'go' ? 'All games' : kind === 'lb' ? 'Leaderboard' : 'Your account');
   if (kind === 'lb') { renderBoard(); lbLoad(); } else if (kind === 'acct') renderProfile();
   ui.flSheet.hidden = false;
   buzz(6);
