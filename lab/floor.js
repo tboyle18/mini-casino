@@ -741,7 +741,7 @@ export async function mount({ stage, controls, info, casino }) {
   }
 
   // The cashier's cage: a wood booth with brass bars, a window and a counter
-  let bonusCoin = null;
+  let bonusCoin = null, wasLocked = null;
   function buildCashier() {
     const g = new THREE.Group();
     const W = 1.8, H = 2.3, D = 0.9;
@@ -966,11 +966,12 @@ export async function mount({ stage, controls, info, casino }) {
     here = k;
     const st = STATIONS[k];
     tag.querySelector('b').textContent = st.name;
-    tag.querySelector('span').textContent = st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Your $1,000 daily bonus is ready · tap to collect' : `${st.blurb} · tap to sit`;
+    tag.querySelector('span').textContent = locked() ? `${st.blurb} · sign in to play`
+      : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Your $1,000 daily bonus is ready · tap to collect' : `${st.blurb} · tap to sit`;
     info.textContent = 'Swipe to move around the floor';
     prevBtn.disabled = k === 0;
     nextBtn.disabled = k === LAST;
-    sitBtn.textContent = st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : `Sit at ${st.name}`;
+    sitBtn.textContent = locked() ? 'Sign in to play' : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : `Sit at ${st.name}`;
   }
   let glide = null;
   function go(k) {
@@ -983,8 +984,11 @@ export async function mount({ stage, controls, info, casino }) {
   // ---- Sitting down ----
   // The camera drops into the seat, then the casino opens that station's game screen
   let busy = false;
+  // Signed out: the floor is open to look around, but sitting down asks you to sign in
+  const locked = () => !!(casino.locked && casino.locked());
   function sit() {
     if (busy) return;
+    if (locked()) { casino.ask(); return; }
     busy = true;
     if (glide) { glide.kill(); glide = null; }
     const k = Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST));
@@ -998,6 +1002,7 @@ export async function mount({ stage, controls, info, casino }) {
   function jumpTo(id) {
     const k = STATIONS.findIndex(st => st.id === id);
     if (k < 0 || busy) return;
+    if (locked()) { go(k); casino.ask(); return; }   // take them there to look, and ask them to sign in
     busy = true;
     if (glide) { glide.kill(); glide = null; }
     buzz(8);
@@ -1152,6 +1157,8 @@ export async function mount({ stage, controls, info, casino }) {
     // Today's bonus waiting at the cashier: a gold coin spinning in the window
     const owed = !!(casino.bonusReady && casino.bonusReady());
     if (bonusCoin.visible !== owed) { bonusCoin.visible = owed; here = -1; changed(); }
+    const lockNow = locked();
+    if (lockNow !== wasLocked) { wasLocked = lockNow; here = -1; changed(); }   // signed in or out
     if (owed) { bonusCoin.rotation.y = now * 2.4; bonusCoin.position.y = 1.5 + Math.sin(now * 2) * 0.03; }
     pose();
     renderer.render(scene, camera);

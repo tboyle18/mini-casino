@@ -158,7 +158,6 @@
     kbd { display: inline-block; }
     .btn:hover:not(:disabled) { background: rgba(0, 0, 0, .55); }
     .btn.primary:hover:not(:disabled) { background: linear-gradient(#f7dd98, #dcb150); }
-    .btn.google-btn:hover:not(:disabled) { background: #f1f3f4; }
     .btn.hit:hover:not(:disabled) { background: linear-gradient(#f7dd98, #dcb150); }
     .btn.stand:hover:not(:disabled) { background: linear-gradient(#d84d59, #96212c); }
     .tile:hover { border-color: rgba(233, 196, 106, .45); }
@@ -387,12 +386,6 @@
   .auth-error { margin: 0; min-height: 18px; color: var(--lose); font-size: 14px; }
   .auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
   .auth-links .linkbtn { color: var(--ink-2); padding: 6px 0; }
-  /* Google's light sign-in button: white, grey outline, the four-colour G */
-  .btn.google-btn { background: #fff; color: #1f1f1f; font-weight: 600; gap: 10px; box-shadow: inset 0 0 0 1px #747775, 0 2px 0 rgba(0, 0, 0, .25); }
-  .btn.google-btn:active:not(:disabled) { background: #e8eaed; }
-  .google-btn svg { width: 20px; height: 20px; flex: none; }
-  .or { display: flex; align-items: center; gap: 10px; color: var(--ink-3); font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
-  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
   /* ---------- Home ---------- */
   .wallet-card {
@@ -521,6 +514,7 @@
   }
   .fl-btn:active { transform: scale(.94); }
   .fl-btn svg { width: 24px; height: 24px; }
+  .fl-btn.fl-2d { font: 800 15px/1 var(--font-display); letter-spacing: .02em; }
   .fl-av { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(#f4d98f, #d3a744); color: var(--on-gold); font: 800 17px/1 var(--font-display); }
   .fl-av svg { width: 20px; height: 20px; }
   .fl-btn.dot::after { content: ""; position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
@@ -1582,7 +1576,7 @@
       <ol class="lbw-list" id="lbw-list"></ol>
       <div class="lbw-me" id="lbw-me"></div>
     </button>
-    <button class="floor-cta" id="floor-cta"><span class="fc-k">Beta</span><b>Walk the casino floor</b><span class="fc-sub">Glide between the tables in 3D, then take a seat</span><span class="fc-go" aria-hidden="true">›</span></button>
+    <button class="floor-cta" id="floor-cta"><span class="fc-k">3D</span><b>Back to the casino floor</b><span class="fc-sub">Glide between the tables in 3D, then take a seat</span><span class="fc-go" aria-hidden="true">›</span></button>
     <div class="section-label">Table games</div>
     <div class="tiles" id="tiles"></div>
     <div class="home-foot">Play money only</div>
@@ -1610,6 +1604,7 @@
     <div class="ag-stage" id="fl-stage"><div class="hud fl-hud">
       <div class="fl-btns">
         <button class="fl-btn" id="fl-acct" aria-label="Your account"><span class="fl-av" id="fl-av"></span></button>
+        <button class="fl-btn fl-2d" id="fl-2d" aria-label="Open the 2D casino">2D</button>
         <button class="fl-btn" id="fl-go" aria-label="Jump to a table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></button>
         <button class="fl-btn" id="fl-lb" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11M12 13v4M8.5 20h7M9.5 17h5v3h-5z"/></svg></button>
       </div>
@@ -1640,7 +1635,6 @@
       <div class="gate-art" aria-hidden="true">🎟️</div>
       <h1>Sign in to play</h1>
       <p>Your wallet lives in your account: you start with <b>$1,000</b>, get another <b>$1,000 every day</b>, and your winnings count on the leaderboard.</p>
-      <button class="btn google-btn" id="gate-google"></button>
       <div class="acct-actions">
         <button class="btn" id="gate-in">Sign in</button>
         <button class="btn primary" id="gate-up">Create account</button>
@@ -2288,7 +2282,7 @@
         <li>The casino's server deals every card, spins every wheel and drops every duck, so nobody can fake a win.</li>
       </ul>
       <h2>Your account</h2>
-      <p>Sign in from the Profile tab with Google, or with an email and password. Your wallet, stats, solo blackjack table and any hand in progress follow you to any device.</p>
+      <p>Sign in with your email and password from the account button on the casino floor. Your wallet, stats, solo blackjack table and any hand in progress follow you to any device.</p>
       <h2>Leaderboard</h2>
       <p>The Stats tab ranks everyone by <b>this week's winnings</b> (wins minus losses, Monday to Sunday) or by <b>all-time balance</b>. Daily bonuses don't count toward the weekly board. Last week's top three stay on show.</p>
       <h2>Your stats</h2>
@@ -2507,8 +2501,7 @@
     <div class="section-label">Play with friends</div>
     <p class="note" id="lobby-note" hidden></p>
     <div class="signin-row" id="lobby-signin" hidden>
-      <button class="btn google-btn" id="lobby-google"></button>
-      <button class="btn" id="lobby-email">Sign in with email</button>
+      <button class="btn" id="lobby-email">Sign in</button>
     </div>
     <div class="room-cards" id="room-cards">
     <div class="lcard">
@@ -2541,8 +2534,7 @@
   <section class="view has-dock" id="table-view" hidden>
     <p class="note" id="t-note" hidden></p>
     <div class="signin-row" id="t-signin" hidden>
-      <button class="btn google-btn" id="t-google"></button>
-      <button class="btn" id="t-email">Sign in with email</button>
+      <button class="btn" id="t-email">Sign in</button>
     </div>
     <div id="game">
       <div class="felt" id="felt">
@@ -2670,8 +2662,6 @@
   <form class="auth-card" id="auth-form" novalidate>
     <h2 id="auth-title">Sign in</h2>
     <p class="fine" id="auth-sub"></p>
-    <button type="button" class="btn google-btn" id="auth-google"></button>
-    <div class="or">or use email</div>
     <div class="auth-field" id="auth-name-row">
       <label for="auth-name">Name</label>
       <input class="text" id="auth-name" autocomplete="nickname" maxlength="40">
@@ -2754,6 +2744,7 @@ const GAMES = [
 
 /* ================= App state ================= */
 const app = {
+  afterSignIn: null,   // where a signed-out player was headed, once they sign in
   view: 'home', solo: false, code: null, routeKey: '', hashOverride: null,
   fromFloor: null,                    // the casino floor station you sat down at (see floorSeat)
   learnId: '', learnBack: null,       // the How to play article on screen, and where its back button returns to
@@ -2773,8 +2764,8 @@ const ui = {
   casinoBar: $('casino-bar'), homeBtn: $('home-btn'), balanceBtn: $('balance-btn'), walletAmt: $('wallet-amt'),
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
-  gateView: $('gate-view'), gateGoogle: $('gate-google'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
-  floorView: $('floor-view'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
+  gateView: $('gate-view'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
+  floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
   flHops: $('fl-hops'), flPrev: $('fl-prev'), flNext: $('fl-next'), flHere: $('fl-here'),
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   arcadeView: $('arcade-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
@@ -2818,8 +2809,8 @@ const ui = {
   account: $('account'), acctTitle: $('acct-title'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
   authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
   authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
-  authGoogle: $('auth-google'), lobbySignin: $('lobby-signin'), lobbyGoogle: $('lobby-google'), lobbyEmail: $('lobby-email'),
-  tSignin: $('t-signin'), tGoogle: $('t-google'), tEmail: $('t-email'),
+  lobbySignin: $('lobby-signin'), lobbyEmail: $('lobby-email'),
+  tSignin: $('t-signin'), tEmail: $('t-email'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
   rHist: $('r-hist'), rTotal: $('r-total'), rSpin: $('r-spin'), rBoard: $('r-board'), rChips: $('r-chips'),
   rUndo: $('r-undo'), rClear: $('r-clear'), rLow: $('r-low'),
@@ -2921,8 +2912,9 @@ function prefsSave() {
 /* ================= Routing ================= */
 function route() {
   const h = app.hashOverride != null ? app.hashOverride : decodeURIComponent(location.hash.slice(1));
-  let target = { view: 'home', code: '' };
-  if (h === 'solo') target = { view: 'solo', code: SOLO_ID };
+  let target = { view: 'floor', code: '' };   // the casino floor is the front door
+  if (h === 'home') target = { view: 'home', code: '' };   // the 2D casino
+  else if (h === 'solo') target = { view: 'solo', code: SOLO_ID };
   else if (h === 'blackjack') target = { view: 'lobby', code: '' };
   else if (h === 'roulette') target = { view: 'roulette', code: '' };
   else if (h === 'stats') target = { view: 'stats', code: '' };
@@ -2930,7 +2922,6 @@ function route() {
   else if (h === 'arcade') target = { view: 'arcade', code: '' };
   else if (h === 'arcade-plinko' || h === 'arcade-crash' || h === 'arcade-slots') target = { view: 'arcadegame', code: h.slice(7) };
   else if (h === 'profile') target = { view: 'profile', code: '' };
-  else if (h === 'floor') target = { view: 'floor', code: '' };
   else if (h === 'poker') target = { view: 'poker', code: '' };
   else if (h === 'baccarat') target = { view: 'baccarat', code: '' };
   else if (h === 'war') target = { view: 'war', code: '' };
@@ -2939,6 +2930,15 @@ function route() {
   else if (h === 'learn') target = { view: 'learn', code: '' };
   else if (/^learn-[a-z]+$/.test(h)) target = { view: 'learn', code: h.slice(6) };
   else if (/^table-[a-z0-9]{4,12}$/.test(h)) target = { view: 'table', code: h.slice(6) };
+  // Signed out, you can look around the floor (and read how to play), but the games and the
+  // 2D casino need an account: back to the floor, and straight on to where you were headed
+  // once you've signed in
+  if (cloud.ready && !signedIn() && target.view !== 'floor' && target.view !== 'learn') {
+    if (h && h !== 'floor') { app.afterSignIn = h; toast('Sign in to play. You can look around the floor first.'); }
+    target = { view: 'floor', code: '' };
+    app.hashOverride = null;
+    try { history.replaceState(null, '', '#floor'); } catch (e) { /* hash locked in this frame */ }
+  }
   const net = target.view === 'lobby' || target.view === 'table';
   const who = !cloud.ready ? 'wait' : cloud.user ? cloud.user.id : 'out';   // re-enter rooms once sign-in is known
   const key = `${target.view}:${target.code}:${net ? who : ''}`;
@@ -5587,6 +5587,14 @@ function floorSeat() {
   if (app.view === 'arcadegame' && location.hash !== '#' + FLOOR_GO[id]) return null;   // the arcade screen runs three games
   return id;
 }
+// Signed out: sign in first (then on to where you were going)
+function floorAsk(next) {
+  buzz(8);
+  app.afterSignIn = next || null;
+  if (!cloud.ready) { toast('One moment, checking your account…'); return; }
+  openAuth('in');
+  ui.authSub.textContent = 'Sign in to play. New here? Create a free account and get $1,000 to start.';
+}
 function floorSit(id) {
   if (!FLOOR_GO[id]) return;
   app.fromFloor = id;
@@ -5613,7 +5621,7 @@ async function floorEnsure() {
     const mod = await import('/lab/embed.js');
     const floor = await mod.floor();
     if (mine !== fl.token) return;
-    const inst = await floor.mount({ stage: ui.flStage, controls: ui.flControls, info: ui.flInfo, casino: { start, sit: floorSit, bonusReady } });
+    const inst = await floor.mount({ stage: ui.flStage, controls: ui.flControls, info: ui.flInfo, casino: { start, sit: floorSit, bonusReady, locked: () => !signedIn(), ask: floorAsk } });
     inst.setTicker && inst.setTicker(floorTickerLines());
     if (mine !== fl.token) { inst.dispose(); return; }
     fl.inst = inst;
@@ -6084,24 +6092,6 @@ async function cloudInit() {
   const done = () => { cloud.ready = true; route(); };
   if (!/^https?:$/.test(location.protocol)) { done(); return; }
 
-  // Back from "Continue with Google": trade the one-time verifier for a session cookie on this site
-  const params = new URLSearchParams(location.search);
-  const verifier = params.get(VERIFIER_PARAM);
-  const googleFailed = params.get('signin') === 'failed';
-  if (verifier || googleFailed) {
-    const clean = new URL(location.href);
-    for (const k of [VERIFIER_PARAM, 'signin', 'error', 'error_description']) clean.searchParams.delete(k);
-    // Go back to where sign-in started (a room invite, say)
-    let back = '';
-    try { back = sessionStorage.getItem('mini-casino.return') || ''; sessionStorage.removeItem('mini-casino.return'); } catch (e) { /* storage unavailable */ }
-    history.replaceState(null, '', clean.pathname + clean.search + (clean.hash || (/^#[\w-]+$/.test(back) ? back : '')));
-  }
-  if (verifier) {
-    try {
-      await fetch(`/api/auth/get-session?${VERIFIER_PARAM}=${encodeURIComponent(verifier)}`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
-    } catch (e) { /* reported below when /api/me comes back signed out */ }
-  }
-
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin', headers: { accept: 'application/json' } });
     if (!res.ok || !(res.headers.get('content-type') || '').includes('application/json')) { done(); return; }
@@ -6110,47 +6100,8 @@ async function cloudInit() {
     cloud.user = d && d.user ? d.user : null;
   } catch (e) { done(); return; }
   done();
-  if (verifier && cloud.user) toast(`Signed in as ${cloud.user.name || cloud.user.email || 'you'}`);
-  else if (verifier || googleFailed) toast('Google sign-in didn’t finish. Try again.');
   if (cloud.user) { await walletFetch(); cloudPull(); }
   render();
-}
-
-/* ---------- Continue with Google ---------- */
-const VERIFIER_PARAM = 'neon_auth_session_verifier';
-const GOOGLE_G = '<svg viewBox="0 0 48 48" aria-hidden="true">' +
-  '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
-  '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +
-  '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>' +
-  '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
-function googleButton(el) {
-  el.innerHTML = GOOGLE_G + '<span>Continue with Google</span>';
-  el.addEventListener('click', googleSignIn);
-  return el;
-}
-/* Neon starts the Google flow and hands back Google's address. Google returns the player to
-   Neon, which sends them back here with a one-time verifier (handled in cloudInit). */
-async function googleSignIn() {
-  const btns = document.querySelectorAll('.google-btn');
-  btns.forEach(b => { b.disabled = true; });
-  buzz();
-  try { sessionStorage.setItem('mini-casino.return', location.hash); } catch (e) { /* storage unavailable */ }
-  try {
-    const res = await fetch('/api/auth/sign-in/social', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ provider: 'google', callbackURL: `${location.origin}/`, errorCallbackURL: `${location.origin}/?signin=failed` }),
-    });
-    const d = await res.json().catch(() => ({}));
-    if (res.ok && d && typeof d.url === 'string' && /^https:\/\//.test(d.url)) { location.href = d.url; return; }
-    throw new Error('no_redirect');
-  } catch (e) {
-    btns.forEach(b => { b.disabled = false; });
-    const msg = 'Couldn’t start Google sign-in. Try again.';
-    if (!ui.auth.hidden) ui.authError.textContent = msg;
-    else toast(msg);
-  }
 }
 
 function cloudSnapshot() {
@@ -6283,12 +6234,10 @@ function renderAccount() {
     line.textContent = 'Sign in to get $1,000 every day and keep your wallet and stats on every device.';
     line.style.whiteSpace = 'normal';
     text.appendChild(line);
-    const g = document.createElement('button');
-    g.className = 'btn google-btn';
     const actions = document.createElement('div');
     actions.className = 'acct-actions';
     actions.append(btn('Sign in', () => openAuth('in')), btn('Create account', () => openAuth('up'), true));
-    el.append(text, googleButton(g), actions);
+    el.append(text, actions);
   }
 }
 function renderProfile() {
@@ -6356,7 +6305,9 @@ async function authSubmit(e) {
     cloud.user = { id: d.user.id, name: d.user.name || '', email: d.user.email || '' };
     cloud.version = 0;
     closeAuth();
-    route();
+    const next = app.afterSignIn;
+    app.afterSignIn = null;
+    if (next) go(next); else route();   // on to the game you were trying to open
     toast(up ? 'Account created. You start with $1,000.' : `Signed in as ${cloud.user.name || cloud.user.email}`);
     await walletFetch();
     cloudPull();
@@ -6592,6 +6543,7 @@ function render() {
     ui.flNext.setAttribute('aria-label', i < FLOOR_ORDER.length - 1 ? `Move to ${FLOOR_NAME[FLOOR_ORDER[i + 1]]}` : 'Next station');
   }
   if (v === 'floor') renderFloorHud(); else flPopClose();
+  ui.homeBtn.hidden = v === 'floor';   // the floor is home: the HUD's 2D button leads out
   ui.tableTools.hidden = v !== 'table';
   ui.balanceBtn.hidden = v === 'table' || v === 'learn';
   const bal = wallet.ready ? money(wallet.balance) : '—';
@@ -7202,9 +7154,10 @@ ui.pfLearn.addEventListener('click', () => {
 ui.flAcct.addEventListener('click', () => flPopOpen('acct'));
 ui.flLb.addEventListener('click', () => flPopOpen('lb'));
 ui.flGo.addEventListener('click', () => flPopOpen('go'));
+ui.fl2d.addEventListener('click', () => { if (signedIn()) { buzz(6); go('home'); } else floorAsk('home'); });
 ui.flSheetClose.addEventListener('click', flPopClose);
 ui.flSheet.addEventListener('click', e => { if (e.target === ui.flSheet) flPopClose(); });
-ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? '' : t.dataset.tab); window.scrollTo(0, 0); }));
+ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? 'home' : t.dataset.tab); window.scrollTo(0, 0); }));
 ui.pfVibe.addEventListener('change', () => { app.vibe = ui.pfVibe.checked; prefsSave(); buzz(10); });
 ui.pfHints.addEventListener('change', () => { app.hints = ui.pfHints.checked; prefsSave(); render(); });
 ui.vpDeal.addEventListener('click', vpDeal);
@@ -7220,13 +7173,9 @@ ui.histTabs.forEach(b => b.addEventListener('click', () => { hist.filter = b.dat
 ui.lbInvite.addEventListener('click', inviteFriends);
 ui.lbTabs.forEach(b => b.addEventListener('click', () => { lb.board = b.dataset.board; buzz(4); renderBoard(); lbLoad(); }));
 ui.authForm.addEventListener('submit', authSubmit);
-googleButton(ui.authGoogle);
-googleButton(ui.gateGoogle);
 ui.gateIn.addEventListener('click', () => openAuth('in'));
 ui.gateUp.addEventListener('click', () => openAuth('up'));
 ui.gateLearn.addEventListener('click', openHelp);
-googleButton(ui.lobbyGoogle);
-googleButton(ui.tGoogle);
 ui.lobbyEmail.addEventListener('click', () => openAuth('in'));
 ui.tEmail.addEventListener('click', () => openAuth('in'));
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });

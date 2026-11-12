@@ -25,9 +25,8 @@ import { note } from './play.js';
 
 export { TableRoom };
 
-// /sign-in/social starts "Continue with Google". Neon sends the player back to this site with a
-// one-time verifier; the page trades it for a session through /get-session, still via this proxy.
-const AUTH_ROUTES = new Set(['/sign-up/email', '/sign-in/email', '/sign-in/social', '/sign-out', '/get-session']);
+// Email and password only: the sign-in routes the page may reach through this proxy
+const AUTH_ROUTES = new Set(['/sign-up/email', '/sign-in/email', '/sign-out', '/get-session']);
 const MAX_SAVE_BYTES = 256 * 1024;
 
 export default {
