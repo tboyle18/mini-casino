@@ -322,7 +322,9 @@ export async function mount({ stage, controls, info, casino }) {
     g.arc(CREST.x, CREST.y, CREST.r - i, 0, TAU);
   }
   function postTex(st) {
-    const [cv, g] = canvas(PW, PH);
+    const RES = 1.6;   // drawn at 1.6× for sharper lettering up close
+    const [cv, g] = canvas(PW * RES, PH * RES);
+    g.scale(RES, RES);
     // Layered fills (no strokes, so the crest and body join without a seam): a dark rim,
     // a thin cream line, then the station's colour from bright to deep
     boardPath(g);
@@ -355,7 +357,7 @@ export async function mount({ stage, controls, info, casino }) {
     g.font = `900 ${size}px Manrope, sans-serif`;
     while (g.measureText(st.name).width > PW - 120 && size > 44) { size -= 2; g.font = `900 ${size}px Manrope, sans-serif`; }
     g.save();
-    g.translate(PW / 2, 252);
+    g.translate(PW / 2, 236);
     g.rotate(-0.035);
     g.lineJoin = 'round';
     g.lineWidth = 16;
@@ -367,7 +369,7 @@ export async function mount({ stage, controls, info, casino }) {
     g.fillText(st.name, 0, 0);
     g.restore();
     // The pitch on a cream ribbon with notched ends
-    const rx = 52, ry = 318, rw = PW - 104, rh = 118, notch = 26;
+    const rx = 46, ry = 290, rw = PW - 92, rh = 144, notch = 24;
     g.beginPath();
     g.moveTo(rx, ry); g.lineTo(rx + rw, ry); g.lineTo(rx + rw - notch, ry + rh / 2); g.lineTo(rx + rw, ry + rh);
     g.lineTo(rx, ry + rh); g.lineTo(rx + notch, ry + rh / 2); g.closePath();
@@ -376,18 +378,24 @@ export async function mount({ stage, controls, info, casino }) {
     g.lineWidth = 4;
     g.strokeStyle = '#1a0f08';
     g.stroke();
-    g.font = '700 36px Manrope, sans-serif';
-    g.fillStyle = '#2b2418';
-    const words = st.blurb.split(' '), lines = [];
-    let line = '';
-    for (const w of words) {
-      const t = line ? line + ' ' + w : w;
-      if (g.measureText(t).width > rw - notch * 2 - 30 && line) { lines.push(line); line = w; } else line = t;
-    }
-    if (line) lines.push(line);
-    const shown = lines.slice(0, 2);
-    if (shown.length === 1) g.fillText(shown[0], PW / 2, ry + rh / 2 + 2);
-    else shown.forEach((l, k) => g.fillText(l, PW / 2, ry + rh / 2 - 20 + k * 42));
+    // As big as fits on two lines (three for the longest), heavy and dark so it reads at a distance
+    g.fillStyle = '#21180f';
+    const wrap = size => {
+      g.font = `800 ${size}px Manrope, sans-serif`;
+      const out = [];
+      let line = '';
+      for (const w of st.blurb.split(' ')) {
+        const t = line ? line + ' ' + w : w;
+        if (g.measureText(t).width > rw - notch * 2 - 20 && line) { out.push(line); line = w; } else line = t;
+      }
+      if (line) out.push(line);
+      return out;
+    };
+    let px = 54, lines = wrap(px);
+    while (lines.length > 2 && px > 40) lines = wrap(px -= 2);
+    if (lines.length > 2) { px = 38; lines = wrap(px); }
+    const gap = px * 1.04;
+    lines.forEach((l, k) => g.fillText(l, PW / 2, ry + rh / 2 + 3 + (k - (lines.length - 1) / 2) * gap));
     const t = keep(tex(cv, renderer));
     t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     return t;
