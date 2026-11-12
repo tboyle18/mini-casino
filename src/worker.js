@@ -4,6 +4,7 @@
 //   /api/auth/*  same-origin proxy to Neon Auth (Managed Better Auth), so the
 //                session cookie belongs to this site and Safari doesn't block it
 //   /api/me      who is signed in
+//   /api/guest   POST starts a guest account: no email, just a cookie on this device
 //   /api/save    the signed-in player's stats and roulette history, stored in Neon
 //                Postgres (table: saves)
 //   /api/wallet  the signed-in player's wallet: balance, statement, rounds in progress
@@ -36,6 +37,7 @@ export default {
     try {
       if (url.pathname.startsWith('/api/auth/')) return await proxyAuth(request, env, url);
       if (url.pathname === '/api/me') return await me(request, env, url);
+      if (url.pathname === '/api/guest') return await guestRoute(request, env, url);
       if (url.pathname === '/api/save') return await save(request, env, url);
       if (url.pathname === '/api/daily') return await daily(request, env, url);
       if (url.pathname === '/api/wallet') return await walletRoute(request, env, url);
@@ -89,7 +91,18 @@ async function proxyAuth(request, env, url) {
     // every request that needs it now comes from this origin.
     out.append('set-cookie', cookie.replace(/;\s*domain=[^;]*/gi, '').replace(/;\s*samesite=none/gi, '; SameSite=Lax'));
   }
-  return new Response(upstream.body, { status: upstream.status, headers: out });
+  const guest = await guestUser(request, env, url);
+  if (!guest || !upstream.ok || route === '/get-session') return new Response(upstream.body, { status: upstream.status, headers: out });
+
+  // A guest who signs up, in or out stops being a guest. Signing up keeps their chips.
+  const text = await upstream.text();
+  if (route === '/sign-up/email') {
+    const d = (() => { try { return JSON.parse(text); } catch (e) { return null; } })();
+    const id = d && d.user && typeof d.user.id === 'string' ? d.user.id : null;
+    if (id) await adoptGuest(neon(env.DATABASE_URL), guest.id, id, displayName(d.user));
+  }
+  out.append('set-cookie', guestCookie('', 0));
+  return new Response(text, { status: upstream.status, headers: out });
 }
 
 function sameOrigin(request, url) {
@@ -112,18 +125,61 @@ async function currentUser(request, env, url) {
   if (dev) return dev;
   const cookie = request.headers.get('cookie');
   if (!cookie) return null;
+  if (!cookie.split(';').some(c => c.trim() && !c.trim().startsWith(GUEST_COOKIE + '='))) return guestUser(request, env, url);   // only a guest cookie: skip the sign-in check
   const res = await fetch(authBase(env) + '/get-session', {
     headers: { cookie, origin: url.origin, accept: 'application/json' },
   });
   if (!res.ok) return null;
   const data = await res.json().catch(() => null);
-  return data && data.user && typeof data.user.id === 'string' ? data.user : null;
+  return data && data.user && typeof data.user.id === 'string' ? data.user : guestUser(request, env, url);
 }
+
+/* ---------- Guest accounts ----------
+   A guest plays with a real wallet on the server but has no email or password: the
+   `mc_guest` cookie holds a random secret, and the guest's id is a hash of it, so nobody
+   can claim a guest's wallet without that cookie. Clearing cookies loses the wallet;
+   creating an account keeps it (adoptGuest). Guests stay off the all-time leaderboard. */
+const GUEST_COOKIE = 'mc_guest';
+const GUEST_DAYS = 400;
+function guestCookie(token, days) {
+  return `${GUEST_COOKIE}=${token}; Path=/; Max-Age=${days * 86400}; HttpOnly; Secure; SameSite=Lax`;
+}
+async function guestFromToken(token, env, url) {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode('mini-casino-guest:' + token)));
+  const hex = [...digest.slice(0, 10)].map(b => b.toString(16).padStart(2, '0')).join('');
+  // Local tests make dev-guest-… rows, which are cleared with the other test players
+  const local = env.DEV_AUTH === '1' && ['localhost', '127.0.0.1'].includes(url.hostname);
+  return { id: (local ? 'dev-guest-' : 'guest-') + hex, name: 'Guest ' + hex.slice(0, 4).toUpperCase(), email: '', guest: true };
+}
+async function guestUser(request, env, url) {
+  const m = /(?:^|;\s*)mc_guest=([0-9a-f]{32})(?:;|$)/.exec(request.headers.get('cookie') || '');
+  return m ? guestFromToken(m[1], env, url) : null;
+}
+async function guestRoute(request, env, url) {
+  if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!sameOrigin(request, url)) return json({ error: 'bad_origin' }, 403);
+  const existing = await currentUser(request, env, url);
+  if (existing) return json({ user: userView(existing) });   // already signed in, or already a guest
+  const token = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join('');
+  const user = await guestFromToken(token, env, url);
+  const res = json({ user: userView(user) });
+  res.headers.append('set-cookie', guestCookie(token, GUEST_DAYS));
+  return res;
+}
+// A guest made an account: their wallet and save become the account's, unless the
+// account somehow already has its own
+async function adoptGuest(sql, guestId, userId, name) {
+  await sql`update wallets set user_id = ${userId}, name = ${name}
+            where user_id = ${guestId} and not exists (select 1 from wallets where user_id = ${userId})`;
+  await sql`update saves set user_id = ${userId}
+            where user_id = ${guestId} and not exists (select 1 from saves where user_id = ${userId})`;
+}
+const userView = user => ({ id: user.id, name: user.name || '', email: user.email || '', ...(user.dev ? { dev: true } : {}), ...(user.guest ? { guest: true } : {}) });
 
 /* ---------- API ---------- */
 async function me(request, env, url) {
   const user = await currentUser(request, env, url);
-  return json({ user: user ? { id: user.id, name: user.name || '', email: user.email || '', ...(user.dev ? { dev: true } : {}) } : null });
+  return json({ user: user ? userView(user) : null });
 }
 
 async function save(request, env, url) {
@@ -277,6 +333,7 @@ async function boardRoute(request, env, url) {
 
 // First name and last initial: shown to everyone at the table
 function displayName(user) {
+  if (user.guest) return user.name;
   const parts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return 'Player';
   const name = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];

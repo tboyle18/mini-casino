@@ -117,7 +117,8 @@ export async function walletCredit(sql, userId, name, amount) {
 }
 
 /* The leaderboard: this week's net winnings, or everyone's balance. Test players (dev-…)
-   only show up when testing locally. */
+   only show up when testing locally. Guests play on the weekly board but not the all-time
+   one, which is for players who keep an account. */
 export async function leaderboard(sql, board, userId, now, withTest) {
   const wk = weekKey(now), prev = prevWeekKey(now);
   const test = withTest ? 'zzz' : 'dev-';
@@ -125,11 +126,11 @@ export async function leaderboard(sql, board, userId, now, withTest) {
   if (board === 'balance') {
     rows = await sql`
       select user_id, name, balance as value from wallets
-      where user_id not like ${test + '%'}
+      where user_id not like ${test + '%'} and user_id not like 'guest-%' and user_id not like 'dev-guest-%'
       order by balance desc, updated_at asc limit 50`;
-    if (userId) {
+    if (userId && !/^(dev-)?guest-/.test(userId)) {   // guests aren't ranked on the all-time board
       const r = await sql`
-        select w.balance as value, (select count(*) from wallets o where o.balance > w.balance and o.user_id not like ${test + '%'}) + 1 as rank
+        select w.balance as value, (select count(*) from wallets o where o.balance > w.balance and o.user_id not like ${test + '%'} and o.user_id not like 'guest-%' and o.user_id not like 'dev-guest-%') + 1 as rank
         from wallets w where w.user_id = ${userId}`;
       if (r.length) me = { value: Number(r[0].value), rank: Number(r[0].rank) };
     }

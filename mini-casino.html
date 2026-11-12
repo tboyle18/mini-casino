@@ -386,6 +386,8 @@
   .auth-error { margin: 0; min-height: 18px; color: var(--lose); font-size: 14px; }
   .auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14px; }
   .auth-links .linkbtn { color: var(--ink-2); padding: 6px 0; }
+  .auth-or { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .auth-or span { text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 
   /* ---------- Home ---------- */
   .wallet-card {
@@ -2676,6 +2678,7 @@
     </div>
     <p class="auth-error" id="auth-error" role="alert"></p>
     <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
+    <div class="auth-or" id="auth-guest-row"><span>or</span><button type="button" class="btn" id="auth-guest">Play as a guest</button></div>
     <div class="auth-links">
       <button type="button" class="linkbtn" id="auth-switch"></button>
       <button type="button" class="linkbtn" id="auth-close">Cancel</button>
@@ -2808,7 +2811,7 @@ const ui = {
   rCapNum: $('r-cap-num'), rCapTitle: $('r-cap-title'), rCapSub: $('r-cap-sub'), rCapHint: $('r-cap-hint'),
   account: $('account'), acctTitle: $('acct-title'), auth: $('auth'), authForm: $('auth-form'), authTitle: $('auth-title'), authSub: $('auth-sub'),
   authNameRow: $('auth-name-row'), authName: $('auth-name'), authEmail: $('auth-email'), authPassword: $('auth-password'),
-  authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authClose: $('auth-close'),
+  authError: $('auth-error'), authSubmit: $('auth-submit'), authSwitch: $('auth-switch'), authGuest: $('auth-guest'), authGuestRow: $('auth-guest-row'), authClose: $('auth-close'),
   lobbySignin: $('lobby-signin'), lobbyEmail: $('lobby-email'),
   tSignin: $('t-signin'), tEmail: $('t-email'),
   rouletteView: $('roulette-view'), rWheel: $('r-wheel'), rResult: $('r-result'), rNum: $('r-num'), rTitle: $('r-title'), rSub: $('r-sub'),
@@ -3372,6 +3375,21 @@ function bigWin(stake, payout, kicker, kind, delay = 600) {
       (await mod.celebrate()).celebrate({ kind, kicker, amount: Math.round((payout - stake) * 100) / 100 });
     } catch (err) { /* no celebration on this device: the result still shows */ }
   }, delay);
+}
+/* The 3D games load in pieces named by their content, and each release replaces them. A page
+   left open across an update still asks for the old pieces, which are gone: the browser says
+   "Importing a module script failed" (Safari) or "Failed to fetch dynamically imported module".
+   Reload once to pick up the new release, but not again within a minute (if the phone is just
+   offline, reloading wouldn't help). Returns true when it's reloading. */
+function staleReload(err) {
+  const msg = String((err && err.message) || err || '');
+  if (!/Importing a module script failed|dynamically imported module|error loading dynamically imported/i.test(msg)) return false;
+  let last = 0;
+  try { last = Number(sessionStorage.getItem('mini-casino.reloaded')) || 0; } catch (e) { /* storage unavailable */ }
+  if (Date.now() - last < 60000 || navigator.onLine === false) return false;
+  try { sessionStorage.setItem('mini-casino.reloaded', String(Date.now())); } catch (e) { return false; }   // no storage: no loop guard, so don't
+  location.reload();
+  return true;
 }
 async function walletFetch() {
   if (!signedIn()) return;
@@ -4087,6 +4105,7 @@ async function rl3dEnsure() {
     if (app.view !== 'roulette' || rl.stage) inst.dispose();   // left already, or a flat spin is showing
     else rl3d.inst = inst;
   } catch (e) {
+    if (staleReload(e)) return;   // an update went out while the app was open
     rl3d.off = true;
   } finally {
     rl3d.loading = false;
@@ -5558,6 +5577,7 @@ async function arcOpen(name) {
     if (mine !== arc.token) { inst.dispose(); return; }
     arc.inst = inst;
   } catch (err) {
+    if (staleReload(err)) return;   // an update went out while the app was open
     console.error(err);
     if (mine === arc.token) ui.agInfo.textContent = `${ARC_NAME[name]} couldn’t start on this device: ${(err && err.message) || err}`;
   }
@@ -5593,7 +5613,7 @@ function floorAsk(next) {
   app.afterSignIn = next || null;
   if (!cloud.ready) { toast('One moment, checking your account…'); return; }
   openAuth('in');
-  ui.authSub.textContent = 'Sign in to play. New here? Create a free account and get $1,000 to start.';
+  ui.authSub.textContent = 'Sign in to play, or jump in as a guest. Either way you start with $1,000.';
 }
 function floorSit(id) {
   if (!FLOOR_GO[id]) return;
@@ -5626,6 +5646,7 @@ async function floorEnsure() {
     if (mine !== fl.token) { inst.dispose(); return; }
     fl.inst = inst;
   } catch (err) {
+    if (staleReload(err)) return;   // an update went out while the app was open
     console.error(err);
     if (mine === fl.token) ui.flInfo.textContent = `The casino floor couldn’t start on this device: ${(err && err.message) || err}`;
   } finally {
@@ -5855,6 +5876,7 @@ async function lobbyEnsure() {
     const idle = window.requestIdleCallback || (fn => setTimeout(fn, 200));
     setTimeout(() => idle(() => { mod.table().catch(() => {}); mod.roulette().catch(() => {}); }), 4000);
   } catch (e) {
+    if (staleReload(e)) return;   // an update went out while the app was open
     lobbyBg.off = true;   // no WebGL, or the code didn't load: the felt stays
   } finally {
     lobbyBg.loading = false;
@@ -6213,7 +6235,19 @@ function renderAccount() {
     b.addEventListener('click', fn);
     return b;
   };
-  if (u) {
+  if (u && u.guest) {
+    ui.acctTitle.textContent = 'Playing as a guest';
+    const name = document.createElement('b');
+    name.textContent = u.name || 'Guest';
+    const line = document.createElement('span');
+    line.textContent = 'Your chips are saved on this device only. Create an account to keep them, and play on any device.';
+    line.style.whiteSpace = 'normal';
+    text.append(name, line);
+    const actions = document.createElement('div');
+    actions.className = 'acct-actions';
+    actions.append(btn('Sign in', () => openAuth('in')), btn('Create account', () => openAuth('up'), true));
+    el.append(text, actions);
+  } else if (u) {
     ui.acctTitle.textContent = 'Your account';
     const name = document.createElement('b');
     name.textContent = u.name || u.email || 'Signed in';
@@ -6266,10 +6300,13 @@ function closeAuth() {
 function renderAuth() {
   const up = app.authMode === 'up';
   ui.authTitle.textContent = up ? 'Create an account' : 'Sign in';
-  ui.authSub.textContent = up
-    ? 'Your wallet and progress in this browser move to your new account.'
+  const guest = !!(cloud.user && cloud.user.guest);
+  ui.authSub.textContent = guest
+    ? (up ? 'Your guest chips and stats come with you to your new account.' : 'Signing in switches to your account’s wallet. Your guest chips stay behind.')
+    : up ? 'Your wallet and progress in this browser move to your new account.'
     : 'Loads your saved wallet and progress. It replaces what’s in this browser.';
   ui.authNameRow.hidden = !up;
+  ui.authGuestRow.hidden = guest || !cloud.on;
   ui.authPassword.setAttribute('autocomplete', up ? 'new-password' : 'current-password');
   ui.authSubmit.textContent = up ? 'Create account' : 'Sign in';
   ui.authSwitch.textContent = up ? 'Have an account? Sign in' : 'New here? Create an account';
@@ -6302,19 +6339,43 @@ async function authSubmit(e) {
     });
     const d = await res.json().catch(() => ({}));
     if (!res.ok || !d || !d.user) { ui.authError.textContent = authMessage(d, up); return; }
+    const wasGuest = !!(cloud.user && cloud.user.guest);
     cloud.user = { id: d.user.id, name: d.user.name || '', email: d.user.email || '' };
     cloud.version = 0;
     closeAuth();
     const next = app.afterSignIn;
     app.afterSignIn = null;
     if (next) go(next); else route();   // on to the game you were trying to open
-    toast(up ? 'Account created. You start with $1,000.' : `Signed in as ${cloud.user.name || cloud.user.email}`);
+    toast(up ? (wasGuest ? 'Account created. Your chips came with you.' : 'Account created. You start with $1,000.') : `Signed in as ${cloud.user.name || cloud.user.email}`);
     await walletFetch();
     cloudPull();
   } catch (err) {
     ui.authError.textContent = 'Couldn’t reach the sign-in service. Check your connection and try again.';
   } finally {
     ui.authSubmit.disabled = false;
+  }
+}
+// No email needed: the server gives this device a guest wallet, which an account can adopt later
+async function playAsGuest() {
+  ui.authGuest.disabled = true;
+  ui.authError.textContent = '';
+  try {
+    const res = await fetch('/api/guest', { method: 'POST', credentials: 'same-origin', headers: { accept: 'application/json' } });
+    const d = await res.json().catch(() => null);
+    if (!res.ok || !d || !d.user) { ui.authError.textContent = 'Couldn’t start a guest game. Try again.'; return; }
+    cloud.user = d.user;
+    cloud.version = 0;
+    closeAuth();
+    const next = app.afterSignIn;
+    app.afterSignIn = null;
+    if (next) go(next); else route();
+    toast(`You’re ${d.user.name}, with $1,000 to play. Create an account any time to keep your chips.`);
+    await walletFetch();
+    cloudPull();
+  } catch (err) {
+    ui.authError.textContent = 'Couldn’t reach the casino. Check your connection and try again.';
+  } finally {
+    ui.authGuest.disabled = false;
   }
 }
 async function signOut() {
@@ -6836,6 +6897,7 @@ async function bj3dEnsure() {
     if (app.view !== 'table' || !app.solo) inst.dispose();
     else { bj3d.inst = inst; render(); }
   } catch (e) {
+    if (staleReload(e)) return;   // an update went out while the app was open
     bj3d.off = true;
   } finally {
     bj3d.loading = false;
@@ -7178,6 +7240,7 @@ ui.gateUp.addEventListener('click', () => openAuth('up'));
 ui.gateLearn.addEventListener('click', openHelp);
 ui.lobbyEmail.addEventListener('click', () => openAuth('in'));
 ui.tEmail.addEventListener('click', () => openAuth('in'));
+ui.authGuest.addEventListener('click', playAsGuest);
 ui.authSwitch.addEventListener('click', () => { app.authMode = app.authMode === 'up' ? 'in' : 'up'; ui.authError.textContent = ''; renderAuth(); });
 ui.authClose.addEventListener('click', closeAuth);
 ui.auth.addEventListener('click', e => { if (e.target === ui.auth) closeAuth(); });
