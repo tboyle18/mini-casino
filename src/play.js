@@ -15,6 +15,7 @@ import { rdDeal, rdSpread, rdThird, rdPayout, rdVal } from './reddog.js';
 import { newTable, newPlayer, applyIntent, autoAdvance, migrateTable, mulberry32 } from './rules.js';
 import { RISKS, pegLayout, makeBall, stepBall } from '../lab/plinko-physics.js';
 import { crashPoint, multAt, timeTo } from '../lab/crash-math.js';
+import { randomSymbol, evaluate } from '../lab/slots-math.js';
 
 export class PlayError extends Error {
   constructor(code, message) { super(message || code); this.code = code; }
@@ -258,6 +259,21 @@ function plinko(w, action, args, ctx) {
   return { drops, bet: args.bet, risk };
 }
 
+/* ---------- Lucky Duck 3000 (slots) ----------
+   The server picks each reel's symbol by weight and pays the middle line; the page then
+   spins the 3D reels to land on them. */
+const SLOT_PLURAL = { cherry: 'cherries', lemon: 'lemons', bell: 'bells', clover: 'clovers', diamond: 'diamonds', seven: 'Lucky 7s' };
+function slots(w, action, args, ctx) {
+  if (action !== 'spin') throw new PlayError('bad_action');
+  take(w, args.bet);
+  const line = [0, 1, 2].map(() => randomSymbol(ctx.rand));
+  const res = evaluate(line);
+  const payout = r2(args.bet * res.mult);
+  const what = !res.mult ? 'No win' : res.kind === 'small' ? 'Two cherries' : res.sym === 'duck' ? 'Duck jackpot' : `Three ${SLOT_PLURAL[res.sym]}`;
+  settle(w, args.bet, payout, `Lucky Duck · ${what}${res.mult ? ` · ${res.mult}×` : ''}`, ctx.now);
+  return { line, mult: res.mult, kind: res.kind, payout };
+}
+
 /* ---------- Duck Rocket (crash) ----------
    The crash point is drawn at launch and never sent to the page until the rocket is down.
    The flight starts after the countdown; the multiplier is worked out from the server's
@@ -354,7 +370,7 @@ function blackjack(w, action, args, ctx) {
   return { T: soloView(T) };
 }
 
-const GAMES = { roulette, poker, baccarat, war, threecard, reddog, plinko, crash, blackjack };
+const GAMES = { roulette, poker, baccarat, war, threecard, reddog, plinko, crash, slots, blackjack };
 
 export function play(w, game, action, args, ctx) {
   const fn = GAMES[game];

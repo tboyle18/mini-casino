@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { button, buzz, makeRenderer, fitRenderer, disposeScene, fontReady } from './shared.js';
+import { button, buzz, makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
 
 const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
@@ -56,8 +56,8 @@ function planarUV(geo, R) {
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
 }
 
-function wheelTexture(renderer) {
-  const S = 2048, R = 0.31, k = S / 2 / R;
+function wheelTexture(renderer, S = 2048) {
+  const R = 0.31, k = S / 2 / R;
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
@@ -93,6 +93,19 @@ function wheelTexture(renderer) {
   return tex;
 }
 
+// Eight brass deflectors on the track, alternating along and across it
+function deflectorLayout() {
+  const out = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    const r = 0.356;
+    const y = 0.022 + ((r - 0.315) / 0.085) * 0.024 + 0.004;
+    const half = i % 2 === 0 ? { x: 0.005, y: 0.004, z: 0.014 } : { x: 0.013, y: 0.004, z: 0.005 };
+    out.push({ a, r, y, half });
+  }
+  return out;
+}
+
 /* The physics, separate from the graphics so it can be tested without a screen.
    Returns the world, the bodies, where the deflectors sit, and helpers to launch the
    ball, advance time, and read which pocket it is in. */
@@ -108,17 +121,12 @@ export function createWheelPhysics(rand = Math.random) {
   const bowlBody = new CANNON.Body({ type: CANNON.Body.STATIC, material: mWood });
   bowlBody.addShape(latheTrimesh(PHYS_BOWL, 160));   // a smooth wall: coarse facets kick a fast ball into the air
   // Eight brass deflectors on the track, alternating along and across it
-  const deflectors = [];
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    const r = 0.356;
-    const y = 0.022 + ((r - 0.315) / 0.085) * 0.024 + 0.004;
-    const along = i % 2 === 0;
-    const half = along ? new CANNON.Vec3(0.005, 0.004, 0.014) : new CANNON.Vec3(0.013, 0.004, 0.005);
+  const deflectors = deflectorLayout();
+  for (const { a, r, y, half: h } of deflectors) {
+    const half = new CANNON.Vec3(h.x, h.y, h.z);
     const shape = new CANNON.Box(half);
     shape.material = mMetal;
     bowlBody.addShape(shape, new CANNON.Vec3(r * Math.cos(a), y, r * Math.sin(a)), new CANNON.Quaternion().setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -a));
-    deflectors.push({ a, r, y, half });
   }
   world.addBody(bowlBody);
 
@@ -204,9 +212,10 @@ export function createWheelPhysics(rand = Math.random) {
   };
 }
 
-export async function mount({ stage, controls, info }) {
-  await fontReady();
-  const { renderer, envTex } = makeRenderer(stage);
+/* The wheel's scene: table, bowl, rotor, ball and lights, shared by the lab demo and the
+   casino's spin screen. opts go to makeRenderer; shadow sets the shadow map's size. */
+function buildWheel(stage, opts = {}) {
+  const { renderer, envTex } = makeRenderer(stage, opts);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0b0907);
   scene.environment = envTex;
@@ -214,23 +223,14 @@ export async function mount({ stage, controls, info }) {
   scene.fog = new THREE.Fog(0x0b0907, 3.5, 7);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.02, 20);
-  const orbit = new OrbitControls(camera, renderer.domElement);
-  orbit.enableDamping = true;
-  orbit.enablePan = false;
-  orbit.minDistance = 0.35;
-  orbit.maxDistance = 4;
-  orbit.minPolarAngle = 0.12;
-  orbit.maxPolarAngle = 1.25;
-  orbit.target.set(0, 0.02, 0);
-
-  function homeView() {
+  // The whole wheel in view, from a seat at the table
+  function homeView(elevDeg = 52, margin = 0.53) {
     fitRenderer(renderer, camera, stage);
     const fit = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * Math.min(camera.aspect, 1.15);
-    const d = 0.53 / fit;
-    const elev = THREE.MathUtils.degToRad(52);
+    const d = margin / fit;
+    const elev = THREE.MathUtils.degToRad(elevDeg);
     camera.position.set(0, Math.sin(elev) * d, Math.cos(elev) * d);
-    orbit.target.set(0, 0.02, 0);
-    orbit.update();
+    camera.lookAt(0, 0.02, 0);
   }
 
   // ---- Lights ----
@@ -238,7 +238,7 @@ export async function mount({ stage, controls, info }) {
   const key = new THREE.DirectionalLight(0xfff0d8, 2.6);
   key.position.set(0.55, 1.6, 0.9);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(opts.shadow || 2048, opts.shadow || 2048);
   Object.assign(key.shadow.camera, { left: -0.6, right: 0.6, top: 0.6, bottom: -0.6, near: 0.5, far: 4 });
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.002;
@@ -252,7 +252,7 @@ export async function mount({ stage, controls, info }) {
   const brass = new THREE.MeshStandardMaterial({ color: 0xd9b25e, metalness: 1, roughness: 0.22 });
   const chrome = new THREE.MeshStandardMaterial({ color: 0xe8e8ea, metalness: 1, roughness: 0.12 });
   const ivory = new THREE.MeshPhysicalMaterial({ color: 0xfbf8f0, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.04 });
-  const ringMat = new THREE.MeshPhysicalMaterial({ map: wheelTexture(renderer), roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1, side: THREE.DoubleSide });
+  const ringMat = new THREE.MeshPhysicalMaterial({ map: wheelTexture(renderer, opts.texture), roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1, side: THREE.DoubleSide });
 
   // ---- Table and bowl (static) ----
   const felt = new THREE.Mesh(new THREE.CircleGeometry(4, 64), new THREE.MeshStandardMaterial({ color: 0x0d5536, roughness: 0.95 }));
@@ -271,10 +271,8 @@ export async function mount({ stage, controls, info }) {
   rim.position.y = 0.083;
   scene.add(rim);
 
-  // ---- Physics ----
-  const phys = createWheelPhysics();
-  const { rotorBody, ballBody } = phys;
-  for (const { a, r, y, half } of phys.deflectors) {
+  // ---- Deflectors ----
+  for (const { a, r, y, half } of deflectorLayout()) {
     const gem = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), brass);
     gem.scale.set(half.x * 1.3, half.y * 1.6, half.z * 1.3);
     gem.position.set(r * Math.cos(a), y, r * Math.sin(a));
@@ -332,6 +330,28 @@ export async function mount({ stage, controls, info }) {
   scene.add(ball);
   const glow = new THREE.PointLight(0xffd27a, 0, 0.25, 2);
   scene.add(glow);
+
+  return { renderer, envTex, scene, camera, homeView, rotor, ball, glow, felt };
+}
+
+export async function mount({ stage, controls, info }) {
+  await fontReady();
+  const { renderer, envTex, scene, camera, homeView: frameWheel, rotor, ball, glow } = buildWheel(stage);
+  const orbit = new OrbitControls(camera, renderer.domElement);
+  orbit.enableDamping = true;
+  orbit.enablePan = false;
+  orbit.minDistance = 0.35;
+  orbit.maxDistance = 4;
+  orbit.minPolarAngle = 0.12;
+  orbit.maxPolarAngle = 1.25;
+  orbit.target.set(0, 0.02, 0);
+  function homeView() {
+    frameWheel();
+    orbit.target.set(0, 0.02, 0);
+    orbit.update();
+  }
+  const phys = createWheelPhysics();
+  const { rotorBody, ballBody } = phys;
 
   // ---- Spin logic ----
   let follow = false;
@@ -417,6 +437,172 @@ export async function mount({ stage, controls, info }) {
       cancelAnimationFrame(raf);
       orbit.dispose();
       result.remove();
+      disposeScene(scene);
+      envTex.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer.domElement.remove();
+    },
+  };
+}
+
+/* ================= The casino's spin screen =================
+   The casino's server picks the number; the wheel has to land on it. Every pocket is the
+   same shape, so a spin recorded with the physics can be made to land on any number by
+   turning the whole rotor a whole number of pockets before playing it back: the ball rolls
+   exactly as recorded and falls into the same slot, which now carries the right number.
+   Recording takes a moment on a phone, so the next spin is recorded in the background
+   while the player bets (a few milliseconds at a time), and is ready when they tap Spin. */
+
+const REC_FPS = 60;
+const FRAME = 8;   // per frame: rotor yaw, ball x y z, ball quaternion x y z w
+// A recording in progress: call work(ms) until it returns true, then read rec
+export function recordSpin(rand = Math.random) {
+  let phys = null, buf = null, n = 0, drop = 0;
+  const job = { rec: null };
+  function start() {
+    phys = createWheelPhysics(rand);
+    phys.launch();
+    buf = new Float32Array(FRAME * REC_FPS * 40);
+    n = 0;
+    drop = 0;
+  }
+  start();
+  job.work = budget => {
+    if (job.rec) return true;
+    const t0 = performance.now();
+    while (performance.now() - t0 < budget) {
+      const st = phys.step(1 / REC_FPS);
+      const q = phys.rotorBody.quaternion, p = phys.ballBody.position, bq = phys.ballBody.quaternion;
+      if (n * FRAME + FRAME > buf.length) { start(); continue; }   // never settled: start again
+      buf.set([2 * Math.atan2(q.y, q.w), p.x, p.y, p.z, bq.x, bq.y, bq.z, bq.w], n * FRAME);
+      n++;
+      if (!drop && phys.state.phase === 'free') drop = n;
+      if (st === 'escaped') { start(); continue; }    // jumped the wheel: record another
+      if (st === 'landed') {
+        job.rec = { frames: buf.subarray(0, n * FRAME), count: n, drop: drop || n, landed: WHEEL.indexOf(phys.pocket()) };
+        return true;
+      }
+    }
+    return false;
+  };
+  return job;
+}
+
+let nextSpin = null;   // the recording waiting for the next Spin, kept across mounts
+function keepRecording() {
+  if (!nextSpin) nextSpin = recordSpin();
+  const job = nextSpin;
+  if (job.rec || job.busy) return;
+  job.busy = true;
+  const tick = () => {
+    if (job.rec) return;                       // finished (maybe by play)
+    if (document.visibilityState === 'hidden') { setTimeout(tick, 500); return; }
+    if (!job.work(6)) setTimeout(tick, 16);
+  };
+  setTimeout(tick, 0);
+}
+
+/* Mount the wheel in `container` (sized by the page). Returns { play(result, onLanded),
+   skip(), dispose() }: play shows a spin that lands on `result` and calls onLanded once
+   the ball settles; skip jumps to the end. Nothing is drawn while no spin is playing. */
+export async function mountCasinoWheel(container) {
+  await fontReady();
+  const Q = casinoQuality();
+  const W = buildWheel(container, { maxDpr: Q.maxDpr, alpha: true, shadow: Q.shadow, softShadows: Q.softShadows, texture: Q.texture });
+  const { renderer, envTex, scene, camera, rotor, ball, glow } = W;
+  scene.background = null;
+  // No table top: the page's own background shows through, with the wheel's shadow on it
+  W.felt.material.dispose();
+  W.felt.material = new THREE.ShadowMaterial({ opacity: 0.45 });
+  keepRecording();
+  // Get the graphics chip ready for every material now, so the first spin doesn't stutter
+  try {
+    ball.visible = true;
+    W.homeView(56, 0.5);
+    if (renderer.compileAsync) await renderer.compileAsync(scene, camera);
+    else renderer.compile(scene, camera);
+  } catch (e) { /* it compiles on the first frame instead */ }
+  ball.visible = false;
+
+  const Y = new THREE.Vector3(0, 1, 0);
+  const q1 = new THREE.Quaternion(), q2 = new THREE.Quaternion();
+  let play = null, raf = 0, disposed = false;
+  const TRACK_RATE = 1.6;   // the ball's laps on the wall play faster than life,
+  const FREE_RATE = 1.15;   // and the drop and bounces a touch faster
+
+  function poseAt(f) {
+    const { rec, offset } = play;
+    const i = Math.min(rec.count - 1, Math.floor(f)), j = Math.min(rec.count - 1, i + 1), t = f - Math.floor(f);
+    const a = rec.frames, A = i * FRAME, B = j * FRAME;
+    const lerp = k => a[A + k] + (a[B + k] - a[A + k]) * t;
+    rotor.quaternion.setFromAxisAngle(Y, lerp(0) + offset);
+    ball.position.set(lerp(1), lerp(2), lerp(3));
+    q1.set(a[A + 4], a[A + 5], a[A + 6], a[A + 7]);
+    q2.set(a[B + 4], a[B + 5], a[B + 6], a[B + 7]);
+    ball.quaternion.slerpQuaternions(q1, q2, t);
+    glow.position.set(ball.position.x, ball.position.y + 0.03, ball.position.z);
+  }
+  const secsOf = rec => (rec.count - rec.drop) / REC_FPS / FREE_RATE + rec.drop / REC_FPS / TRACK_RATE;
+  // Frame index for a time since the spin started, with the faster laps at the start
+  function frameAt(sec) {
+    const { rec } = play;
+    const lapSec = rec.drop / REC_FPS / TRACK_RATE;
+    return sec < lapSec ? sec * TRACK_RATE * REC_FPS : rec.drop + (sec - lapSec) * FREE_RATE * REC_FPS;
+  }
+  const governor = frameGovernor(renderer, scene);
+  function draw(now) {
+    if (!play) return;
+    if (governor.tick(now)) W.homeView.lastW = -1;
+    if (W.homeView.lastW !== container.clientWidth || W.homeView.lastH !== container.clientHeight) {
+      W.homeView(56, 0.5);
+      W.homeView.lastW = container.clientWidth;
+      W.homeView.lastH = container.clientHeight;
+    }
+    const f = play.skipped ? play.rec.count - 1 : frameAt((now - play.t0) / 1000);
+    poseAt(f);
+    renderer.render(scene, camera);
+    if (f >= play.rec.count - 1) {
+      glow.intensity = 0.6;
+      renderer.render(scene, camera);
+      const done = play.onLanded;
+      play = null;
+      governor.idle();
+      keepRecording();               // record the next spin now the ball has stopped
+      if (done) done();
+      return;
+    }
+    raf = requestAnimationFrame(draw);
+  }
+
+  return {
+    // Returns about how many seconds the spin will take
+    play(result, onLanded) {
+      cancelAnimationFrame(raf);
+      if (!nextSpin) nextSpin = recordSpin();
+      const job = nextSpin;
+      nextSpin = null;
+      const start = () => {
+        if (disposed) return;
+        const rec = job.rec;
+        const k = (((WHEEL.indexOf(result) - rec.landed) % 37) + 37) % 37;
+        play = { rec, offset: k * STEP, t0: performance.now(), onLanded, skipped: false };
+        ball.visible = true;
+        glow.intensity = 0;
+        W.homeView.lastW = -1;
+        raf = requestAnimationFrame(draw);
+      };
+      if (job.work(8)) { start(); return secsOf(job.rec); }
+      // Not recorded yet (Spin came very quickly): finish it a little at a time, then play
+      const more = () => { if (disposed) return; if (job.work(12)) start(); else setTimeout(more, 0); };
+      setTimeout(more, 0);
+      return 8.5;
+    },
+    skip() { if (play) play.skipped = true; },
+    dispose() {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      play = null;
       disposeScene(scene);
       envTex.dispose();
       renderer.dispose();

@@ -7,14 +7,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { gsap } from 'gsap';
-import { button, buzz, makeRenderer, fitRenderer, disposeScene, fontReady } from './shared.js';
+import { button, buzz, makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
 
 const FELT_Y = 0.03;
 const CARD_W = 0.063, CARD_H = 0.088, CARD_T = 0.0006;
 const CHIP_R = 0.0195, CHIP_T = 0.0034;
 const SUITS = { S: '♠', H: '♥', D: '♦', C: '♣' };
 const SYM = '"Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", sans-serif';
-const CHIPS = [{ v: 5, c: '#c8303c' }, { v: 25, c: '#2f6fd0' }, { v: 100, c: '#25272c' }, { v: 500, c: '#7a3fb8' }];
+const CHIPS = [{ v: 5, c: '#c8303c' }, { v: 25, c: '#2f6fd0' }, { v: 100, c: '#25272c' }, { v: 500, c: '#7a3fb8' }, { v: 1000, c: '#d9822b' }];
 const BET_SPOT = new THREE.Vector3(0, FELT_Y, 0.3);
 const SHOE_MOUTH = new THREE.Vector3(0.5, FELT_Y + 0.06, -0.24);
 const DISCARD = new THREE.Vector3(-0.55, FELT_Y + 0.01, -0.3);
@@ -74,11 +74,14 @@ function feltTexture(renderer) {
   grad.addColorStop(1, '#073d26');
   g.fillStyle = grad;
   g.fillRect(0, 0, W, H);
-  // felt nap: thousands of faint specks
-  for (let i = 0; i < 60000; i++) {
-    g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)';
-    g.fillRect(Math.random() * W, Math.random() * H, 2, 2);
+  // felt nap: faint specks, drawn once on a small tile and repeated across the felt
+  const [nc, ng] = canvas(256, 256);
+  for (let i = 0; i < 2000; i++) {
+    ng.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)';
+    ng.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
   }
+  g.fillStyle = g.createPattern(nc, 'repeat');
+  g.fillRect(0, 0, W, H);
   const cx = W / 2, cy = 0;   // the arcs share the dealer edge's center
   const gold = '#e9c46a';
   arcText(g, 'BLACKJACK PAYS 3 TO 2', cx, cy, 0.425 * k, '800 40px Manrope', gold, 7);
@@ -207,9 +210,11 @@ const score = cards => {
   return aces && total + 10 <= 21 ? total + 10 : total;
 };
 
-export async function mount({ stage, controls, info }) {
-  await fontReady();
-  const { renderer, envTex } = makeRenderer(stage);
+/* The table's scene: felt, rail, tray, shoe, lamp, and makers for cards and chips, shared by
+   the lab demo and the casino's solo table. opts go to makeRenderer; shadow is the shadow
+   map's size. */
+function buildTable(stage, opts = {}) {
+  const { renderer, envTex } = makeRenderer(stage, opts);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0b0907);
   scene.environment = envTex;
@@ -217,22 +222,15 @@ export async function mount({ stage, controls, info }) {
   scene.fog = new THREE.Fog(0x0b0907, 2.2, 5);
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.02, 20);
-  const orbit = new OrbitControls(camera, renderer.domElement);
-  orbit.enableDamping = true;
-  orbit.enablePan = false;
-  orbit.minDistance = 0.4;
-  orbit.maxDistance = 2.4;
-  orbit.minPolarAngle = 0.3;
-  orbit.maxPolarAngle = 1.3;
-  orbit.minAzimuthAngle = -0.8;
-  orbit.maxAzimuthAngle = 0.8;
-  function seatView() {
+  /* From the player's seat: halfW is how much of the table's width (each side of the middle)
+     must fit, and halfD how much of its depth; target is the point in the middle of the view. */
+  function seatView({ halfW = 0.205, halfD = 0, target = new THREE.Vector3(0, 0.03, 0.02), dir = new THREE.Vector3(0, 0.78, 0.68), min = 0.8 } = {}) {
     fitRenderer(renderer, camera, stage);
-    const target = new THREE.Vector3(0, 0.03, 0.02);
-    const dist = Math.max(0.8, 0.205 / (Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect));
-    camera.position.copy(target).add(new THREE.Vector3(0, 0.78, 0.68).normalize().multiplyScalar(dist));
-    orbit.target.copy(target);
-    orbit.update();
+    const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const dist = Math.max(min, halfW / (t * camera.aspect), halfD / t);
+    camera.position.copy(target).add(dir.clone().normalize().multiplyScalar(dist));
+    camera.lookAt(target);
+    return target;
   }
 
   // ---- Light: a warm lamp over the table ----
@@ -241,7 +239,7 @@ export async function mount({ stage, controls, info }) {
   lamp.position.set(0.1, 1.55, 0.25);
   lamp.target.position.set(0, 0, 0);
   lamp.castShadow = true;
-  lamp.shadow.mapSize.set(2048, 2048);
+  lamp.shadow.mapSize.set(opts.shadow || 2048, opts.shadow || 2048);
   lamp.shadow.bias = -0.0002;
   lamp.shadow.normalBias = 0.003;
   lamp.shadow.radius = 5;
@@ -319,17 +317,41 @@ export async function mount({ stage, controls, info }) {
   const backMat = new THREE.MeshPhysicalMaterial({ map: keep(backTexture(renderer)), roughness: 0.45, clearcoat: 0.3, alphaTest: 0.5 });
   shoeBody.material = [shoeBody.material, shoeBody.material, backMat, shoeBody.material, shoeBody.material, shoeBody.material];
   const faceMats = new Map();
-  function cardMesh(code) {
+  // A card's face; one the player can't know yet (not a real code, like '??') is all back
+  function faceFor(code) {
+    if (!/^(10|[2-9AJQK])[SHDC]$/.test(code || '')) return backMat;
     let face = faceMats.get(code);
     if (!face) {
       face = new THREE.MeshPhysicalMaterial({ map: keep(faceTexture(code.slice(0, -1), code.slice(-1), renderer)), roughness: 0.45, clearcoat: 0.3, alphaTest: 0.5 });
       faceMats.set(code, face);
     }
-    const m = new THREE.Mesh(cardGeo, [edgeMat, edgeMat, face, backMat, edgeMat, edgeMat]);
+    return face;
+  }
+  function cardMesh(code) {
+    const m = new THREE.Mesh(cardGeo, [edgeMat, edgeMat, faceFor(code), backMat, edgeMat, edgeMat]);
     m.castShadow = m.receiveShadow = true;
     return m;
   }
   const chipGeo = new THREE.CylinderGeometry(CHIP_R, CHIP_R, CHIP_T, 48);
+  return { renderer, envTex, scene, camera, seatView, textures, keep, floor, chipMats, cardMesh, faceFor, backMat, cardGeo, chipGeo };
+}
+
+export async function mount({ stage, controls, info }) {
+  await fontReady();
+  const { renderer, envTex, scene, camera, seatView: frameSeat, textures, chipMats, cardMesh, cardGeo, chipGeo } = buildTable(stage);
+  const orbit = new OrbitControls(camera, renderer.domElement);
+  orbit.enableDamping = true;
+  orbit.enablePan = false;
+  orbit.minDistance = 0.4;
+  orbit.maxDistance = 2.4;
+  orbit.minPolarAngle = 0.3;
+  orbit.maxPolarAngle = 1.3;
+  orbit.minAzimuthAngle = -0.8;
+  orbit.maxAzimuthAngle = 0.8;
+  function seatView() {
+    orbit.target.copy(frameSeat());
+    orbit.update();
+  }
 
   let deck = [];
   const shuffle = () => {
@@ -483,6 +505,351 @@ export async function mount({ stage, controls, info }) {
       cancelAnimationFrame(raf);
       for (const o of objects) { gsap.killTweensOf(o.position); gsap.killTweensOf(o.rotation); }
       orbit.dispose();
+      disposeScene(scene);
+      for (const t of textures) t.dispose();
+      cardGeo.dispose();
+      chipGeo.dispose();
+      envTex.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      renderer.domElement.remove();
+    },
+  };
+}
+
+/* ================= The casino's solo table =================
+   mountCasinoTable(container) draws the table and returns { update(view), dispose() }. The
+   page calls update with what the server's table looks like now, and the scene animates
+   whatever changed: new cards fly out of the shoe, the dealer's hole card turns over, chips
+   drop on the betting spot, split cards slide apart, wins are paid from the tray and losses
+   swept into it. The page keeps all the rules and money; this only draws.
+
+   view: {
+     n,                       // the round number (null before the first deal)
+     over,                    // the round is finished
+     dealer: [{ code, up }],  // a code the player can't know yet may be '??'
+     dealerLabel: { text, cls },
+     hands: [{ id, cards, bet, doubled, result, active, total: { text, cls }, tag: { text, cls } }],
+     bet,                     // chips on the spot for the next hand, while betting
+   } */
+const DENOMS = [1000, 500, 100, 25, 5];
+const HAND_GAP = 0.165;          // between split hands
+const HAND_Z = 0.13;             // the first card of each hand
+const STACK_Z = 0.285;           // chips, on the printed betting spot
+const DEALER_Z = -0.27;
+const TO_PLAYER = new THREE.Vector3(0, 0.25, 0.85);   // chips coming back to you leave this way
+const TRAY = new THREE.Vector3(0, FELT_Y + 0.03, -0.39);
+
+function chipsFor(amount) {
+  const out = [];
+  let a = Math.floor(amount + 1e-6);
+  for (const d of DENOMS) while (a >= d && out.length < 20) { out.push(d); a -= d; }
+  if (!out.length && amount > 0) out.push(5);
+  return out;   // biggest first, so they sit at the bottom
+}
+
+export async function mountCasinoTable(container) {
+  await fontReady();
+  const Q = casinoQuality();
+  const B = buildTable(container, { maxDpr: Q.maxDpr, alpha: true, shadow: Q.shadow, softShadows: Q.softShadows });
+  const { renderer, envTex, scene, camera, chipMats, cardMesh, faceFor, cardGeo, chipGeo, textures } = B;
+  scene.background = null;
+  scene.fog = null;
+  B.floor.visible = false;
+  renderer.domElement.classList.add('t3-canvas');
+  const layer = document.createElement('div');
+  layer.className = 't3-labels';
+  container.appendChild(layer);
+
+  const cards = new Map();      // key -> { mesh, code, up, target, sideways }
+  const hands = new Map();      // hand id -> { chips: [mesh], won: [mesh], settled, label }
+  let betStack = [];            // [{ mesh, v }] on the spot before the deal
+  let round = null;
+  const anchor = new THREE.Vector3();
+  let renderUntil = 0, raf = 0, disposed = false;
+
+  // ---- Drawing on demand: only while something moves ----
+  function kick(ms = 1600) {
+    renderUntil = Math.max(renderUntil, performance.now() + ms);
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+  let viewKey = '';
+  const governor = frameGovernor(renderer, scene);
+  function frame(now) {
+    raf = 0;
+    if (disposed) return;
+    governor.tick(now);
+    const key = container.clientWidth + 'x' + container.clientHeight + ':' + spread + ':' + renderer.getPixelRatio();
+    if (key !== viewKey) { viewKey = key; frameCamera(); }
+    renderer.render(scene, camera);
+    placeLabels();
+    // Keep drawing while anything is still moving (tweens can run late if frames were missed)
+    if (now < renderUntil || gsap.globalTimeline.getChildren(true, true, true).some(t => t.isActive())) raf = requestAnimationFrame(frame);
+    else governor.idle();
+  }
+  let spread = 1;   // how many hands across the view must fit
+  function frameCamera() {
+    const wide = spread > 2 ? 0.36 : spread > 1 ? 0.27 : 0.2;
+    B.seatView({ halfW: wide, halfD: 0.35, target: new THREE.Vector3(0, 0.03, 0), dir: new THREE.Vector3(0, 0.92, 0.58), min: 0.5 });
+  }
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => kick(200)) : null;
+  if (ro) ro.observe(container);
+
+  // ---- Labels: the page's own badges, pinned to points on the table ----
+  function label() {
+    const el = document.createElement('div');
+    el.className = 't3-label';
+    el.innerHTML = '<span></span><span></span>';
+    layer.appendChild(el);
+    return { el, at: new THREE.Vector3(), below: false };
+  }
+  function setLabel(L, parts, at, below, extra) {
+    const [a, b] = L.el.children;
+    a.textContent = (parts[0] && parts[0].text) || '';
+    a.className = (parts[0] && parts[0].cls) || '';
+    a.hidden = !a.textContent;
+    b.textContent = (parts[1] && parts[1].text) || '';
+    b.className = (parts[1] && parts[1].cls) || '';
+    b.hidden = !b.textContent;
+    L.el.className = 't3-label' + (below ? ' below' : '') + (extra ? ' ' + extra : '');
+    L.el.hidden = a.hidden && b.hidden;
+    L.at.copy(at);
+  }
+  function placeLabels() {
+    const w = container.clientWidth, h = container.clientHeight;
+    for (const L of allLabels()) {
+      anchor.copy(L.at).project(camera);
+      L.el.style.transform = `translate(${((anchor.x + 1) / 2) * w}px, ${((1 - anchor.y) / 2) * h}px) translate(-50%, ${L.el.classList.contains('below') ? '0' : '-100%'})`;
+    }
+  }
+  const dealerLabel = label();
+  function allLabels() { return [dealerLabel, ...[...hands.values()].map(H => H.label)]; }
+
+  // ---- Cards ----
+  function cardTarget(i, n, dealer, handIndex, handCount, sideways) {
+    if (dealer) return new THREE.Vector3((i - (n - 1) / 2) * 0.07, FELT_Y + CARD_T / 2 + i * 0.0002, DEALER_Z);
+    const cx = (handIndex - (handCount - 1) / 2) * HAND_GAP;
+    return new THREE.Vector3(cx - 0.012 + i * 0.024, FELT_Y + CARD_T / 2 + i * 0.0009, HAND_Z - i * 0.013 - (sideways ? 0.01 : 0));
+  }
+  function dealCard(code, up, to, yaw, delay) {
+    const m = cardMesh(code);
+    m.position.copy(SHOE_MOUTH);
+    m.rotation.set(0, 0.45, Math.PI);
+    scene.add(m);
+    const tl = gsap.timeline({ delay });
+    tl.to(m.position, { x: to.x, z: to.z, duration: 0.5, ease: 'power3.out' }, 0)
+      .to(m.position, { y: to.y + 0.06, duration: 0.2, ease: 'sine.out' }, 0)
+      .to(m.position, { y: to.y, duration: 0.3, ease: 'power2.in' }, 0.2)
+      .to(m.rotation, { y: yaw, z: up ? 0 : Math.PI, duration: 0.45, ease: 'power2.inOut' }, 0.02);
+    setTimeout(() => buzz(5), delay * 1000 + 420);
+    return m;
+  }
+  // Move a card that's already out to a new place; whatever it was doing before stops
+  function slide(m, to, yaw, delay = 0, up = true) {
+    gsap.killTweensOf(m.position);
+    gsap.killTweensOf(m.rotation);
+    gsap.to(m.position, { x: to.x, y: to.y, z: to.z, duration: 0.4, delay, ease: 'power2.inOut' });
+    gsap.to(m.rotation, { x: 0, y: yaw == null ? m.rotation.y : yaw, z: up ? 0 : Math.PI, duration: 0.4, delay, ease: 'power2.inOut' });
+  }
+  function flip(m, up, delay = 0) {
+    const y = m.position.y;
+    gsap.timeline({ delay })
+      .to(m.position, { y: y + 0.045, duration: 0.22, ease: 'power2.out' })
+      .to(m.rotation, { z: up ? 0 : Math.PI, duration: 0.42, ease: 'power2.inOut' }, 0.04)
+      .to(m.position, { y, duration: 0.28, ease: 'power2.in' }, 0.28);
+  }
+  function remove(m, delay = 0, dur = 0.5) {
+    gsap.delayedCall(delay + dur + 0.05, () => { gsap.killTweensOf(m.position); gsap.killTweensOf(m.rotation); scene.remove(m); });
+  }
+  // Everything from the last round goes to the discard pile
+  function clearCards() {
+    let i = 0;
+    for (const C of cards.values()) {
+      const m = C.mesh;
+      gsap.killTweensOf(m.position);
+      gsap.killTweensOf(m.rotation);
+      gsap.to(m.position, { x: DISCARD.x, y: DISCARD.y + i * 0.0008, z: DISCARD.z, duration: 0.45, delay: i * 0.04, ease: 'power2.inOut' });
+      gsap.to(m.rotation, { y: 0.3, z: Math.PI, duration: 0.45, delay: i * 0.04 });
+      remove(m, i * 0.04, 0.45);
+      i++;
+    }
+    cards.clear();
+    for (const H of hands.values()) { for (const m of [...H.chips, ...H.won]) sweepTo(m, TO_PLAYER, 0); H.label.el.remove(); }
+    hands.clear();
+    return i ? 0.35 : 0;
+  }
+
+  // ---- Chips ----
+  function chipMesh(v) {
+    const m = new THREE.Mesh(chipGeo, chipMats[CHIPS.findIndex(c => c.v === v)] || chipMats[0]);
+    m.castShadow = m.receiveShadow = true;
+    m.userData.v = v;
+    return m;
+  }
+  // Drop chip number k of a stack at base (from your side of the table, or from the tray)
+  function dropChip(m, base, k, delay, from = 'player') {
+    const to = new THREE.Vector3(base.x + gsap.utils.random(-0.0012, 0.0012), FELT_Y + CHIP_T / 2 + k * CHIP_T, base.z + gsap.utils.random(-0.0012, 0.0012));
+    if (from === 'tray') m.position.copy(TRAY);
+    else m.position.set(base.x + 0.04, 0.3, 0.75);
+    m.rotation.set(gsap.utils.random(-0.6, 0.6), gsap.utils.random(0, 6), gsap.utils.random(-0.6, 0.6));
+    scene.add(m);
+    gsap.timeline({ delay })
+      .to(m.position, { x: to.x, z: to.z, duration: 0.4, ease: 'power2.out' }, 0)
+      .to(m.position, { y: to.y + 0.04, duration: 0.17, ease: 'sine.out' }, 0)
+      .to(m.position, { y: to.y, duration: 0.28, ease: 'bounce.out' }, 0.17)
+      .to(m.rotation, { x: 0, z: 0, y: '+=' + gsap.utils.random(1, 3), duration: 0.4, ease: 'power2.out' }, 0);
+    setTimeout(() => buzz(6), delay * 1000 + 400);
+  }
+  function sweepTo(m, to, delay) {
+    gsap.killTweensOf(m.position);
+    gsap.to(m.position, { x: to.x + gsap.utils.random(-0.02, 0.02), y: to.y, z: to.z, duration: 0.5, delay, ease: 'power2.in' });
+    remove(m, delay, 0.5);
+  }
+  // Make a stack show `amount`, adding or taking away chips from the top
+  function setStack(stack, amount, base, from = 'player', delay = 0) {
+    const want = chipsFor(amount);
+    let keep = 0;
+    while (keep < stack.length && keep < want.length && stack[keep].userData.v === want[keep]) keep++;
+    const gone = stack.splice(keep);
+    gone.forEach((m, i) => sweepTo(m, TO_PLAYER, i * 0.03));
+    for (let k = keep; k < want.length; k++) {
+      const m = chipMesh(want[k]);
+      dropChip(m, base, k, delay + (k - keep) * 0.07, from);
+      stack.push(m);
+    }
+    return stack;
+  }
+  // Slide a stack (already on the table) to a new spot
+  function moveStack(stack, base) {
+    stack.forEach((m, k) => slide(m, new THREE.Vector3(base.x, FELT_Y + CHIP_T / 2 + k * CHIP_T, base.z)));
+  }
+
+  // ---- The update ----
+  function update(v) {
+    if (disposed || !v) return;
+    let delay = 0;
+    const n = v.n == null ? null : v.n;
+    // A new round: last round's cards go, and the bet on the spot becomes the first hand's
+    if (n !== round) {
+      if (round != null) delay = clearCards();
+      round = n;
+    }
+    const hs = v.hands || [];
+    spread = Math.max(1, hs.length);
+    const count = hs.length;
+
+    // Dealer
+    const dn = v.dealer.length;
+    v.dealer.forEach((d, i) => {
+      const key = `d:${i}`;
+      const to = cardTarget(i, dn, true);
+      let C = cards.get(key);
+      if (!C) {
+        C = { mesh: dealCard(d.code, d.up, to, gsap.utils.random(-0.04, 0.04), delay), code: d.code, up: d.up, target: to };
+        cards.set(key, C);
+        delay += 0.22;
+        return;
+      }
+      if (C.code !== d.code) { C.mesh.material[2] = faceFor(d.code); C.code = d.code; }
+      if (C.up !== d.up) { flip(C.mesh, d.up, delay); C.up = d.up; delay += 0.5; }
+      if (!C.target.equals(to)) { slide(C.mesh, to, null, delay, C.up); C.target = to; }
+    });
+    setLabel(dealerLabel, [v.dealerLabel], new THREE.Vector3(0, FELT_Y, DEALER_Z + CARD_H / 2 + 0.012), true);
+
+    // Player hands. Cards that left one hand for another (a split) slide across.
+    const seen = new Set();
+    const orphans = [];
+    const live = new Set();
+    hs.forEach(h => h.cards.forEach((c, i) => live.add(`h:${h.id}:${i}:${c}`)));
+    for (const [k, C] of cards) if (k.startsWith('h:') && !live.has(k)) { orphans.push(C); cards.delete(k); }
+    hs.forEach((h, hi) => {
+      const cx = (hi - (count - 1) / 2) * HAND_GAP;
+      let H = hands.get(h.id);
+      if (!H) {
+        H = { chips: [], won: [], settled: false, label: label(), base: new THREE.Vector3(cx, 0, STACK_Z) };
+        if (betStack.length) { H.chips = betStack; betStack = []; }   // the bet you placed is this hand's
+        hands.set(h.id, H);
+      }
+      const base = new THREE.Vector3(cx - (H.won.length ? 0.026 : 0), 0, STACK_Z);
+      if (!H.base.equals(base)) { moveStack(H.chips, base); H.base = base; }
+      if (!H.settled) setStack(H.chips, h.bet, base, 'player', delay);
+
+      h.cards.forEach((c, i) => {
+        const key = `h:${h.id}:${i}:${c}`;
+        seen.add(key);
+        const sideways = h.doubled && i === 2;
+        const to = cardTarget(i, h.cards.length, false, hi, count, sideways);
+        const yaw = sideways ? Math.PI / 2 : 0;
+        let C = cards.get(key);
+        if (!C) {
+          const o = orphans.findIndex(x => x.code === c);
+          if (o >= 0) {
+            C = orphans.splice(o, 1)[0];
+            slide(C.mesh, to, yaw, delay);
+            delay += 0.25;
+          } else {
+            C = { mesh: dealCard(c, true, to, sideways ? yaw : gsap.utils.random(-0.05, 0.05), delay), code: c, up: true };
+            delay += 0.25;
+          }
+          C.target = to;
+          cards.set(key, C);
+        } else if (!C.target.equals(to)) { slide(C.mesh, to, sideways ? yaw : null, delay); C.target = to; }
+      });
+
+      // The hand is decided: pay it, sweep it, or give it back
+      if (h.result && !H.settled && (v.over || h.result === 'bust')) {
+        H.settled = true;
+        const at = delay + (v.over ? 0.5 : 0.35);
+        if (h.result === 'win' || h.result === 'blackjack') {
+          const winBase = new THREE.Vector3(cx + 0.026, 0, STACK_Z);
+          moveStack(H.chips, new THREE.Vector3(cx - 0.026, 0, STACK_Z));
+          setStack(H.won, h.bet * (h.result === 'blackjack' ? 1.5 : 1), winBase, 'tray', at);
+          const back = at + 0.6 + H.won.length * 0.07 + 0.9;
+          [...H.chips, ...H.won].forEach((m, i) => sweepTo(m, TO_PLAYER, back + i * 0.02));
+          H.chips = []; H.won = [];
+          kick((back + 1) * 1000);
+        } else if (h.result === 'push') {
+          H.chips.forEach((m, i) => sweepTo(m, TO_PLAYER, at + 0.9 + i * 0.02));
+          H.chips = [];
+          kick((at + 2) * 1000);
+        } else {
+          H.chips.forEach((m, i) => sweepTo(m, TRAY, at + i * 0.03));
+          H.chips = [];
+          kick((at + 1.2) * 1000);
+        }
+      }
+      const top = HAND_Z - (h.cards.length - 1) * 0.013 - CARD_H / 2 - 0.01;
+      setLabel(H.label, [h.total, h.tag], new THREE.Vector3(cx, FELT_Y, top), false, h.active ? 'active' : '');
+    });
+    for (const C of orphans) remove(C.mesh, 0, 0);
+    for (const [id, H] of hands) if (!hs.some(h => h.id === id)) { H.label.el.remove(); hands.delete(id); }
+
+    // Chips for the next hand
+    if (!hs.length || v.over) {
+      if (v.bet > 0 || betStack.length) setStack(betStack, v.bet || 0, new THREE.Vector3(0, 0, STACK_Z), 'player', 0);
+    }
+    kick(delay * 1000 + 1500);
+  }
+
+  // Get the graphics chip ready for every material now, so the first deal doesn't stutter
+  try {
+    const probe = [cardMesh('AS'), chipMesh(25)];
+    scene.add(...probe);
+    frameCamera();
+    if (renderer.compileAsync) await renderer.compileAsync(scene, camera);
+    else renderer.compile(scene, camera);
+    scene.remove(...probe);
+  } catch (e) { /* it compiles on the first frame instead */ }
+
+  kick(300);
+  return {
+    update,
+    dispose() {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      if (ro) ro.disconnect();
+      scene.traverse(o => { gsap.killTweensOf(o.position); gsap.killTweensOf(o.rotation); });
+      layer.remove();
       disposeScene(scene);
       for (const t of textures) t.dispose();
       cardGeo.dispose();

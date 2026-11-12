@@ -503,6 +503,7 @@
   .arcade-art { width: 96px; height: 96px; flex: none; border-radius: 18px; display: grid; place-items: center; font-size: 54px; }
   .arcade-art.plinko { background: radial-gradient(circle at 50% 30%, #3a7bd5, #12305e); }
   .arcade-art.crash { background: radial-gradient(circle at 50% 70%, #f39c34, #5a1e0c); }
+  .arcade-art.slots { background: radial-gradient(circle at 50% 35%, #e8344a, #4a0812); }
   /* ---------- Arcade games: the 3D stage fills the screen above the dock ---------- */
   html.arc body::before { background: #0b0907; }
   html.arc .dock { background: rgba(16, 12, 9, .94); }
@@ -823,6 +824,17 @@
       0 19px 0 #1f130b,
       0 28px 26px rgba(0, 0, 0, .6);
   }
+  /* The 3D table (lab/table.js) for the solo game: the canvas fills the felt, the flat
+     cards and printing hide, and the totals float over the 3D cards */
+  .felt .t3-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+  .felt.three { background: none; box-shadow: none; border-radius: 0; margin-bottom: 0; }
+  .felt.three > .tray, .felt.three > .shoe, .felt.three > .felt-print, .felt.three > .dealer, .felt.three > .others, .felt.three > .my-seat { visibility: hidden; }
+  .felt.three > .mid { position: relative; z-index: 2; }
+  .felt.three .msg:has(.title:not(:empty)) { padding: 6px 16px 8px; border-radius: 14px; background: rgba(6, 30, 18, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .t3-labels { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  .t3-label { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; padding: 2px 0; will-change: transform; }
+  .t3-label .badge { font-size: 17px; box-shadow: 0 2px 8px rgba(0, 0, 0, .45); }
+  .t3-label.active .badge { box-shadow: 0 0 0 2px var(--gold), 0 0 14px rgba(233, 196, 106, .6); }
   /* The dealer's chip tray and the card shoe along the far edge */
   .tray {
     position: absolute;
@@ -1206,6 +1218,11 @@
   .stage.win .stage-title { color: var(--gold); }
   .stage.win .stage-sub { color: var(--win); }
   .stage.lose .stage-sub { color: var(--lose); }
+  /* The 3D wheel takes most of the screen, standing on the stage's own background */
+  .stage.three { gap: 4px; }
+  .stage.three .stage-wheel {
+    width: calc(100% + 40px); max-width: 640px; height: min(52dvh, 560px); aspect-ratio: auto; margin: 0 -20px;
+  }
   .stage-hint { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
 
   /* ---------- Video poker ----------
@@ -1705,6 +1722,16 @@
       <p class="fine" id="rd-line">No hands yet</p>
     </div>
     <div class="lcard stat-card">
+      <div class="sc-head"><h2>Lucky Duck 3000</h2><span class="sc-net" id="sl-net"></span></div>
+      <dl class="sc-grid">
+        <div><dt>Spins</dt><dd id="sl-hands">0</dd></div>
+        <div><dt>Winners</dt><dd id="sl-rate">–</dd></div>
+        <div><dt>Total bet</dt><dd id="sl-wagered">$0</dd></div>
+        <div><dt>Biggest win</dt><dd id="sl-biggest">$0</dd></div>
+      </dl>
+      <p class="fine" id="sl-line">No spins yet</p>
+    </div>
+    <div class="lcard stat-card">
       <div class="sc-head"><h2>Duck Drop</h2><span class="sc-net" id="pk-net"></span></div>
       <dl class="sc-grid">
         <div><dt>Ducks dropped</dt><dd id="pk-hands">0</dd></div>
@@ -2130,7 +2157,7 @@
         <li>Over time the machine pays back about 96% of what goes in.</li>
         <li>Run out of credits and the duck lends you $1,000.</li>
       </ul>
-      <a class="btn primary block kb-cta" href="/lab/#slots">Open the slots</a>
+      <button class="btn primary block kb-cta" data-go="arcade-slots">Play Lucky Duck 3000</button>
     </article>
 
     <article class="kb" data-kb="plinko" hidden>
@@ -2632,6 +2659,7 @@ const TAB_OF = { home: 'casino', lobby: 'casino', arcade: 'arcade', stats: 'stat
 const TAB_HOME = new Set(['home', 'arcade', 'stats', 'profile']);
 const GAME_VIEWS = new Set(['table', 'roulette', 'poker', 'baccarat', 'war', 'threecard', 'reddog', 'arcadegame']);
 const ARCADE = [
+  { go: 'arcade-slots', name: 'Lucky Duck 3000', blurb: 'A ridiculous 3D slot machine. Drag the lever down. The duck is wild.', art: 'slots', emoji: '🎰' },
   { go: 'arcade-plinko', name: 'Duck Drop', blurb: 'Drop rubber ducks down a 3D peg board. The edges pay big.', art: 'plinko', emoji: '🦆' },
   { go: 'arcade-crash', name: 'Duck Rocket', blurb: 'The multiplier climbs until the rocket blows. Cash out first.', art: 'crash', emoji: '🚀' },
 ];
@@ -2698,6 +2726,7 @@ const ui = {
   rdBet: $('rd-bet'), rdRaiseWrap: $('rd-raise-wrap'), rdRaise: $('rd-raise'), rdLow: $('rd-low'), rdChips: $('rd-chips'), rdActions: $('rd-actions'), rdDecide: $('rd-decide'),
   rdUndo: $('rd-undo'), rdClear: $('rd-clear'), rdSpot: $('rd-spot'), rdSpotHint: $('rd-spot-hint'), rdDeal: $('rd-deal'), rdCall: $('rd-call'), rdRaiseBtn: $('rd-raise-btn'),
   tcNet: $('tc-net'), tcHands: $('tc-hands'), tcRate: $('tc-rate'), tcWagered: $('tc-wagered'), tcBiggest: $('tc-biggest'), tcLine: $('tc-line'),
+  slNet: $('sl-net'), slHands: $('sl-hands'), slRate: $('sl-rate'), slWagered: $('sl-wagered'), slBiggest: $('sl-biggest'), slLine: $('sl-line'),
   pkNet: $('pk-net'), pkHands: $('pk-hands'), pkRate: $('pk-rate'), pkWagered: $('pk-wagered'), pkBiggest: $('pk-biggest'), pkLine: $('pk-line'),
   crNet: $('cr-net'), crHands: $('cr-hands'), crRate: $('cr-rate'), crWagered: $('cr-wagered'), crBiggest: $('cr-biggest'), crLine: $('cr-line'),
   rdNet: $('rd-net'), rdHands: $('rd-hands'), rdRate: $('rd-rate'), rdWagered: $('rd-wagered'), rdBiggest: $('rd-biggest'), rdLine: $('rd-line'),
@@ -2825,7 +2854,7 @@ function route() {
   else if (h === 'stats') target = { view: 'stats', code: '' };
   else if (h === 'history') target = { view: 'history', code: '' };
   else if (h === 'arcade') target = { view: 'arcade', code: '' };
-  else if (h === 'arcade-plinko' || h === 'arcade-crash') target = { view: 'arcadegame', code: h.slice(7) };
+  else if (h === 'arcade-plinko' || h === 'arcade-crash' || h === 'arcade-slots') target = { view: 'arcadegame', code: h.slice(7) };
   else if (h === 'profile') target = { view: 'profile', code: '' };
   else if (h === 'poker') target = { view: 'poker', code: '' };
   else if (h === 'baccarat') target = { view: 'baccarat', code: '' };
@@ -3556,6 +3585,7 @@ function freshStats() {
     tc: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, folds: 0, pairPlus: 0 },
     rd: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, raises: 0, trips: 0 },
     pk: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, best: 0 },
+    sl: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, best: 0 },
     cr: { hands: 0, won: 0, lost: 0, wagered: 0, net: 0, biggest: 0, best: 0 },
     streak: 0, best: 0,
     seen: [],
@@ -3583,6 +3613,7 @@ function statsLoad(d) {
   for (const k of Object.keys(f.tc)) f.tc[k] = finite(d.tc && d.tc[k]);
   for (const k of Object.keys(f.rd)) f.rd[k] = finite(d.rd && d.rd[k]);
   for (const k of Object.keys(f.pk)) f.pk[k] = finite(d.pk && d.pk[k]);
+  for (const k of Object.keys(f.sl)) f.sl[k] = finite(d.sl && d.sl[k]);
   for (const k of Object.keys(f.cr)) f.cr[k] = finite(d.cr && d.cr[k]);
   f.streak = finite(d.streak);
   f.best = finite(d.best);
@@ -3675,7 +3706,7 @@ function recordRedDog(h, o) {
 }
 // Duck Drop (pk) and Duck Rocket (cr): one drop or flight at a time; `best` is the top multiplier won
 function recordArcade(game, stake, payout) {
-  const t = game === 'plinko' ? stats.pk : stats.cr;
+  const t = game === 'plinko' ? stats.pk : game === 'slots' ? stats.sl : stats.cr;
   recordTable(t, stake, payout - stake);
   if (payout > 0) t.best = Math.max(t.best, Math.round((payout / stake) * 100) / 100);
   statsSave();
@@ -3924,15 +3955,55 @@ async function rlSpin() {
   rlSave();
   buzz(20);
   rlStageOpen();
-  rlAnimate(r.result);
+  let secs = 0;
+  if (rl3d.inst) {
+    try { secs = rl3d.inst.play(r.result, rlSettle); }
+    catch (e) { rl3dDrop(true); }
+  }
+  if (secs) {
+    rlAnimate(r.result, secs * 1000, false);      // the thumbnail wheel follows along underneath
+    setTimeout(rlSettle, secs * 1000 + 12000);    // in case the 3D wheel never reports back
+  } else rlAnimate(r.result);
   render();
+}
+
+/* The 3D wheel (lab/roulette.js) for the full-screen spin, loaded when the roulette screen
+   opens. It plays a recorded physics spin made to land on the server's number. Without
+   WebGL, with reduced motion or data saver, or if it fails, the flat wheel spins instead. */
+const rl3d = { inst: null, loading: false, off: false };
+async function rl3dEnsure() {
+  if (rl3d.inst || rl3d.loading || rl3d.off) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const c = navigator.connection;
+  if (reduce || (c && c.saveData)) { rl3d.off = true; return; }
+  rl3d.loading = true;
+  try {
+    const mod = await import('/lab/embed.js');
+    const wheel = await mod.roulette();
+    const inst = await wheel.mountCasinoWheel(ui.rStageWheel);
+    if (app.view !== 'roulette' || rl.stage) inst.dispose();   // left already, or a flat spin is showing
+    else rl3d.inst = inst;
+  } catch (e) {
+    rl3d.off = true;
+  } finally {
+    rl3d.loading = false;
+  }
+}
+// Leaving roulette frees the 3D wheel; a spin it was showing settles straight away
+function rl3dDrop(broken) {
+  if (broken) rl3d.off = true;
+  if (!rl3d.inst) return;
+  const inst = rl3d.inst;
+  rl3d.inst = null;
+  try { inst.dispose(); } catch (e) { /* already gone */ }
+  if (rl.live) rlSettle();
 }
 /* The wheel lives in the header as a thumbnail. Spinning moves the same canvas into a full-screen stage. */
 function rlStageOpen() {
   clearTimeout(rl.stageTimer);
   rl.stage = 'spin';
   ui.rStage.hidden = false;
-  ui.rStageWheel.appendChild(ui.rWheel);
+  if (!rl3d.inst) ui.rStageWheel.appendChild(ui.rWheel);
   syncLock();
   rlDraw();
 }
@@ -3977,14 +4048,14 @@ function rlSettle() {
 
 /* Wheel turns clockwise; the ball runs the other way, drops in, then rides the wheel. */
 const easeOutCubic = x => 1 - Math.pow(1 - x, 3);
-function rlAnimate(result) {
+function rlAnimate(result, ms = SPIN_MS, settle = true) {
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const D = reduce ? 700 : SPIN_MS;
+  const D = reduce ? 700 : ms;
   const pocket = WHEEL.indexOf(result) * STEP;
   const back = (((rl.rel - pocket) % TAU) + TAU) % TAU + TAU * (reduce ? 0 : 3);
   rl.anim = { t0: performance.now(), D, w0: rl.w, W: TAU * (reduce ? 0.2 : 1.6), rel0: rl.rel, R: -back, br0: rl.br };
   requestAnimationFrame(rlFrame);
-  setTimeout(rlSettle, D + 60);
+  if (settle) setTimeout(rlSettle, D + 60);
 }
 function rlFrame(now) {
   const a = rl.anim;
@@ -4190,12 +4261,13 @@ function renderRoulette() {
   // Full-screen wheel caption
   if (rl.stage) {
     const done = rl.stage === 'result';
-    ui.rStage.className = 'stage' + (done && tone ? ' ' + tone : '');
+    ui.rStage.className = 'stage' + (rl3d.inst ? ' three' : '') + (done && tone ? ' ' + tone : '');
     ui.rCapNum.className = 'rnum' + (done ? ' pop ' + colorOf(rl.result) : '');
     ui.rCapNum.textContent = done ? String(rl.result) : '…';
     ui.rCapTitle.textContent = done ? title : 'No more bets';
     ui.rCapSub.textContent = done ? sub : `${money(total)} on the table`;
-    ui.rCapHint.hidden = !done;
+    ui.rCapHint.hidden = !done && !rl3d.inst;
+    ui.rCapHint.textContent = done ? 'Tap to place your next bets' : 'Tap to skip';
   }
 
   ui.rHist.textContent = '';
@@ -5329,7 +5401,7 @@ function renderRedDog() {
    through the server: it drops the ducks (picking each one's seed and paying it at once)
    and flies the rocket (drawing the crash point and keeping it secret). Winnings stay off
    the shown balance until the game reveals them. */
-const ARC_NAME = { plinko: 'Duck Drop', crash: 'Duck Rocket' };
+const ARC_NAME = { plinko: 'Duck Drop', crash: 'Duck Rocket', slots: 'Lucky Duck 3000' };
 const arc = { game: '', inst: null, token: 0, stake: 0 };
 function arcCrashDone(r) {
   if (r && (r.cashed || r.at != null || r.refunded) && arc.stake) {
@@ -5349,6 +5421,12 @@ const arcadeBank = {
     return r.drops;
   },
   reveal: a => release(a),
+  // Lucky Duck 3000: the server picks the line and pays it; the win stays hidden until the reels stop
+  async spin(bet) {
+    const r = await api('slots', 'spin', { bet }, r => r.payout);
+    if (r) recordArcade('slots', bet, r.payout);
+    return r;
+  },
   async launch(bet, auto) {
     const r = await api('crash', 'launch', { bet, auto });
     if (r) arc.stake = bet;
@@ -5385,6 +5463,7 @@ function arcClose() {
 }
 function renderArcadeGame() {
   const bal = wallet.ready ? wallet.balance : 0;
+  if (arc.inst && arc.inst.refresh) arc.inst.refresh();
   paintChipRail(ui.agChips, bal, false);
   paintLow(ui.agLow, wallet.ready && bal < chipPick);
 }
@@ -5524,6 +5603,10 @@ async function lobbyEnsure() {
     lobbyBg.inst = lobby.mountLobby(ui.bg3d, { still: !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) });
     ui.bg3d.classList.add('ready');
     lobbySync();
+    // A few seconds later, when the phone is idle, fetch the 3D table and wheel too, so
+    // opening blackjack or roulette doesn't wait on a download
+    const idle = window.requestIdleCallback || (fn => setTimeout(fn, 200));
+    setTimeout(() => idle(() => { mod.table().catch(() => {}); mod.roulette().catch(() => {}); }), 4000);
   } catch (e) {
     lobbyBg.off = true;   // no WebGL, or the code didn't load: the felt stays
   } finally {
@@ -6258,6 +6341,8 @@ function render() {
 
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
+  if (v === 'roulette') rl3dEnsure(); else rl3dDrop();
+  if (v === 'table' && app.solo) bj3dEnsure(); else bj3dDrop();
   lobbySync();
   if (v !== 'home') purse.shown = wallet.ready ? wallet.balance : null;   // wins elsewhere don't burst when you come back
   if (v === 'home') { renderDaily(); renderWalletCard(); renderTicker(); feedLoad(); renderLbw(); lbLoad(false, 'week'); }
@@ -6283,11 +6368,11 @@ const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n));
 const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');
 const tone = (el, n) => { el.classList.toggle('up', n > 0); el.classList.toggle('down', n < 0); };
 function statsTotals() {
-  const b = stats.bj, r = stats.rl, p = stats.vp, c = stats.bc, w = stats.wr, t = stats.tc, d = stats.rd, k = stats.pk, x = stats.cr;
+  const b = stats.bj, r = stats.rl, p = stats.vp, c = stats.bc, w = stats.wr, t = stats.tc, d = stats.rd, k = stats.pk, x = stats.cr, s = stats.sl;
   return {
-    net: b.net + r.net + p.net + c.net + w.net + t.net + d.net + k.net + x.net,
-    rounds: b.hands + r.spins + p.hands + c.rounds + w.rounds + t.hands + d.hands + k.hands + x.hands,
-    biggest: Math.max(b.biggest, r.biggest, p.biggest, c.biggest, w.biggest, t.biggest, d.biggest, k.biggest, x.biggest, 0),
+    net: b.net + r.net + p.net + c.net + w.net + t.net + d.net + k.net + x.net + s.net,
+    rounds: b.hands + r.spins + p.hands + c.rounds + w.rounds + t.hands + d.hands + k.hands + x.hands + s.hands,
+    biggest: Math.max(b.biggest, r.biggest, p.biggest, c.biggest, w.biggest, t.biggest, d.biggest, k.biggest, x.biggest, s.biggest, 0),
   };
 }
 function topNumber(map) {
@@ -6384,7 +6469,7 @@ function renderStats() {
   ui.rdBiggest.textContent = money(ds.biggest);
   ui.rdLine.textContent = !ds.hands ? 'No hands yet' : `Raised ${ds.raises} time${ds.raises === 1 ? '' : 's'} · Three of a kind ${ds.trips} time${ds.trips === 1 ? '' : 's'}`;
 
-  for (const [k, noun, empty] of [['pk', 'Best bucket', 'No drops yet'], ['cr', 'Best cash-out', 'No flights yet']]) {
+  for (const [k, noun, empty] of [['sl', 'Best line', 'No spins yet'], ['pk', 'Best bucket', 'No drops yet'], ['cr', 'Best cash-out', 'No flights yet']]) {
     const a = stats[k];
     ui[k + 'Net'].textContent = a.hands ? signed(a.net) : '';
     tone(ui[k + 'Net'], a.net);
@@ -6513,9 +6598,65 @@ function renderTable() {
   renderMessage(T, R, ctx);
   renderControls(T, R, ctx);
 
+  const three = !!(app.solo && bj3d.inst);
+  ui.felt.classList.toggle('three', three);
+  if (three) bj3d.inst.update(bj3dView(T, R));
+
   const st = P ? P.stats : null;
   ui.stats.textContent = st ? `Won ${st.w} · Lost ${st.l} · Pushed ${st.p} · Blackjacks ${st.bj}` : '';
   ui.leave.hidden = app.solo || mySeat() < 0;
+}
+
+/* The 3D table (lab/table.js) for the solo game, loaded when you sit down at it. It draws
+   from the same table the flat view does (bj3dView); the flat cards stay underneath, hidden,
+   and come back if the 3D table can't run (no WebGL, reduced motion, data saver). */
+const bj3d = { inst: null, loading: false, off: false };
+async function bj3dEnsure() {
+  if (bj3d.inst || bj3d.loading || bj3d.off) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const c = navigator.connection;
+  if (reduce || (c && c.saveData)) { bj3d.off = true; return; }
+  bj3d.loading = true;
+  try {
+    const mod = await import('/lab/embed.js');
+    const table = await mod.table();
+    const inst = await table.mountCasinoTable(ui.felt);
+    if (app.view !== 'table' || !app.solo) inst.dispose();
+    else { bj3d.inst = inst; render(); }
+  } catch (e) {
+    bj3d.off = true;
+  } finally {
+    bj3d.loading = false;
+  }
+}
+function bj3dDrop() {
+  ui.felt.classList.remove('three');
+  if (!bj3d.inst) return;
+  const inst = bj3d.inst;
+  bj3d.inst = null;
+  try { inst.dispose(); } catch (e) { /* already gone */ }
+}
+function bj3dView(T, R) {
+  const me = myId();
+  const act = activeHandOf(T);
+  const mine = R ? R.hands.filter(h => h.uid === me) : [];
+  return {
+    n: R ? R.n : null,
+    over: !!(R && R.over),
+    dealer: R ? R.dealer.map((c, i) => ({ code: c, up: i !== 1 || !!R.holeUp })) : [],
+    dealerLabel: { text: ui.dealerTotal.textContent, cls: ui.dealerTotal.className },
+    hands: mine.map(h => {
+      const total = score(h.cards).total;
+      const tag = h.result ? RESULT_LABEL[h.result] : h.doubled ? 'Doubled' : '';
+      return {
+        id: h.id, cards: h.cards, bet: h.bet, doubled: !!h.doubled, result: h.result || null,
+        active: act === h && mine.length > 1,
+        total: { text: totalText(h.cards, !R.over && !h.done), cls: 'badge total' + (total > 21 ? ' bust' : total === 21 ? ' gold' : '') },
+        tag: { text: tag, cls: 'tag ' + (h.result || (h.doubled ? 'double' : '')) },
+      };
+    }),
+    bet: T.phase === 'betting' ? viewBet() : 0,
+  };
 }
 
 function renderSeats(T, R, ctx, anim) {
@@ -6825,7 +6966,10 @@ ui.cpClose.addEventListener('click', closeChips);
 ui.inviteClose.addEventListener('click', closeInvite);
 ui.chipsPanel.addEventListener('click', e => { if (e.target === ui.chipsPanel) closeChips(); });
 ui.invitePanel.addEventListener('click', e => { if (e.target === ui.invitePanel) closeInvite(); });
-ui.rStage.addEventListener('click', () => { if (rl.stage === 'result') rlStageClose(); });
+ui.rStage.addEventListener('click', () => {
+  if (rl.stage === 'result') rlStageClose();
+  else if (rl.stage === 'spin' && rl3d.inst) rl3d.inst.skip();
+});
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!ui.auth.hidden) closeAuth();

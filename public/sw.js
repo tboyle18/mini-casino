@@ -2,6 +2,10 @@
 // the site's files, so every deploy installs a fresh cache and drops the old one.
 const VERSION = '__BUILD_VERSION__';
 const CACHE = `mini-casino-${VERSION}`;
+// The lab's code chunks are named by their content, so they're kept across deploys in a
+// cache of their own (trimmed to the newest few dozen) instead of downloading again each time.
+const CHUNKS = 'mini-casino-chunks';
+const CHUNKS_KEEP = 60;
 const PRECACHE = [
   '/',
   '/manifest.webmanifest',
@@ -23,7 +27,9 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k.startsWith('mini-casino-') && k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k.startsWith('mini-casino-') && k !== CACHE && k !== CHUNKS).map(k => caches.delete(k))))
+      .then(() => caches.open(CHUNKS))
+      .then(cache => cache.keys().then(reqs => Promise.all(reqs.slice(0, Math.max(0, reqs.length - CHUNKS_KEEP)).map(r => cache.delete(r)))))
       .then(() => self.clients.claim())
   );
 });
@@ -56,7 +62,14 @@ self.addEventListener('fetch', event => {
   // Files whose name changes whenever their content does (the lab's code chunks), plus fonts
   // and icons: cache first. Everything else (the lab's entry script, the manifest) is network
   // first, so an update can never leave an old file asking for pieces that no longer exist.
-  const immutable = url.pathname.startsWith('/lab/chunks/') || url.pathname.startsWith('/fonts/') || url.pathname.startsWith('/icons/');
+  if (url.pathname.startsWith('/lab/chunks/')) {
+    event.respondWith(caches.open(CHUNKS).then(cache => cache.match(request).then(hit => hit || fetch(request).then(response => {
+      if (response.ok && !response.redirected) cache.put(request, response.clone());
+      return response;
+    }))));
+    return;
+  }
+  const immutable = url.pathname.startsWith('/fonts/') || url.pathname.startsWith('/icons/');
   if (immutable) {
     event.respondWith(
       caches.match(request).then(hit => hit || fetch(request).then(response => store(request, response)))

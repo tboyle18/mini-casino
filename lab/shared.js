@@ -18,14 +18,14 @@ export const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(p
 
 /* A WebGL renderer that fills the stage, with filmic tone mapping, soft shadows and
    studio reflections. Returns a resize() you call before rendering. */
-export function makeRenderer(stage) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+export function makeRenderer(stage, { maxDpr = 2, alpha = false, power = 'high-performance', softShadows = true } = {}) {
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha, powerPreference: power });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = softShadows ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
   stage.appendChild(renderer.domElement);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -55,6 +55,51 @@ export function disposeScene(scene) {
       m.dispose();
     }
   });
+}
+
+/* How hard the casino's 3D scenes start out working. Phones (small screens) get a lower
+   resolution and cheaper shadows; ones that look modest (few cores or little memory) lower
+   still. frameGovernor then watches the real frame rate and steps down if it's too slow. */
+export function casinoQuality() {
+  const small = Math.min(window.innerWidth, window.innerHeight) < 700;
+  const cores = navigator.hardwareConcurrency || 8;
+  const mem = navigator.deviceMemory || 8;
+  const modest = cores <= 4 || mem <= 3;
+  return {
+    small,
+    maxDpr: !small ? 2 : modest ? 1.25 : 1.5,
+    shadow: small ? 1024 : 2048,
+    softShadows: !small,
+    texture: small ? 1024 : 2048,
+  };
+}
+
+/* Watches the time between frames while a scene animates. If it averages under ~38 frames
+   a second, it lowers the resolution, then (if still slow) turns shadows off. tick(now)
+   returns true when it changed something, so the caller can resize. */
+export function frameGovernor(renderer, scene) {
+  let last = 0, n = 0, sum = 0, level = 0;
+  const base = renderer.getPixelRatio();
+  return {
+    tick(now) {
+      if (level >= 2) return false;
+      if (last && now - last < 250) { sum += now - last; n++; }   // only frames drawn back to back
+      last = now;
+      if (n < 45) return false;
+      const avg = sum / n;
+      n = 0; sum = 0;
+      if (avg < 26) return false;
+      level++;
+      if (level === 1 && base > 1) renderer.setPixelRatio(Math.max(1, base * 0.7));
+      else {
+        level = 2;
+        renderer.shadowMap.enabled = false;
+        scene.traverse(o => { for (const m of [].concat(o.material || [])) m.needsUpdate = true; });
+      }
+      return true;
+    },
+    idle() { last = 0; },
+  };
 }
 
 export async function fontReady() {

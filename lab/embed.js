@@ -3,7 +3,14 @@
 export const games = {
   plinko: () => import('./plinko.js'),
   crash: () => import('./crash.js'),
+  slots: () => import('./slots.js'),
 };
 
 // The slot-machine hall behind the home screen (lab/lobby.js)
 export const lobby = () => import('./lobby.js');
+
+// The 3D roulette wheel for the spin screen (lab/roulette.js, mountCasinoWheel)
+export const roulette = () => import('./roulette.js');
+
+// The 3D blackjack table for the solo game (lab/table.js, mountCasinoTable)
+export const table = () => import('./table.js');

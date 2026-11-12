@@ -4,7 +4,8 @@
 // rattle when you pull the lever, three real reel cylinders and a lever you drag down.
 // Bloom makes the bulbs glow. Near misses tease you with a slow third reel, wins spit
 // coins at the camera, and jackpots launch the duck. Sounds are synthesized on the fly.
-// It plays with lab credits (shared with the other lab games), not the casino wallet.
+// In the lab it plays with lab credits (shared with the other lab games). In the casino it
+// gets a bank: the server picks the line and pays it, and the bet is the chip you've picked.
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
@@ -225,7 +226,8 @@ function speedAt(p, t) {
   return 0;
 }
 
-export async function mount({ stage, controls, info }) {
+export async function mount({ stage, controls, info, bank }) {
+  const server = !!(bank && bank.server);
   await fontReady();
   const calm = reducedMotion();
   const style = document.createElement('style');
@@ -504,6 +506,7 @@ export async function mount({ stage, controls, info }) {
     pays.hidden = true;
     paysBtn.setAttribute('aria-pressed', 'false');
   });
+  if (server) bribeBtn.hidden = true;
   pays.querySelector('.slot-row').append(bribeBtn, button('Close', () => { pays.hidden = true; paysBtn.setAttribute('aria-pressed', 'false'); }));
   stage.append(pays);
 
@@ -515,8 +518,9 @@ export async function mount({ stage, controls, info }) {
   let rigged = false;
   const sound = makeSound();
   sound.on = saved.sound !== false;
+  let dead = false, owed = 0;   // owed: winnings the server paid that the reels haven't shown yet
   const persist = () => {
-    saveCredits(credits);
+    if (!server) saveCredits(credits);
     try { localStorage.setItem(STORE, JSON.stringify({ bet, sound: sound.on })); } catch (e) { /* storage unavailable */ }
   };
   const st = { spinning: false, t0: 0, line: null, tease: 0, teased: false };
@@ -527,7 +531,8 @@ export async function mount({ stage, controls, info }) {
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
 
   function hud(extra) {
-    info.textContent = extra || `Credits ${money(credits)} · Bet ${money(bet)}`;
+    if (server) bet = bank.chip();
+    info.textContent = extra || (server ? `Wallet ${money(bank.balance())} · Bet ${money(bet)}` : `Credits ${money(credits)} · Bet ${money(bet)}`);
     betBtn.textContent = `Bet ${money(bet)}`;
   }
   function setMode(m, seconds) {
@@ -543,10 +548,27 @@ export async function mount({ stage, controls, info }) {
   }
 
   // ---- A pull ----
-  function pull(power = 1) {
+  async function pull(power = 1, ask) {
     if (st.spinning) return false;
     sound.unlock();
-    if (credits < BETS[0]) {
+    let line;
+    if (server) {
+      bet = bank.chip();
+      // (when the lever already asked, the wallet may have paid for this spin already)
+      if (!ask && bank.balance() < bet) {
+        hud(bank.balance() < 1 ? bank.broke() : undefined);
+        led.say(`NOT ENOUGH IN YOUR WALLET FOR A ${money(bet)} BET. PICK A SMALLER CHIP.`, { color: '#ff5d6c' });
+        return false;
+      }
+      st.spinning = true;   // locks the lever while the server picks the line
+      hud('Spinning…');
+      const r = await (ask || bank.spin(bet));
+      if (dead) { if (r) bank.reveal(r.payout); return false; }
+      if (!r) { st.spinning = false; hud(); led.say('THE MACHINE JAMMED. NO CHARGE. TRY AGAIN.'); return false; }
+      if (r.bet) bet = r.bet;
+      line = r.line;
+      owed = r.payout;
+    } else if (credits < BETS[0]) {
       credits += LAB_START;
       persist();
       hud();
@@ -557,20 +579,22 @@ export async function mount({ stage, controls, info }) {
       hop(0.08);
       return false;
     }
-    if (credits < bet) {
+    else if (credits < bet) {
       bet = [...BETS].reverse().find(b => b <= credits);
       persist();
       hud();
       led.say(`BET LOWERED TO ${money(bet)}. THE DUCK BELIEVES IN YOU.`);
       return false;
     }
-    credits -= bet;
-    persist();
+    if (!server) {
+      credits -= bet;
+      persist();
+      line = rigged ? ['duck', 'duck', 'duck'] : [0, 1, 2].map(() => randomSymbol(rand));
+      rigged = false;
+    }
     hideTitle();
     pays.hidden = true;
     paysBtn.setAttribute('aria-pressed', 'false');
-    const line = rigged ? ['duck', 'duck', 'duck'] : [0, 1, 2].map(() => randomSymbol(rand));
-    rigged = false;
     const stops = line.map((s, i) => stopFor(i, s, rand));
     const potential = bestPossible(line[0], line[1]);
     st.tease = calm ? 0 : potential >= 100 ? 2 : potential >= 12 ? 1 : 0;
@@ -609,6 +633,9 @@ export async function mount({ stage, controls, info }) {
     sound.unlock();
     pulling = true;
     gsap.killTweensOf(lv);
+    // Ask the server as the lever goes down, so the answer is usually back when it bottoms out
+    const b = server ? bank.chip() : 0;
+    const ask = server && bank.balance() >= b ? bank.spin(b).then(r => (r ? { ...r, bet: b } : r)) : null;
     let lastClick = 0;
     gsap.to(lv, {
       a: LEVER_PULLED, duration: 0.3, ease: 'power2.in',
@@ -616,7 +643,7 @@ export async function mount({ stage, controls, info }) {
         const t = (lv.a - LEVER_REST) / (LEVER_PULLED - LEVER_REST);
         if (t - lastClick > 0.2) { lastClick = t; sound.ratchet(); }
       },
-      onComplete() { pulling = false; pull(1); springBack(); },
+      onComplete() { pulling = false; pull(1, ask); springBack(); },
     });
   }
 
@@ -640,10 +667,10 @@ export async function mount({ stage, controls, info }) {
   function finish() {
     st.spinning = false;
     const res = evaluate(st.line);
-    const win = bet * res.mult;
-    credits += win;
-    persist();
-    hud(win ? `Won ${money(win)}! · Credits ${money(credits)}` : undefined);
+    let win = bet * res.mult;
+    if (server) { win = owed; owed = 0; bank.reveal(win); }
+    else { credits += win; persist(); }
+    hud(win ? `Won ${money(win)}! · ${server ? 'Wallet' : 'Credits'} ${money(server ? bank.balance() : credits)}` : undefined);
     gsap.to(camFx, { dolly: 0, duration: 1, ease: 'power2.inOut', delay: res.kind === 'lose' ? 0.4 : 1.2 });
     gsap.to(duckFx, { lean: 0, duration: 0.6 });
     if (res.kind === 'lose') {
@@ -770,6 +797,7 @@ export async function mount({ stage, controls, info }) {
 
   // ---- Controls ----
   const betBtn = button('', () => {
+    if (server) return;
     if (st.spinning) return;
     bet = BETS[(BETS.indexOf(bet) + 1) % BETS.length];
     persist();
@@ -794,6 +822,7 @@ export async function mount({ stage, controls, info }) {
     soundBtn.setAttribute('aria-pressed', String(sound.on));
   };
   soundLabel();
+  if (server) betBtn.hidden = true;
   controls.append(betBtn, pullBtn, paysBtn, soundBtn);
   hud();
   led.say(pick(QUIPS.idle));
@@ -899,7 +928,11 @@ export async function mount({ stage, controls, info }) {
   raf = requestAnimationFrame(frame);
 
   return {
+    // The casino calls this when the chip or the wallet changes
+    refresh() { if (!st.spinning) hud(); },
     dispose() {
+      dead = true;
+      if (owed) { bank.reveal(owed); owed = 0; }   // leaving mid-spin: show what you won
       cancelAnimationFrame(raf);
       for (const t of timers) clearTimeout(t);
       gsap.killTweensOf([lv, camFx, duckFx]);
