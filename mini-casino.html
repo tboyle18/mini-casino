@@ -1150,6 +1150,7 @@
   .bc-spot:active:not(:disabled) { background: rgba(255, 255, 255, .08); }
   .bc-spot:disabled { cursor: default; }
   .bc-spot.pick { box-shadow: inset 0 0 0 3px var(--gold), 0 0 14px rgba(233, 196, 106, .45); }
+  .bc-spot.lost .bc-amt { color: var(--lose); text-decoration: line-through; }
   .bc-spot.win { background: rgba(233, 196, 106, .18); box-shadow: 0 0 0 2px var(--gold), 0 0 22px rgba(233, 196, 106, .55); }
   .bc-name { font: 800 16px/1.1 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
   .bc-odds { font-size: 12px; font-weight: 600; color: var(--ink-3); }
@@ -4259,9 +4260,12 @@ function renderBaccarat() {
   ui.bcBet.textContent = money(bc.busy && bc.live ? bc.live.total : total);
   for (const spot of ui.bcSpots) {
     const k = spot.dataset.k;
-    const live = bc.busy && bc.live ? bc.live.bets[k] : bc.bets[k];
+    // After a hand, until you bet again, each spot still shows what you had on it
+    const showing = r && !total && !bc.busy;
+    const live = bc.busy && bc.live ? bc.live.bets[k] : showing ? r.bets[k] : bc.bets[k];
     spot.querySelector('.bc-amt').textContent = live ? money(live) : '';
     spot.classList.toggle('win', !!r && r.winner === k);
+    spot.classList.toggle('lost', !!showing && !!live && r.winner !== k && !(r.winner === 'tie' && k !== 'tie'));
     spot.classList.toggle('pick', !bc.busy && bc.target === k);
     spot.setAttribute('aria-pressed', String(bc.target === k));
     spot.disabled = bcLocked();
@@ -4274,8 +4278,9 @@ function renderBaccarat() {
   else if (r) {
     const net = Math.round((r.payout - r.total) * 100) / 100;
     const score = r.winner === 'banker' ? `${r.bt} to ${r.pt}` : `${r.pt} to ${r.bt}`;
-    title = r.winner === 'tie' ? 'Tie' : `${BC_NAME[r.winner]} wins`;
-    sub = (r.natural ? 'Natural ' : '') + score + (net > 0 ? ` · +${money(net)}` : net < 0 ? ` · −${money(-net)}` : ' · Bets back');
+    // Say what happened to you first: "Banker wins" alone reads like a win even when your chips were on Player
+    title = net > 0 ? `You win ${money(net)}` : net < 0 ? `You lose ${money(-net)}` : 'Your bets come back';
+    sub = (r.winner === 'tie' ? 'Tie' : `${BC_NAME[r.winner]} wins`) + ' · ' + (r.natural ? 'natural ' : '') + score;
     cls = net > 0 ? 'win' : net < 0 ? 'lose' : '';
   } else if (total) {
     title = 'Bets are down';
