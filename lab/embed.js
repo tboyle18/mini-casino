@@ -6,8 +6,6 @@ export const games = {
   slots: () => import('./slots.js'),
 };
 
-// The slot-machine hall behind the home screen (lab/lobby.js)
-export const lobby = () => import('./lobby.js');
 
 // The 3D roulette wheel for the spin screen (lab/roulette.js, mountCasinoWheel)
 export const roulette = () => import('./roulette.js');

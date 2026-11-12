@@ -554,29 +554,20 @@
   .home .wc-label, .home .wc-amt { padding-right: 118px; }
   .wc-art { position: absolute; z-index: 1; top: 10px; right: 8px; width: 124px; height: 112px; pointer-events: none; }
   .wc-art svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .45)); }
-  .wc-art .bill { transform-box: fill-box; transform-origin: 50% 100%; animation: billSway 3.4s ease-in-out infinite; animation-delay: var(--bd, 0s); }
-  @keyframes billSway { 0%, 100% { transform: rotate(var(--br, 0deg)); } 50% { transform: rotate(calc(var(--br, 0deg) + 3deg)) translateY(-2px); } }
-  .wc-art .moth { animation: moth 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-  @keyframes moth { 0%, 100% { transform: translate(0, 0) rotate(-8deg); } 25% { transform: translate(-10px, -8px) rotate(6deg); } 50% { transform: translate(-4px, -16px) rotate(-4deg); } 75% { transform: translate(6px, -7px) rotate(10deg); } }
+  .wc-art .bill { transform-box: fill-box; transform-origin: 50% 100%; }
   .wc-art.burst { animation: walletPop .5s ease-out; }
   @keyframes walletPop { 0% { transform: scale(1); } 35% { transform: scale(1.12) rotate(-4deg); } 100% { transform: scale(1); } }
   .wc-fly { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-  .fly { position: absolute; left: 0; top: 0; opacity: 0; animation: drift var(--dur, 9s) linear infinite; animation-delay: var(--delay, 0s); }
+  .fly { position: absolute; left: 0; top: 0; opacity: 0; }
   .fly.bill { width: 34px; height: 16px; border-radius: 3px; background: linear-gradient(135deg, #5fcf8e, #2e8a57); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35), 0 3px 6px rgba(0, 0, 0, .35); }
   .fly.bill::after { content: "$"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 11px/1 var(--font-display); color: rgba(255, 255, 255, .85); }
   .fly.chip { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle, var(--c) 0 38%, #fff 39% 46%, var(--c) 47%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7), 0 3px 6px rgba(0, 0, 0, .35); }
-  @keyframes drift {
-    0% { opacity: 0; transform: translate(var(--x0), 130%) rotate(var(--r0)); }
-    12% { opacity: var(--o, .55); }
-    88% { opacity: var(--o, .55); }
-    100% { opacity: 0; transform: translate(var(--x1), -60px) rotate(var(--r1)); }
-  }
   .fly.out { animation: flyOut .9s cubic-bezier(.2, .7, .3, 1) forwards; opacity: 1; }
   @keyframes flyOut {
     0% { opacity: 1; transform: translate(var(--sx), var(--sy)) rotate(0) scale(.6); }
     100% { opacity: 0; transform: translate(var(--ex), var(--ey)) rotate(var(--r1)) scale(1.1); }
   }
-  @media (prefers-reduced-motion: reduce) { .fly, .wc-art .bill, .wc-art .moth { animation: none; } .fly { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .fly { display: none; } }
   /* ---------- Home: neon marquee, winners ticker, leaderboard widget, living tiles ---------- */
   .marquee {
     position: relative; display: flex; align-items: center; justify-content: center; gap: 12px;
@@ -585,17 +576,15 @@
     border: 2px solid #f2c75b;
     box-shadow: 0 0 0 4px rgba(20, 4, 18, .85), 0 0 26px rgba(255, 70, 160, .55), 0 0 60px rgba(242, 199, 91, .25), inset 0 0 22px rgba(255, 60, 150, .35);
   }
-  /* Two rings of bulbs that blink in turn, like a chase */
+  /* Two rings of bulbs around the sign */
   .marquee::before, .marquee::after {
     content: ""; position: absolute; inset: -9px; border-radius: 24px; padding: 6px; pointer-events: none;
     background: radial-gradient(circle, #fff3c4 0 2.4px, rgba(255, 220, 120, .9) 2.6px 3.4px, transparent 3.8px) 0 0 / 14px 14px;
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
     filter: drop-shadow(0 0 3px rgba(255, 210, 90, .9));
-    animation: bulbs 1s steps(1) infinite;
   }
-  .marquee::after { background-position: 7px 7px; animation-delay: -.5s; }
-  @keyframes bulbs { 0%, 100% { opacity: 1; } 50% { opacity: .18; } }
+  .marquee::after { background-position: 7px 7px; }
   .mq-title { display: flex; flex-direction: column; align-items: center; line-height: .9; }
   .mq-mini { font: 800 13px/1 var(--font-display); letter-spacing: .55em; margin-right: -.55em; text-transform: uppercase; color: #ff9fd6; text-shadow: 0 0 8px rgba(255, 80, 170, .9); }
   .mq-casino {
@@ -603,9 +592,7 @@
     background: linear-gradient(180deg, #fff6d6 0%, #ffd76a 45%, #e0a22e 55%, #fff0b8 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
     filter: drop-shadow(0 0 10px rgba(255, 200, 80, .6)) drop-shadow(0 2px 0 rgba(120, 60, 0, .9));
   }
-  .mq-star { color: #ffd76a; font-size: 20px; text-shadow: 0 0 10px rgba(255, 200, 80, .9); animation: twinkle 1.6s ease-in-out infinite; }
-  .mq-star:last-child { animation-delay: -.8s; }
-  @keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8) rotate(20deg); } }
+  .mq-star { color: #ffd76a; font-size: 20px; text-shadow: 0 0 10px rgba(255, 200, 80, .9); }
   .home .tab-head { padding-top: calc(var(--safe-top) + 22px); }
 
   .ticker {
@@ -660,45 +647,7 @@
   .lbw-me { font-size: 12px; color: var(--ink-3); }
   .lbw-me:empty { display: none; }
 
-  /* The game tiles come alive: cards bob and fan, the wheel turns */
-  @keyframes bobA { 0%, 100% { transform: rotate(-10deg); } 50% { transform: translateY(-4px) rotate(-14deg); } }
-  @keyframes bobB { 0%, 100% { transform: rotate(8deg); } 50% { transform: translateY(-6px) rotate(13deg); } }
-  @keyframes fan1 { 0%, 100% { transform: rotate(-26deg); } 50% { transform: rotate(-34deg); } }
-  @keyframes fan2 { 0%, 100% { transform: rotate(-13deg); } 50% { transform: rotate(-17deg); } }
-  @keyframes fan4 { 0%, 100% { transform: rotate(13deg); } 50% { transform: rotate(17deg); } }
-  @keyframes fan5 { 0%, 100% { transform: rotate(26deg); } 50% { transform: rotate(34deg); } }
-  @keyframes three1 { 0%, 100% { transform: rotate(-14deg); } 50% { transform: translateX(-3px) rotate(-20deg); } }
-  @keyframes three2 { 0%, 100% { transform: rotate(0); } 50% { transform: translateY(-6px); } }
-  @keyframes three3 { 0%, 100% { transform: rotate(14deg); } 50% { transform: translateX(3px) rotate(20deg); } }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes floaty { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
-  @media (prefers-reduced-motion: no-preference) {
-    .home .tile-art .card { animation: 3.2s ease-in-out infinite both; animation-delay: var(--d, 0s); }
-    .home .tile-art:not(.fan):not(.three) .card:nth-child(1) { animation-name: bobA; }
-    .home .tile-art:not(.fan):not(.three) .card:nth-child(2) { animation-name: bobB; }
-    .home .tile-art.fan .card:nth-child(1) { animation-name: fan1; }
-    .home .tile-art.fan .card:nth-child(2) { animation-name: fan2; }
-    .home .tile-art.fan .card:nth-child(4) { animation-name: fan4; }
-    .home .tile-art.fan .card:nth-child(5) { animation-name: fan5; }
-    .home .tile-art.three .card:nth-child(1) { animation-name: three1; }
-    .home .tile-art.three .card:nth-child(2) { animation-name: three2; }
-    .home .tile-art.three .card:nth-child(3) { animation-name: three3; }
-    .home .mini-wheel { animation: spin 14s linear infinite; }
-    .arcade-art { animation: floaty 3s ease-in-out infinite; }
-  }
-  @media (prefers-reduced-motion: reduce) { .marquee::before, .marquee::after, .mq-star, .ticker-track { animation: none; } }
-  /* ---------- The slot-machine hall behind the Casino tab (lab/lobby.js) ----------
-     It fades in once it has loaded; a dark wash on top keeps the tiles easy to read. */
-  .bg3d { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .8s ease; }
-  .bg3d canvas { display: block; width: 100%; height: 100%; }
-  .bg3d::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 4, 14, .35) 0%, rgba(8, 4, 14, .05) 22%, rgba(8, 4, 14, .3) 45%, rgba(8, 4, 14, .7) 100%); }
-  html.lobby3d .bg3d.ready { opacity: 1; }
-  html.lobby3d .home .tile { background: rgba(14, 8, 22, .5); border-color: rgba(255, 255, 255, .14); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  /* A window onto the casino floor above the wallet */
-  html.lobby3d .home .tab-head { padding-bottom: clamp(70px, 16vh, 150px); }
-  html.lobby3d .home .tab-head .brand { font-size: 17px; text-shadow: 0 2px 10px rgba(0, 0, 0, .9); }
-  html.lobby3d .home .wallet-card { background: radial-gradient(120% 140% at 0% 0%, rgba(233, 196, 106, .22), transparent 55%), rgba(14, 8, 22, .7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-  html.lobby3d .home .section-label, html.lobby3d .home .home-foot { color: rgba(245, 240, 227, .7); text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
+  @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
 
   /* ---------- Transaction history: a bank-statement page ---------- */
   .hist-card { margin-top: 0; }
@@ -1531,7 +1480,6 @@
   }
 </style>
 
-<div class="bg3d" id="bg3d" aria-hidden="true"></div>
 <div class="wrap" id="app">
 
   <header class="appbar" id="casino-bar">
@@ -2829,7 +2777,7 @@ const ui = {
   dealerCards: $('dealer-cards'), dealerTotal: $('dealer-total'),
   msg: $('msg'), msgTitle: $('msg-title'), msgSub: $('msg-sub'), statusLine: $('status-line'), seats: $('seats'),
   betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
-  bg3d: $('bg3d'), walletCard: $('wallet-card'), wcArt: $('wc-art'), wcFly: $('wc-fly'), tickerTrack: $('ticker-track'), lbw: $('lbw'), lbwList: $('lbw-list'), lbwMe: $('lbw-me'),
+  walletCard: $('wallet-card'), wcArt: $('wc-art'), wcFly: $('wc-fly'), tickerTrack: $('ticker-track'), lbw: $('lbw'), lbwList: $('lbw-list'), lbwMe: $('lbw-me'),
   bjChips: $('bj-chips'), bjLow: $('bj-low'), bjSpot: $('bj-spot'), bjSpotHint: $('bj-spot-hint'), bjUndo: $('bj-undo'),
   clear: $('clear-btn'), betAmt: $('bet-amt'),
   out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
@@ -5854,42 +5802,6 @@ function renderBoard() {
   }
 }
 
-/* ================= The slot-machine hall behind the Casino tab =================
-   A 3D background (lab/lobby.js), loaded after the page is up and only shown on the Casino
-   tab. It pauses on every other screen and while the app is in the background, and stays
-   off if the phone asks to save data or can't do WebGL. Reduced motion gets a still frame. */
-const lobbyBg = { inst: null, loading: false, off: false };
-function lobbyWanted() { return app.view === 'home' && document.visibilityState === 'visible'; }
-async function lobbyEnsure() {
-  if (lobbyBg.inst || lobbyBg.loading || lobbyBg.off) return;
-  const c = navigator.connection;
-  if (c && c.saveData) { lobbyBg.off = true; return; }
-  lobbyBg.loading = true;
-  try {
-    const mod = await import('/lab/embed.js');
-    const lobby = await mod.lobby();
-    lobbyBg.inst = lobby.mountLobby(ui.bg3d, { still: !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) });
-    ui.bg3d.classList.add('ready');
-    lobbySync();
-    // A few seconds later, when the phone is idle, fetch the 3D table and wheel too, so
-    // opening blackjack or roulette doesn't wait on a download
-    const idle = window.requestIdleCallback || (fn => setTimeout(fn, 200));
-    setTimeout(() => idle(() => { mod.table().catch(() => {}); mod.roulette().catch(() => {}); }), 4000);
-  } catch (e) {
-    if (staleReload(e)) return;   // an update went out while the app was open
-    lobbyBg.off = true;   // no WebGL, or the code didn't load: the felt stays
-  } finally {
-    lobbyBg.loading = false;
-  }
-}
-function lobbySync() {
-  const on = lobbyWanted() && !lobbyBg.off;
-  document.documentElement.classList.toggle('lobby3d', on && !!lobbyBg.inst);
-  if (!lobbyBg.inst) { if (on) setTimeout(lobbyEnsure, 300); return; }
-  if (on) lobbyBg.inst.resume(); else lobbyBg.inst.pause();
-}
-document.addEventListener('visibilitychange', lobbySync);
-
 /* ================= Home: winners ticker and leaderboard widget =================
    The ticker scrolls the biggest recent wins across everyone (/api/feed, refreshed every
    minute while the Casino tab is open); the widget shows this week's top three and where
@@ -6020,24 +5932,6 @@ function renderWalletCard() {
   if (level !== purse.level) {
     purse.level = level;
     ui.wcArt.innerHTML = walletSVG(level);
-    // Money drifting across the card: more of it the fuller the wallet
-    ui.wcFly.textContent = '';
-    const bills = [0, 2, 4, 6, 9][level], chips = [0, 1, 3, 5, 7][level];
-    for (let i = 0; i < bills + chips; i++) {
-      const el = document.createElement('div');
-      const chip = i >= bills;
-      el.className = 'fly ' + (chip ? 'chip' : 'bill');
-      if (chip) el.style.setProperty('--c', CHIP_TINTS[i % CHIP_TINTS.length]);
-      const x0 = Math.round(Math.random() * 300);
-      el.style.setProperty('--x0', `${x0}px`);
-      el.style.setProperty('--x1', `${x0 + Math.round((Math.random() - 0.3) * 120)}px`);
-      el.style.setProperty('--r0', `${Math.round(Math.random() * 60 - 30)}deg`);
-      el.style.setProperty('--r1', `${Math.round(Math.random() * 360 - 180)}deg`);
-      el.style.setProperty('--dur', `${(7 + Math.random() * 6).toFixed(1)}s`);
-      el.style.setProperty('--delay', `${(-Math.random() * 12).toFixed(1)}s`);
-      el.style.setProperty('--o', (0.35 + Math.random() * 0.3).toFixed(2));
-      ui.wcFly.appendChild(el);
-    }
   }
   // A win while you're looking: cash flies out of the wallet
   if (purse.shown != null && wallet.ready && bal > purse.shown + 0.5) walletBurst(Math.min(14, 4 + Math.round(Math.log10(bal - purse.shown + 1) * 3)));
@@ -6616,7 +6510,6 @@ function render() {
   if (v === 'roulette') rl3dEnsure(); else rl3dDrop();
   if (v === 'table' && app.solo) bj3dEnsure(); else bj3dDrop();
   if (v === 'floor') floorEnsure(); else floorDrop();
-  lobbySync();
   if (v !== 'home') purse.shown = wallet.ready ? wallet.balance : null;   // wins elsewhere don't burst when you come back
   if (v === 'home') { renderDaily(); renderWalletCard(); renderTicker(); feedLoad(); renderLbw(); lbLoad(false, 'week'); }
   else if (v === 'profile') renderProfile();
