@@ -10,6 +10,7 @@ const help = document.getElementById('lab-help');
 const HELP = {};
 
 const demos = {
+  floor: () => import('./floor.js'),
   roulette: () => import('./roulette.js'),
   win: () => import('./celebrate.js'),
   table: () => import('./table.js'),
@@ -57,4 +58,4 @@ for (const b of document.querySelectorAll('[data-demo]')) b.addEventListener('cl
 const first = location.hash.slice(1);
 // Old links to the graduated games go to the casino's Arcade
 if (first === 'plinko' || first === 'crash' || first === 'slots') location.replace('/#arcade-' + first);
-else show(demos[first] ? first : 'roulette');
+else show(demos[first] ? first : 'floor');
