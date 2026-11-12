@@ -5523,16 +5523,17 @@ function arcClose() {
    The floor (lab/floor.js) is a way into the games: glide between the stations and tap one
    to sit, and its own screen opens. From a seat, the top bar's Floor button stands you back
    up on the floor, and its arrows glide you through the floor into the next seat. */
-const FLOOR_ORDER = ['table', 'threecard', 'war', 'reddog', 'roulette', 'baccarat', 'poker', 'slots', 'cashier'];   // as lab/floor.js lays them out
-const FLOOR_NAME = { table: 'Blackjack', threecard: 'Three Card', war: 'Casino War', reddog: 'Red Dog', roulette: 'Roulette', baccarat: 'Baccarat', poker: 'Video Poker', slots: 'Lucky Duck', cashier: 'Cashier' };
-const FLOOR_GO = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcade-slots', cashier: 'stats' };
-const FLOOR_TARGET = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcadegame', cashier: 'stats' };   // route()'s view for each
+const FLOOR_ORDER = ['table', 'threecard', 'war', 'reddog', 'roulette', 'baccarat', 'poker', 'slots', 'plinko', 'crash', 'cashier'];   // as lab/floor.js lays them out
+const FLOOR_NAME = { table: 'Blackjack', threecard: 'Three Card', war: 'Casino War', reddog: 'Red Dog', roulette: 'Roulette', baccarat: 'Baccarat', poker: 'Video Poker', slots: 'Lucky Duck', plinko: 'Duck Drop', crash: 'Duck Rocket', cashier: 'Cashier' };
+const FLOOR_GO = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcade-slots', plinko: 'arcade-plinko', crash: 'arcade-crash', cashier: 'stats' };
+const FLOOR_TARGET = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcadegame', plinko: 'arcadegame', crash: 'arcadegame', cashier: 'stats' };   // route()'s view for each
 const FLOOR_VIEW = { ...FLOOR_TARGET, table: 'table' };   // app.view while you're at each one
 const fl = { inst: null, loading: false, token: 0, start: null };
 // The station you're sitting at, if you came from the floor and are still at its screen
 function floorSeat() {
   const id = app.fromFloor;
   if (!id || app.view !== FLOOR_VIEW[id] || (id === 'table' && !app.solo)) return null;
+  if (app.view === 'arcadegame' && location.hash !== '#' + FLOOR_GO[id]) return null;   // the arcade screen runs three games
   return id;
 }
 function floorSit(id) {
