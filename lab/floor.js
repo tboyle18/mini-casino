@@ -7,6 +7,7 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { gsap } from 'gsap';
 import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
 import { EMOJI, canvas, tex, carpetCanvas, signCanvas, duckGeometry } from './arcade.js';
@@ -219,60 +220,6 @@ export async function mount({ stage, controls, info, casino }) {
     g.fillText(text, 512, 132);
     return keep(tex(cv, renderer));
   }
-  function rouletteLayoutTex() {
-    const [cv, g] = canvas(1024, 384);
-    g.fillStyle = '#0d6b3a';
-    g.fillRect(0, 0, 1024, 384);
-    const cw = 72, ch = 96, x0 = 112, y0 = 48;
-    const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
-    g.font = '800 34px Manrope, sans-serif';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.strokeStyle = 'rgba(255, 248, 230, .85)';
-    g.lineWidth = 3;
-    g.fillStyle = '#0d8a4a';
-    g.fillRect(x0 - 80, y0, 80, ch * 3);
-    g.strokeRect(x0 - 80, y0, 80, ch * 3);
-    g.fillStyle = '#fff';
-    g.fillText('0', x0 - 40, y0 + ch * 1.5);
-    for (let col = 0; col < 12; col++) {
-      for (let row = 0; row < 3; row++) {
-        const n = col * 3 + (3 - row);
-        const x = x0 + col * cw, y = y0 + row * ch;
-        g.fillStyle = RED.has(n) ? '#b3122e' : '#141414';
-        g.beginPath();
-        g.ellipse(x + cw / 2, y + ch / 2, 24, 24, 0, 0, TAU);
-        g.fill();
-        g.strokeRect(x, y, cw, ch);
-        g.fillStyle = '#fff';
-        g.fillText(String(n), x + cw / 2, y + ch / 2 + 1);
-      }
-    }
-    return keep(tex(cv, renderer));
-  }
-  function rotorTex() {
-    const S = 512, R = S / 2;
-    const [cv, g] = canvas(S, S);
-    g.fillStyle = '#2a140a';
-    g.fillRect(0, 0, S, S);
-    for (let i = 0; i < 37; i++) {
-      const a0 = (i / 37) * TAU, a1 = ((i + 1) / 37) * TAU;
-      g.beginPath();
-      g.moveTo(R, R);
-      g.arc(R, R, R * 0.92, a0, a1);
-      g.closePath();
-      g.fillStyle = i === 0 ? '#0d8a4a' : i % 2 ? '#b3122e' : '#141414';
-      g.fill();
-    }
-    g.fillStyle = '#5a2e14';
-    g.beginPath();
-    g.arc(R, R, R * 0.55, 0, TAU);
-    g.fill();
-    g.strokeStyle = '#d9a93c';
-    g.lineWidth = 6;
-    for (const r of [0.55, 0.92]) { g.beginPath(); g.arc(R, R, R * r, 0, TAU); g.stroke(); }
-    return keep(tex(cv, renderer));
-  }
   // A sign post's board: the station's name over its one-line pitch, edged in its colour
   // ---- Sign posts: a little marquee beside each station ----
   // A crest on top for the game's icon, chasing bulbs round the edge, the name in chunky
@@ -459,23 +406,6 @@ export async function mount({ stage, controls, info, casino }) {
     g.add(kit.bake(tmp));
   }
   // Printing on the felt: the table's name or its bets, in gold
-  function feltTex(text) {
-    const [cv, g] = canvas(1024, 128);
-    g.font = '800 64px Manrope, sans-serif';
-    const fit = Math.min(1, 980 / g.measureText(text).width);
-    if (fit < 1) g.font = `800 ${Math.floor(64 * fit)}px Manrope, sans-serif`;
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.fillStyle = 'rgba(233, 196, 106, .9)';
-    g.fillText(text, 512, 66);
-    return keep(tex(cv, renderer));
-  }
-  function feltPrint(text, width, x, y, z) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 8), new THREE.MeshBasicMaterial({ map: feltTex(text), transparent: true, depthWrite: false }));
-    m.rotation.x = -Math.PI / 2;
-    m.position.set(x, y, z);
-    return m;
-  }
   const cardBack = std(0x9a1628, 0.5);
   // A few real card faces, shared by every table
   const FACES = [['A', '♠'], ['K', '♥'], ['Q', '♦'], ['10', '♣'], ['7', '♥'], ['J', '♠']].map(([r, su]) => {
@@ -681,32 +611,140 @@ export async function mount({ stage, controls, info, casino }) {
     } });
 
 
-  // Baccarat: a long oval table, Player and Banker boxes down the middle
+  /* Baccarat: an oval table on the same lacquered base as the card tables. The felt is printed
+     like the real thing: a numbered box for each seat with its Player, Banker and Tie bets,
+     the Player and Banker card boxes in the middle, the payouts, and the dealer's commission
+     boxes along the back. */
+  function baccaratFelt(SX, SZ) {
+    const W = 1024, H = Math.round(W * SZ / SX), kx = W / (2 * SX);
+    const [cv, g] = canvas(W, H);
+    const P = (x, y) => [W / 2 + x * kx, H / 2 - y * kx];   // shape metres → pixels (y up is the dealer's side)
+    const grad = g.createRadialGradient(W / 2, H / 2, 30, W / 2, H / 2, W * 0.6);
+    grad.addColorStop(0, '#16884f');
+    grad.addColorStop(0.6, '#0d6a3d');
+    grad.addColorStop(1, '#07462a');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 1600; i++) { g.fillStyle = i % 2 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)'; g.fillRect((i * 97.3) % W, (i * 53.7) % H, 2, 2); }
+    const gold = '#e9c46a', cream = 'rgba(245,240,227,.85)';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    // the card boxes
+    for (const [x, label, tint] of [[-0.205, 'PLAYER', 'rgba(60,120,255,.18)'], [0.205, 'BANKER', 'rgba(255,60,80,.18)']]) {
+      const [px, py] = P(x, 0.05);
+      g.fillStyle = tint;
+      g.strokeStyle = gold;
+      g.lineWidth = 3;
+      g.beginPath(); g.roundRect(px - 64, py - 44, 128, 88, 12); g.fill(); g.stroke();
+      g.font = '800 21px Manrope';
+      g.fillStyle = gold;
+      g.fillText(label, px, py + 64);
+    }
+    const [cx, cy] = P(0, 0.29);
+    g.font = '800 15px Manrope';
+    g.fillStyle = cream;
+    g.fillText('TIE PAYS 8 TO 1', cx, cy - 14);
+    g.fillText('BANKER PAYS 19 TO 20', cx, cy + 14);
+    // commission boxes along the dealer's edge
+    for (let i = 0; i < 7; i++) {
+      const [px, py] = P(-0.42 + i * 0.14, 0.52);
+      g.strokeStyle = 'rgba(233,196,106,.6)';
+      g.lineWidth = 2;
+      g.strokeRect(px - 16, py - 13, 32, 26);
+      g.font = '700 13px Manrope';
+      g.fillStyle = cream;
+      g.fillText(String(i + 1), px, py + 1);
+    }
+    // a box at each seat, its three bets running in toward the middle
+    for (let i = -2; i <= 2; i++) {
+      const a = i * 0.42;
+      const [px, py] = P(Math.sin(a) * SX * 0.74, -Math.cos(a) * SZ * 0.72);
+      g.save();
+      g.translate(px, py);
+      g.rotate(a);
+      g.strokeStyle = gold;
+      g.lineWidth = 2.5;
+      const rows = [['PLAYER', 0], ['BANKER', -34], ['TIE', -64]];
+      for (const [label, dy] of rows) {
+        const w = label === 'TIE' ? 56 : 92;
+        g.beginPath(); g.roundRect(-w / 2, dy - 14, w, 28, 8); g.stroke();
+        g.font = '800 12px Manrope';
+        g.fillStyle = label === 'BANKER' ? '#ff9aa6' : label === 'PLAYER' ? '#9ec3ff' : cream;
+        g.fillText(label, 0, dy + 1);
+      }
+      g.beginPath(); g.arc(0, 36, 15, 0, TAU); g.stroke();
+      g.font = '800 15px Manrope';
+      g.fillStyle = gold;
+      g.fillText(String(i + 3), 0, 37);
+      g.restore();
+    }
+    const t = keep(tex(cv, renderer));
+    t.repeat.set(1 / (2 * SX), 1 / (2 * SZ));
+    t.offset.set(0.5, 0.5);
+    return t;
+  }
   function buildBaccarat() {
     const g = new THREE.Group();
     const top = 0.78, SX = 1.35, SZ = 0.72;
-    const oval = m => { m.scale.set(SX, 1, SZ); return m; };
-    const felt = oval(new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.04, 56), std(0x0b5a3a, 0.95)));
-    felt.position.y = top;
-    const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 10, 56), RAIL);
+    const shape = new THREE.Shape();
+    shape.absellipse(0, 0, SX, SZ, 0, TAU, false);
+    const feltGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false, curveSegments: 72 });
+    feltGeo.rotateX(-Math.PI / 2);
+    const felt = new THREE.Mesh(feltGeo, [new THREE.MeshStandardMaterial({ map: baccaratFelt(SX, SZ), roughness: 0.95 }), GLOSS]);
+    felt.position.y = top - 0.04;
+    const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.055, 16, 112), RAIL);
+    rail.geometry.scale(SX + 0.02, SZ + 0.02, 1);   // an oval, with a round cross-section
     rail.rotation.x = Math.PI / 2;
-    rail.scale.set(SX, SZ, 1);
-    rail.position.y = top + 0.03;
-    const skirt = oval(new THREE.Mesh(new THREE.CylinderGeometry(0.94, 0.94, 0.45, 48, 1, true), GLOSS));
-    skirt.position.y = top - 0.25;
-    const legs = [-0.7, 0.7].map(x => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 0.55, 16), GLOSS); l.position.set(x, 0.275, 0); return l; });
-    g.add(felt, rail, skirt, ...legs, feltPrint('PLAYER', 0.8, -0.42, top + 0.021, 0.14), feltPrint('BANKER', 0.8, 0.42, top + 0.021, 0.14), feltPrint('TIE PAYS 8 TO 1', 0.9, 0, top + 0.021, 0.44));
-    for (const x of [-0.42, 0.42]) for (const d of [-0.045, 0.045]) g.add(card(x + d, top + 0.022, -0.05, 0));
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.13), GLOSS);
-    tray.position.set(0, top + 0.035, -0.5);
+    rail.position.y = top + 0.008;
+    const apron = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.16, 72, 1, true), GLOSS);
+    apron.scale.set(SX - 0.04, 1, SZ - 0.04);
+    apron.position.y = top - 0.12;
+    const trim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.008, 6, 96), BRASS);
+    trim.geometry.scale(SX - 0.035, SZ - 0.035, 1);
+    trim.rotation.x = Math.PI / 2;
+    trim.position.y = top - 0.18;
+    g.add(felt, rail, apron, trim);
+    for (const x of [-0.65, 0.65]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.56, 20), GLOSS);
+      leg.position.set(x, 0.33, 0);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.01, 6, 20).rotateX(Math.PI / 2), BRASS);
+      ring.position.set(x, 0.5, 0);
+      const foot = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.05, 0.5, 2, 0.02), GLOSS);
+      foot.position.set(x, 0.025, 0);
+      g.add(leg, ring, foot);
+    }
+    // the hands, dealt into their boxes
+    for (const x of [-0.205, 0.205]) for (const d of [-0.04, 0.04]) g.add(card(x + d, top + 0.002, -0.05, 0));
+    // the chip tray, the shoe and the discard holder along the dealer's side
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.025, 0.09), GLOSS);
+    tray.position.set(0, top + 0.012, -0.5);
     g.add(tray);
-    [0, 0, 1, 1, 2, 2, 3, 3, 1].forEach((c, i) => g.add(chipStack(CHIP_COLS[c], -0.24 + i * 0.06, top + 0.045, -0.5)));
+    const chipGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.075, 18);
+    [3, 3, 2, 2, 1, 1, 0, 0, 2].forEach((c, i) => {
+      const col = new THREE.Mesh(chipGeo, std(CHIP_COLS[c], 0.4));
+      col.rotation.x = Math.PI / 2;
+      col.position.set(-0.22 + i * 0.054, top + 0.03, -0.5);
+      g.add(col);
+    });
+    const shoe = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.08, 0.2, 2, 0.015), new THREE.MeshPhysicalMaterial({ color: 0x17171a, roughness: 0.3, clearcoat: 0.8 }));
+    shoe.position.set(0.72, top + 0.04, -0.38);
+    shoe.rotation.y = 0.35;
+    const discard = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.07, 0.14, 2, 0.01), new THREE.MeshPhysicalMaterial({ color: 0xe8e2d4, roughness: 0.2, transmission: 0, clearcoat: 0.8 }));
+    discard.position.set(-0.72, top + 0.035, -0.38);
+    discard.rotation.y = -0.35;
+    g.add(shoe, discard);
+    // a few bets out on the seats
+    [[-2, 0x7a2bb5], [0, 0xc8102e], [1, 0x1f5fbf]].forEach(([i, c]) => {
+      const a = i * 0.42;
+      g.add(chipStack(c, Math.sin(a) * SX * 0.74, top, Math.cos(a) * SZ * 0.72, 0.025));
+    });
     for (let i = -2; i <= 2; i++) {
       const a = i * 0.42;
       g.add(stool(Math.sin(a) * SX * 1.18, Math.cos(a) * SZ * 1.18 + 0.3));
     }
     return g;
   }
+
 
   // Video poker: a bar-top machine with a slanted screen and a row of hold buttons
   function vpScreenTex() {
@@ -764,44 +802,190 @@ export async function mount({ stage, controls, info, casino }) {
     g.add(stool(0, 0.75));
     return g;
   }
+  /* Roulette, after the game's own wheel: a lacquered bowl and ball track turned on a lathe,
+     the pocket ring with its numbers, a cone and a brass turret with its cross, chrome frets,
+     brass deflectors; beside it a printed layout on a padded-rail table. */
   let rotor = null, ballPivot = null;
+  const WHEEL_ORDER = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+  const REDS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+  const STEP = TAU / 37;
+  const lathe = pts => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 96);
+  function pocketTex() {
+    const S = 1024, k = S / 2 / 0.31;
+    const [cv, g] = canvas(S, S);
+    g.translate(S / 2, S / 2);
+    for (let i = 0; i < 37; i++) {
+      const n = WHEEL_ORDER[i], a0 = i * STEP - STEP / 2, a1 = a0 + STEP;
+      g.fillStyle = n === 0 ? '#12804c' : REDS.has(n) ? '#b3202b' : '#141518';
+      g.beginPath(); g.arc(0, 0, 0.307 * k, a0, a1); g.arc(0, 0, 0.255 * k, a1, a0, true); g.closePath(); g.fill();
+      g.fillStyle = n === 0 ? '#0c5c36' : REDS.has(n) ? '#8a1720' : '#0c0d10';
+      g.beginPath(); g.arc(0, 0, 0.255 * k, a0, a1); g.arc(0, 0, 0.188 * k, a1, a0, true); g.closePath(); g.fill();
+      g.save();
+      g.rotate(i * STEP);
+      g.translate(0.281 * k, 0);
+      g.rotate(-Math.PI / 2);
+      g.fillStyle = '#fff';
+      g.font = `800 ${Math.round(0.029 * k)}px Manrope, sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(String(n), 0, 0);
+      g.restore();
+    }
+    g.strokeStyle = '#d8b25a';
+    g.lineWidth = 3;
+    for (let i = 0; i < 37; i++) {
+      const a = i * STEP + STEP / 2;
+      g.beginPath(); g.moveTo(Math.cos(a) * 0.255 * k, Math.sin(a) * 0.255 * k); g.lineTo(Math.cos(a) * 0.307 * k, Math.sin(a) * 0.307 * k); g.stroke();
+    }
+    for (const r of [0.255, 0.3045]) { g.beginPath(); g.arc(0, 0, r * k, 0, TAU); g.stroke(); }
+    return keep(tex(cv, renderer));
+  }
+  // The betting layout: zero, the 36 numbers in three rows, the columns, dozens and even-money bets
+  function layoutTex(LW, LD) {
+    const W = 1024, H = Math.round(W * LD / LW);
+    const [cv, g] = canvas(W, H);
+    const grad = g.createRadialGradient(W / 2, H / 2, 30, W / 2, H / 2, W * 0.6);
+    grad.addColorStop(0, '#11784a');
+    grad.addColorStop(1, '#0f6e40');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 1400; i++) { g.fillStyle = i % 2 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)'; g.fillRect((i * 97.3) % W, (i * 53.7) % H, 2, 2); }
+    const x0 = 22, y0 = 14, zw = 70, cw = 70, ch = 76, colW = 78;   // zero, number cell, row height, the "2 to 1" column
+    g.strokeStyle = 'rgba(245,240,227,.85)';
+    g.lineWidth = 3;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    // zero
+    g.beginPath();
+    g.moveTo(x0 + zw, y0); g.lineTo(x0 + 18, y0); g.lineTo(x0, y0 + ch * 1.5); g.lineTo(x0 + 18, y0 + ch * 3); g.lineTo(x0 + zw, y0 + ch * 3);
+    g.fillStyle = '#12804c'; g.fill(); g.stroke();
+    g.fillStyle = '#fff'; g.font = '800 30px Manrope'; g.fillText('0', x0 + zw / 2 + 6, y0 + ch * 1.5);
+    for (let col = 0; col < 12; col++) for (let row = 0; row < 3; row++) {
+      const n = col * 3 + (3 - row), x = x0 + zw + col * cw, y = y0 + row * ch;
+      g.strokeRect(x, y, cw, ch);
+      g.fillStyle = REDS.has(n) ? '#c0212e' : '#16161a';
+      g.beginPath(); g.ellipse(x + cw / 2, y + ch / 2, 21, 25, 0, 0, TAU); g.fill();
+      g.fillStyle = '#fff'; g.font = '800 24px Manrope';
+      g.fillText(String(n), x + cw / 2, y + ch / 2 + 1);
+    }
+    const xr = x0 + zw + 12 * cw;
+    for (let row = 0; row < 3; row++) { g.strokeRect(xr, y0 + row * ch, colW, ch); g.fillStyle = '#f5f0e3'; g.font = '800 15px Manrope'; g.fillText('2 TO 1', xr + colW / 2, y0 + row * ch + ch / 2); }
+    const yd = y0 + 3 * ch, dh = 58;
+    ['1st 12', '2nd 12', '3rd 12'].forEach((t, i) => { g.strokeRect(x0 + zw + i * 4 * cw, yd, 4 * cw, dh); g.fillStyle = '#f5f0e3'; g.font = '800 22px Manrope'; g.fillText(t, x0 + zw + i * 4 * cw + 2 * cw, yd + dh / 2); });
+    const ye = yd + dh;
+    ['1–18', 'EVEN', 'red', 'black', 'ODD', '19–36'].forEach((t, i) => {
+      const x = x0 + zw + i * 2 * cw;
+      g.strokeRect(x, ye, 2 * cw, dh);
+      if (t === 'red' || t === 'black') {
+        g.fillStyle = t === 'red' ? '#c0212e' : '#16161a';
+        g.beginPath(); g.moveTo(x + cw, ye + 8); g.lineTo(x + cw + 34, ye + dh / 2); g.lineTo(x + cw, ye + dh - 8); g.lineTo(x + cw - 34, ye + dh / 2); g.closePath(); g.fill();
+      } else { g.fillStyle = '#f5f0e3'; g.font = '800 20px Manrope'; g.fillText(t, x + cw, ye + dh / 2); }
+    });
+    return keep(tex(cv, renderer));
+  }
   function buildRoulette() {
     const g = new THREE.Group();
     const top = 0.8;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.72, 1.05), GLOSS);
-    body.position.y = 0.38;
-    const rim = new THREE.Mesh(new RoundedBoxGeometry(2.62, 0.08, 1.17, 2, 0.03), GLOSS);
-    rim.position.y = top - 0.03;
-    const felt = new THREE.Mesh(new THREE.BoxGeometry(2.48, 0.02, 1.03), M.felt);
-    felt.position.y = top + 0.01;
-    const layout = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.56), new THREE.MeshStandardMaterial({ map: rouletteLayoutTex(), roughness: 0.95 }));
+    // the cabinet: a lacquered body on a dark toe kick, a brass line, a wood top frame
+    const body = new THREE.Mesh(new RoundedBoxGeometry(2.24, 0.62, 0.96, 2, 0.04), GLOSS);
+    body.position.set(0.38, 0.43, 0);
+    const kick = new THREE.Mesh(new THREE.BoxGeometry(2.14, 0.12, 0.86), std(0x0a0806, 0.6));
+    kick.position.set(0.38, 0.06, 0);
+    const line = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.012, 0.98), BRASS);
+    line.position.set(0.38, 0.66, 0);
+    const frame = new THREE.Mesh(new RoundedBoxGeometry(2.46, 0.07, 1.16, 2, 0.03), GLOSS);
+    frame.position.set(0.38, top - 0.035, 0);
+    g.add(body, kick, line, frame);
+    // the layout, and a padded rail along the players' side and the far end
+    const LW = 1.3, LD = 0.53;
+    const layout = new THREE.Mesh(new THREE.PlaneGeometry(LW, LD), new THREE.MeshStandardMaterial({ map: layoutTex(LW, LD), roughness: 0.95 }));
     layout.rotation.x = -Math.PI / 2;
-    layout.position.set(0.32, top + 0.021, 0.05);
-    g.add(body, rim, felt, layout);
+    layout.position.set(0.87, top + 0.001, -0.08);
+    const pad = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.04), new THREE.MeshStandardMaterial({ color: 0x0f6e40, roughness: 0.95 }));   // plain felt round the wheel
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.set(0.38, top + 0.0005, -0.04);
+    const railFront = new THREE.Mesh(new RoundedBoxGeometry(2.44, 0.09, 0.11, 3, 0.045), RAIL);
+    railFront.position.set(0.38, top + 0.02, 0.53);
+    const railEnd = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.09, 1.06, 3, 0.045), RAIL);
+    railEnd.position.set(1.56, top + 0.02, -0.03);
+    g.add(layout, pad, railFront, railEnd);
+    // chips out on the layout
+    [[0.54, -0.08, 0xc8102e], [0.94, -0.22, 0x1f5fbf], [1.26, 0.06, 0x7a2bb5], [0.69, 0.09, 0x222222]].forEach(([x, z, c]) => g.add(chipStack(c, x, top, z, 0.03)));
+    // the dealer's chip tray and the win marker
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.09), GLOSS);
+    tray.position.set(0.94, top + 0.012, -0.48);
+    g.add(tray);
+    const chipGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.075, 18);
+    [3, 3, 2, 2, 1, 1, 0, 0].forEach((c, i) => {
+      const col = new THREE.Mesh(chipGeo, std(CHIP_COLS[c], 0.4));
+      col.rotation.x = Math.PI / 2;
+      col.position.set(0.75 + i * 0.054, top + 0.03, -0.48);
+      g.add(col);
+    });
+    // the wheel
     const wheel = new THREE.Group();
-    wheel.position.set(-0.85, top, 0);
-    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.38, 0.14, 48), GLOSS);
-    bowl.position.y = 0.07;
-    rotor = new THREE.Group();
-    rotor.position.y = 0.13;
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.02, 48), [GLOSS, new THREE.MeshStandardMaterial({ map: rotorTex(), roughness: 0.4 }), GLOSS]);
-    const turret = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 16), M.gold);
-    turret.position.y = 0.07;
-    for (let i = 0; i < 4; i++) {
-      const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.22, 6), M.gold);
-      spoke.rotation.set(0, (i * Math.PI) / 2, Math.PI / 2);
-      spoke.position.y = 0.04;
-      rotor.add(spoke);
+    wheel.position.set(-0.32, top, -0.04);
+    const wood = new THREE.MeshPhysicalMaterial({ color: 0x47210f, roughness: 0.38, clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide });
+    const trackWood = new THREE.MeshPhysicalMaterial({ color: 0x7a4422, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.05, side: THREE.DoubleSide });
+    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.455, 0.47, 0.03, 64), wood);
+    plinth.position.y = 0.0;
+    wheel.add(plinth);
+    wheel.add(new THREE.Mesh(lathe([[0.445, 0.0], [0.445, 0.07], [0.432, 0.083], [0.402, 0.08], [0.4, 0.046]]), wood));
+    wheel.add(new THREE.Mesh(lathe([[0.4, 0.046], [0.315, 0.022], [0.306, 0.0205]]), trackWood));
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.432, 0.0055, 10, 96), BRASS);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = 0.083;
+    wheel.add(rim);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU + Math.PI / 8, r = 0.356, wide = i % 2 === 0;
+      const gem = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), BRASS);
+      gem.scale.set(wide ? 0.0065 : 0.017, 0.0065, wide ? 0.018 : 0.0065);
+      gem.position.set(r * Math.cos(a), 0.022 + ((r - 0.315) / 0.085) * 0.024 + 0.004, r * Math.sin(a));
+      gem.rotation.y = -a;
+      wheel.add(gem);
     }
-    rotor.add(disc, turret);
+    rotor = new THREE.Group();
+    const ringGeo = lathe([[0.305, 0.0205], [0.255, 0.012], [0.255, 0.0], [0.19, 0.004], [0.19, 0.018]]);
+    const pos = ringGeo.attributes.position, uv = new Float32Array(pos.count * 2);
+    for (let i = 0; i < pos.count; i++) { uv[i * 2] = pos.getX(i) / 0.62 + 0.5; uv[i * 2 + 1] = 0.5 - pos.getZ(i) / 0.62; }
+    ringGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    rotor.add(new THREE.Mesh(ringGeo, new THREE.MeshPhysicalMaterial({ map: pocketTex(), roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1, side: THREE.DoubleSide })));
+    rotor.add(new THREE.Mesh(lathe([[0.19, 0.018], [0.13, 0.032], [0.06, 0.05], [0.0, 0.053]]), new THREE.MeshPhysicalMaterial({ color: 0x5c2f14, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, side: THREE.DoubleSide })));
+    rotor.add(new THREE.Mesh(lathe([[0.0, 0.05], [0.032, 0.05], [0.03, 0.058], [0.014, 0.068], [0.008, 0.105], [0.015, 0.115], [0.011, 0.126], [0.0, 0.128]]), BRASS));
+    for (let i = 0; i < 2; i++) {
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 0.13, 10), BRASS);
+      arm.rotation.set(0, (i * Math.PI) / 2, Math.PI / 2);
+      arm.position.y = 0.093;
+      rotor.add(arm);
+      for (const sgn of [-1, 1]) {
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.0075, 12, 10), BRASS);
+        knob.position.set(i ? 0 : sgn * 0.065, 0.093, i ? sgn * 0.065 : 0);
+        rotor.add(knob);
+      }
+    }
+    // the frets, merged into one mesh
+    const frets = [];
+    for (let i = 0; i < 37; i++) {
+      const a = i * STEP + STEP / 2, r = (0.19 + 0.255) / 2;
+      const f = new THREE.BoxGeometry(0.066, 0.013, 0.003);
+      f.rotateY(-a);
+      f.translate(r * Math.cos(a), 0.0065, r * Math.sin(a));
+      frets.push(f);
+    }
+    rotor.add(new THREE.Mesh(mergeGeometries(frets), M.chrome));
+    frets.forEach(f => f.dispose());
+    const rotorRim = new THREE.Mesh(new THREE.TorusGeometry(0.3055, 0.0025, 8, 96), M.chrome);
+    rotorRim.rotation.x = Math.PI / 2;
+    rotorRim.position.y = 0.0205;
+    rotor.add(rotorRim);
     ballPivot = new THREE.Group();
-    ballPivot.position.y = 0.155;
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.018, 12, 8), M.white);
-    ball.position.x = 0.36;
+    ballPivot.position.y = 0.045;
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.0095, 14, 10), new THREE.MeshPhysicalMaterial({ color: 0xfbf8f0, roughness: 0.18, clearcoat: 1 }));
+    ball.position.x = 0.37;
     ballPivot.add(ball);
-    wheel.add(bowl, rotor, ballPivot);
+    wheel.add(rotor, ballPivot);
     g.add(wheel);
-    for (let i = 0; i < 4; i++) g.add(stool(-0.6 + i * 0.55, 0.95));
+    for (let i = 0; i < 4; i++) g.add(stool(-0.2 + i * 0.5, 0.98, 0));
     return g;
   }
   const bulbs = [];

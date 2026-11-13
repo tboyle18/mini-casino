@@ -877,6 +877,7 @@
   .felt.three > .mid { position: relative; z-index: 2; }
   .felt.three .msg:has(.title:not(:empty)) { padding: 8px 18px 10px; border-radius: 14px; background: rgba(8, 22, 15, .92); box-shadow: 0 6px 20px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(240, 230, 208, .14); }
   .felt.three.betting .msg { visibility: hidden; }
+  .felt.three.t3-deal .msg, .felt.three.t3-deal .t3-labels { visibility: hidden; }
   .felt.t3-wait { background: radial-gradient(ellipse 150% 110% at 50% 18%, #145c3c 0%, #0b4029 60%, #062a1b 100%); }
   .felt.t3-wait > .mid { visibility: hidden; }
   .t3-labels { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
@@ -3892,7 +3893,8 @@ function recordBlackjackRound(T) {
   // stats.seen above)
   const mine = R.hands.filter(x => x.uid === me);
   const staked = mine.reduce((a, h) => a + h.bet, 0);
-  bigWin(staked, staked + net, mine.some(h => h.result === 'blackjack') ? 'Blackjack · Pays 3 to 2' : 'Blackjack', mine.some(h => h.result === 'blackjack') && net > 0 ? 'bj' : null, 1600);
+  bigWin(staked, staked + net, mine.some(h => h.result === 'blackjack') ? 'Blackjack · Pays 3 to 2' : 'Blackjack', mine.some(h => h.result === 'blackjack') && net > 0 ? 'bj' : null, Math.max(1600, (bj3d.wait || 0) * 1000 + 500));
+  bj3d.wait = 0;
 }
 
 /* ================= Roulette (single zero, solo, plays from the wallet) ================= */
@@ -6863,8 +6865,6 @@ function renderTable() {
   runAnimations(anim, initial);
   if (R) app.renderedRound = R.n;
 
-  if (R && R.over) recordBlackjackRound(T);
-
   // Chips at this table (minus your bet and whatever is in your hand)
   const P = myP();
   if (!canBetNow()) app.bjHist = [];
@@ -6880,7 +6880,18 @@ function renderTable() {
   ui.felt.classList.toggle('three', three);
   ui.felt.classList.toggle('t3-wait', three && !bj3d.inst);
   ui.felt.classList.toggle('betting', T.phase === 'betting' && !(R && R.over));
-  if (three && bj3d.inst) bj3d.inst.update(bj3dView(T, R));
+  if (three && bj3d.inst) {
+    // The result waits until the 3D cards that decide it have landed, so it never shows early
+    const view = bj3dView(T, R);
+    const wait = bj3d.inst.update(view) || 0;
+    bj3d.wait = view.over ? wait : 0;
+    if (view.over && wait > 0) {
+      ui.felt.classList.add('t3-deal');
+      clearTimeout(bj3d.dealTimer);
+      bj3d.dealTimer = setTimeout(() => { ui.felt.classList.remove('t3-deal'); app.msgKey = ''; render(); }, wait * 1000);
+    } else if (!view.over && ui.felt.classList.contains('t3-deal')) { clearTimeout(bj3d.dealTimer); ui.felt.classList.remove('t3-deal'); }
+  }
+  if (R && R.over) recordBlackjackRound(T);
 
   const st = P ? P.stats : null;
   ui.stats.textContent = st ? `Won ${st.w} · Lost ${st.l} · Pushed ${st.p} · Blackjacks ${st.bj}` : '';
@@ -6909,7 +6920,8 @@ async function bj3dEnsure() {
   }
 }
 function bj3dDrop() {
-  ui.felt.classList.remove('three', 't3-wait');
+  ui.felt.classList.remove('three', 't3-wait', 't3-deal');
+  clearTimeout(bj3d.dealTimer);
   if (!bj3d.inst) return;
   const inst = bj3d.inst;
   bj3d.inst = null;

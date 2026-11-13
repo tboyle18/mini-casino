@@ -336,7 +336,8 @@ function buildTable(stage, opts = {}) {
 }
 
 /* ================= The casino's solo table =================
-   mountCasinoTable(container) draws the table and returns { update(view), dispose() }. The
+   mountCasinoTable(container) draws the table and returns { update(view), dispose() }; update returns
+   the seconds until the cards it just dealt have landed. The
    page calls update with what the server's table looks like now, and the scene animates
    whatever changed: new cards fly out of the shoe, the dealer's hole card turns over, chips
    drop on the betting spot, split cards slide apart, wins are paid from the tray and losses
@@ -647,6 +648,7 @@ export async function mountCasinoTable(container) {
       if (v.bet > 0 || betStack.length) setStack(betStack, v.bet || 0, new THREE.Vector3(0, 0, STACK_Z), 'player', 0);
     }
     kick(delay * 1000 + 1500);
+    return delay > 0 ? delay + 0.55 : 0;   // seconds until the last card has landed
   }
 
   // Get the graphics chip ready for every material now, so the first deal doesn't stutter
