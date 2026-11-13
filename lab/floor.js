@@ -415,17 +415,48 @@ export async function mount({ stage, controls, info, casino }) {
   const shadowy = o => { o.traverse(x => { if (x.isMesh) { x.castShadow = true; x.receiveShadow = true; } }); return o; };
 
   // ---- Stations (stand-in models: the seated view is the real game) ----
-  function stool(x, z) {
+  /* A casino table chair: a chrome pedestal with a foot ring, an upholstered seat on a wood
+     base, and a curved wood-framed back. Built from the slot kit's parts (colour in the
+     vertices) and marked, so each station's chairs merge into a few meshes. It faces the
+     station's centre unless told otherwise; its back is away from the table. */
+  const UPHOLSTERY = 0x7a1020, LACQUER = 0x3b1f0e;
+  function arcBand(r0, r1, span, h) {
+    const sh = new THREE.Shape();
+    const a0 = -Math.PI / 2 - span / 2, a1 = -Math.PI / 2 + span / 2;
+    sh.absarc(0, 0, r1, a0, a1, false);
+    sh.absarc(0, 0, r0, a1, a0, true);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.008, bevelSegments: 2, curveSegments: 16 });
+    geo.rotateX(-Math.PI / 2);   // stand it up, curving round the back of the seat
+    return geo;
+  }
+  function stool(x, z, ry = Math.atan2(x, z)) {
+    const { part, rbox } = kit;
     const g = new THREE.Group();
-    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.16, 0.07, 20), M.seat);
-    seat.position.y = 0.68;
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.64, 8), M.chrome);
-    pole.position.y = 0.33;
-    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.21, 0.03, 20), M.chrome);
-    foot.position.y = 0.015;
-    g.add(seat, pole, foot);
+    g.add(part(new THREE.CylinderGeometry(0.2, 0.23, 0.035, 28), 'chrome', 0xe8e8ee, 0, 0.018, 0));
+    g.add(part(new THREE.CylinderGeometry(0.034, 0.034, 0.52, 12), 'chrome', 0xe8e8ee, 0, 0.29, 0));
+    g.add(part(new THREE.TorusGeometry(0.18, 0.012, 8, 28).rotateX(Math.PI / 2), 'chrome', 0xe8e8ee, 0, 0.3, 0));
+    for (let i = 0; i < 3; i++) {
+      const spoke = part(new THREE.BoxGeometry(0.17, 0.014, 0.014), 'chrome', 0xe8e8ee, 0, 0.3, 0);
+      spoke.rotation.y = (i / 3) * TAU;
+      spoke.translateX(0.09);
+      g.add(spoke);
+    }
+    g.add(part(rbox(0.46, 0.05, 0.44, 0.02), 'paint', LACQUER, 0, 0.575, 0));
+    g.add(part(rbox(0.46, 0.1, 0.44, 0.05), 'leather', UPHOLSTERY, 0, 0.645, -0.01));
+    g.add(part(arcBand(0.2, 0.232, 1.9, 0.19), 'paint', LACQUER, 0, 0.63, 0.02));
+    g.add(part(arcBand(0.168, 0.205, 1.6, 0.12), 'leather', UPHOLSTERY, 0, 0.69, 0.02));
     g.position.set(x, 0, z);
+    g.rotation.y = ry;
+    g.userData.chair = true;
     return g;
+  }
+  // Merge a station's chairs into a few meshes (they're dozens of parts otherwise)
+  function bakeChairs(g) {
+    const chairs = g.children.filter(o => o.userData.chair);
+    if (!chairs.length) return;
+    const tmp = new THREE.Group();
+    for (const c of chairs) { g.remove(c); tmp.add(c); }
+    g.add(kit.bake(tmp));
   }
   // Printing on the felt: the table's name or its bets, in gold
   function feltTex(text) {
@@ -446,8 +477,26 @@ export async function mount({ stage, controls, info, casino }) {
     return m;
   }
   const cardBack = std(0x9a1628, 0.5);
+  // A few real card faces, shared by every table
+  const FACES = [['A', '♠'], ['K', '♥'], ['Q', '♦'], ['10', '♣'], ['7', '♥'], ['J', '♠']].map(([r, su]) => {
+    const [cv, g] = canvas(140, 200);
+    g.fillStyle = '#fbf8f1';
+    g.fillRect(0, 0, 140, 200);
+    const red = su === '♥' || su === '♦';
+    g.fillStyle = red ? '#c8102e' : '#16141a';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = '800 34px Manrope, sans-serif';
+    g.fillText(r, 26, 28);
+    g.font = '30px "Apple Symbols", "Segoe UI Symbol", sans-serif';
+    g.fillText(su, 26, 60);
+    g.font = '86px "Apple Symbols", "Segoe UI Symbol", sans-serif';
+    g.fillText(su, 70, 112);
+    return new THREE.MeshStandardMaterial({ map: keep(tex(cv, renderer)), roughness: 0.55 });
+  });
+  let faceN = 0;
   function card(x, y, z, turn, up = true) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.1), up ? M.white : cardBack);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.1), up ? FACES[faceN++ % FACES.length] : cardBack);
     m.rotation.set(-Math.PI / 2, 0, turn);
     m.position.set(x, y, z);
     return m;
@@ -458,49 +507,179 @@ export async function mount({ stage, controls, info, casino }) {
     return m;
   }
   const CHIP_COLS = [0x7a2bb5, 0x222222, 0x1f5fbf, 0xc8102e];
-  /* The half-moon card tables. per is how many cards sit at each of the five spots (dealt
-     side by side), dealer how many face-down in front of the dealer, middle cards dealt in a
-     row across the middle (Red Dog's spread) */
-  function buildCardTable({ felt, print, per = 2, dealer = 0, middle = 0 }) {
+  // Curved printing on the felt, like the real table's: letters follow an arc round a centre
+  function arcText(g, text, cx, cy, r, font, color, spacing) {
+    g.save();
+    g.font = font;
+    g.fillStyle = color;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const widths = [...text].map(ch => g.measureText(ch).width + spacing);
+    const total = widths.reduce((a, b) => a + b, 0);
+    let a = Math.PI / 2 + total / r / 2;
+    [...text].forEach((ch, i) => {
+      const w = widths[i] / r;
+      a -= w / 2;
+      g.save();
+      g.translate(cx + r * Math.cos(a), cy + r * Math.sin(a));
+      g.rotate(a - Math.PI / 2);
+      g.fillText(ch, 0, 0);
+      g.restore();
+      a -= w / 2;
+    });
+    g.restore();
+  }
+  /* A half-moon table's felt: 512 pixels a metre, the dealer's straight edge along the top,
+     the players' curve along the bottom. Printing in gold arcs, a betting spot at each seat. */
+  function tableFelt(color, arcs, spot, extra) {
+    const W = 1024, H = 512, k = 512, cx = W / 2;
+    const [cv, g] = canvas(W, H);
+    const base = new THREE.Color(color);
+    const shade = f => `#${base.clone().multiplyScalar(f).getHexString()}`;
+    const grad = g.createRadialGradient(cx, H * 0.45, 30, cx, H * 0.45, W * 0.62);
+    grad.addColorStop(0, shade(1.35));
+    grad.addColorStop(0.6, shade(1));
+    grad.addColorStop(1, shade(0.62));
+    g.fillStyle = grad;
+    g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 1600; i++) {   // the nap of the felt
+      g.fillStyle = i % 2 ? 'rgba(255,255,255,.035)' : 'rgba(0,0,0,.05)';
+      g.fillRect((i * 97.3) % W, (i * 53.7) % H, 2, 2);
+    }
+    const gold = '#e9c46a', cream = 'rgba(245,240,227,.8)';
+    g.strokeStyle = 'rgba(233,196,106,.7)';
+    g.lineWidth = 2;
+    for (const r of [0.31, 0.37]) { g.beginPath(); g.arc(cx, 0, r * k, Math.PI * 0.18, Math.PI * 0.82); g.stroke(); }
+    for (const [text, r, size, main] of arcs) arcText(g, text, cx, 0, r * k, `800 ${size}px Manrope`, main ? gold : cream, size * 0.18);
+    for (let i = -2; i <= 2; i++) {
+      const a = i * 0.45;
+      const at = d => [cx + Math.sin(a) * d * k, Math.cos(a) * d * k];
+      g.save();
+      g.strokeStyle = gold;
+      g.fillStyle = cream;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      if (spot === 'three') {
+        for (const [d, label] of [[0.6, 'PLAY'], [0.72, 'ANTE'], [0.86, 'PAIR+']]) {
+          const [x, y] = at(d);
+          g.lineWidth = 2.5;
+          g.beginPath(); g.arc(x, y, 24, 0, TAU); g.stroke();
+          g.font = '800 10px Manrope';
+          g.fillText(label, x, y);
+        }
+      } else {
+        const [x, y] = at(0.82);
+        g.lineWidth = 4;
+        g.beginPath(); g.arc(x, y, 30, 0, TAU); g.stroke();
+        g.lineWidth = 1.5;
+        g.beginPath(); g.arc(x, y, 24, 0, TAU); g.stroke();
+        if (spot === 'war') {
+          const [wx, wy] = at(0.62);
+          g.translate(wx, wy);
+          g.rotate(-a);
+          g.lineWidth = 2.5;
+          g.strokeRect(-26, -14, 52, 28);
+          g.font = '800 14px Manrope';
+          g.fillText('WAR', 0, 1);
+        }
+      }
+      g.restore();
+    }
+    if (extra) extra(g, cx, k);
+    const t = keep(tex(cv, renderer));
+    t.repeat.set(0.5, 1);   // the felt's uvs are its shape in metres: x -1…1, front at -1, dealer at 0
+    t.offset.set(0.5, 1);
+    return t;
+  }
+  const RAIL = new THREE.MeshPhysicalMaterial({ color: 0x2b1810, roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.4 });
+  const GLOSS = new THREE.MeshPhysicalMaterial({ color: 0x3b1f0e, roughness: 0.35, clearcoat: 1, clearcoatRoughness: 0.1 });
+  const BRASS = std(0xd9a93c, 0.3, 0.9);
+  /* The half-moon card tables, after the game's own 3D table: printed felt, a padded leather
+     rail, a lacquered wood edge and apron on a two-pedestal base, a chip tray, the shoe.
+     per is how many cards sit at each of the five spots, dealer how many face-down in front
+     of the dealer, middle cards dealt in a row across the middle (Red Dog's spread) */
+  function buildCardTable({ felt, arcs, spot, extra, per = 2, dealer = 0, middle = 0 }) {
     const g = new THREE.Group();
     const top = 0.78;
-    const feltMesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.04, 48, 1, false, -Math.PI / 2, Math.PI), std(felt, 0.95));
-    feltMesh.position.y = top;
-    const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 10, 48, Math.PI), M.leather);
+    const shape = new THREE.Shape();
+    shape.moveTo(-1, 0);
+    shape.lineTo(1, 0);
+    shape.absarc(0, 0, 1, 0, -Math.PI, true);
+    const feltGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: false, curveSegments: 72 });
+    feltGeo.rotateX(-Math.PI / 2);
+    const feltMesh = new THREE.Mesh(feltGeo, [new THREE.MeshStandardMaterial({ map: tableFelt(felt, arcs, spot, extra), roughness: 0.95 }), GLOSS]);
+    feltMesh.position.y = top - 0.04;
+    const rail = new THREE.Mesh(new THREE.TorusGeometry(1.02, 0.055, 16, 96, Math.PI), RAIL);
     rail.rotation.x = Math.PI / 2;
-    rail.position.y = top + 0.03;
-    const back = new THREE.Mesh(new THREE.BoxGeometry(2.12, 0.09, 0.1), M.wood);
-    back.position.set(0, top + 0.005, -0.03);
-    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.92, 0.45, 40, 1, true, -Math.PI / 2, Math.PI), M.woodDark);
-    skirt.position.y = top - 0.25;
-    const front = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.45, 0.04), M.woodDark);
-    front.position.set(0, top - 0.25, 0);
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.55, 16), M.woodDark);
-    leg.position.set(0, 0.275, 0.35);
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.04, 0.13), M.woodDark);
-    tray.position.set(0, top + 0.035, 0.1);
-    g.add(feltMesh, rail, back, skirt, front, leg, tray, feltPrint(print, 1.0, 0, top + 0.021, 0.42));
-    [0, 0, 1, 1, 2, 2, 3, 3].forEach((c, i) => g.add(chipStack(CHIP_COLS[c], -0.21 + i * 0.06, top + 0.045, 0.1)));
-    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.22), std(0x5a0c18, 0.4));
-    shoe.position.set(0.6, top + 0.07, 0.16);
+    rail.position.y = top + 0.008;
+    const edge = new THREE.Mesh(new THREE.BoxGeometry(2.16, 0.06, 0.08), GLOSS);
+    edge.position.set(0, top - 0.012, -0.035);
+    // the apron under the top, a brass line round it, and two pedestals on wide feet
+    const apron = new THREE.Mesh(new THREE.CylinderGeometry(0.97, 0.97, 0.16, 64, 1, true, -Math.PI / 2, Math.PI), GLOSS);
+    apron.position.y = top - 0.12;
+    const apronBack = new THREE.Mesh(new THREE.BoxGeometry(1.94, 0.16, 0.03), GLOSS);
+    apronBack.position.set(0, top - 0.12, 0);
+    const trim = new THREE.Mesh(new THREE.TorusGeometry(0.975, 0.008, 6, 64, Math.PI), BRASS);
+    trim.rotation.x = Math.PI / 2;
+    trim.position.y = top - 0.18;
+    g.add(feltMesh, rail, edge, apron, apronBack, trim);
+    for (const x of [-0.5, 0.5]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 0.56, 20), GLOSS);
+      leg.position.set(x, 0.33, 0.38);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.01, 6, 20).rotateX(Math.PI / 2), BRASS);
+      ring.position.set(x, 0.5, 0.38);
+      const foot = new THREE.Mesh(new RoundedBoxGeometry(0.4, 0.05, 0.26, 2, 0.02), GLOSS);
+      foot.position.set(x, 0.025, 0.38);
+      g.add(leg, ring, foot);
+    }
+    // the chip tray: columns of chips lying in a wood tray along the dealer's edge
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.025, 0.09), GLOSS);
+    tray.position.set(0, top + 0.012, 0.08);
+    g.add(tray);
+    const chipGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.075, 18);
+    [3, 3, 2, 2, 1, 1, 0, 0].forEach((c, i) => {
+      const col = new THREE.Mesh(chipGeo, std(CHIP_COLS[c], 0.4));
+      col.rotation.x = Math.PI / 2;
+      col.position.set(-0.19 + i * 0.054, top + 0.03, 0.08);
+      g.add(col);
+    });
+    // the shoe, cards waiting in its mouth
+    const shoe = new THREE.Mesh(new RoundedBoxGeometry(0.11, 0.08, 0.2, 2, 0.015), new THREE.MeshPhysicalMaterial({ color: 0x17171a, roughness: 0.3, clearcoat: 0.8 }));
+    shoe.position.set(0.62, top + 0.04, 0.17);
+    shoe.rotation.y = 0.45;
+    const shoeCard = card(0, 0, 0, 0, false);
+    shoeCard.rotation.set(-1.1, 0, 0);
+    shoeCard.position.set(0, 0.0, 0.105);
+    shoe.add(shoeCard);
     g.add(shoe);
-    for (let i = 0; i < dealer; i++) g.add(card((i - (dealer - 1) / 2) * 0.08, top + 0.022, 0.26, 0, false));
-    for (let i = 0; i < middle; i++) g.add(card((i - (middle - 1) / 2) * 0.09, top + 0.022, 0.32, 0, i !== 1));
+    for (let i = 0; i < dealer; i++) g.add(card((i - (dealer - 1) / 2) * 0.08, top + 0.002, 0.26, 0, false));
+    for (let i = 0; i < middle; i++) g.add(card((i - (middle - 1) / 2) * 0.09, top + 0.002, 0.32, 0, i !== 1));
     for (let i = -2; i <= 2; i++) {
       const a = i * 0.45;
       for (let j = 0; j < per; j++) {
         const off = (j - (per - 1) / 2) * 0.03;
-        g.add(card(Math.sin(a) * 0.68 + off * Math.cos(a), top + 0.022 + j * 0.001, Math.cos(a) * 0.68 - off * Math.sin(a), -a));
+        g.add(card(Math.sin(a) * 0.68 + off * Math.cos(a), top + 0.002 + j * 0.001, Math.cos(a) * 0.68 - off * Math.sin(a), -a));
       }
-      g.add(chipStack(CHIP_COLS[(i + 2) % 4], Math.sin(a) * 0.84, top + 0.02, Math.cos(a) * 0.84, 0.03));
+      g.add(chipStack(CHIP_COLS[(i + 2) % 4], Math.sin(a) * 0.82, top, Math.cos(a) * 0.82, 0.03));
       g.add(stool(Math.sin(a) * 1.35, Math.cos(a) * 1.35));
     }
     return g;
   }
-  const buildBlackjack = () => buildCardTable({ felt: 0x0d6b3a, print: 'BLACKJACK PAYS 3 TO 2', per: 2, dealer: 2 });
-  const buildThreeCard = () => buildCardTable({ felt: 0x123f78, print: 'PAIR PLUS · ANTE · PLAY', per: 3, dealer: 3 });
-  const buildWar = () => buildCardTable({ felt: 0x7a1f1a, print: 'CASINO WAR · TIES GO TO WAR', per: 1, dealer: 1 });
-  const buildRedDog = () => buildCardTable({ felt: 0x4b1f6e, print: 'RED DOG · THE SPREAD PAYS', per: 0, middle: 3 });
+  const buildBlackjack = () => buildCardTable({ felt: 0x0d6b3a, spot: 'circle', per: 2, dealer: 2,
+    arcs: [['BLACKJACK PAYS 3 TO 2', 0.43, 22, true], ['INSURANCE PAYS 2 TO 1', 0.34, 13], ['DEALER STANDS ON ALL 17s', 0.265, 10]] });
+  const buildThreeCard = () => buildCardTable({ felt: 0x123f78, spot: 'three', per: 3, dealer: 3,
+    arcs: [['THREE CARD POKER', 0.43, 22, true], ['PAIR PLUS PAYS UP TO 40 TO 1', 0.34, 12], ['DEALER QUALIFIES WITH QUEEN HIGH', 0.265, 9]] });
+  const buildWar = () => buildCardTable({ felt: 0x7a1f1a, spot: 'war', per: 1, dealer: 1,
+    arcs: [['CASINO WAR', 0.43, 24, true], ['TIES GO TO WAR', 0.34, 13], ['HIGH CARD WINS', 0.265, 10]] });
+  const buildRedDog = () => buildCardTable({ felt: 0x4b1f6e, spot: 'circle', per: 0, middle: 3,
+    arcs: [['RED DOG', 0.45, 24, true], ['THE SPREAD PAYS', 0.36, 13]],
+    extra: (g, cx, k) => {
+      g.font = '800 11px Manrope';
+      g.fillStyle = 'rgba(245,240,227,.75)';
+      g.textAlign = 'center';
+      g.fillText('1 · 5 TO 1     2 · 4 TO 1     3 · 2 TO 1     4–11 · EVEN', cx, 0.5 * k);
+    } });
+
 
   // Baccarat: a long oval table, Player and Banker boxes down the middle
   function buildBaccarat() {
@@ -509,16 +688,16 @@ export async function mount({ stage, controls, info, casino }) {
     const oval = m => { m.scale.set(SX, 1, SZ); return m; };
     const felt = oval(new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.04, 56), std(0x0b5a3a, 0.95)));
     felt.position.y = top;
-    const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 10, 56), M.leather);
+    const rail = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 10, 56), RAIL);
     rail.rotation.x = Math.PI / 2;
     rail.scale.set(SX, SZ, 1);
     rail.position.y = top + 0.03;
-    const skirt = oval(new THREE.Mesh(new THREE.CylinderGeometry(0.94, 0.94, 0.45, 48, 1, true), M.woodDark));
+    const skirt = oval(new THREE.Mesh(new THREE.CylinderGeometry(0.94, 0.94, 0.45, 48, 1, true), GLOSS));
     skirt.position.y = top - 0.25;
-    const legs = [-0.7, 0.7].map(x => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 0.55, 16), M.woodDark); l.position.set(x, 0.275, 0); return l; });
+    const legs = [-0.7, 0.7].map(x => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 0.55, 16), GLOSS); l.position.set(x, 0.275, 0); return l; });
     g.add(felt, rail, skirt, ...legs, feltPrint('PLAYER', 0.8, -0.42, top + 0.021, 0.14), feltPrint('BANKER', 0.8, 0.42, top + 0.021, 0.14), feltPrint('TIE PAYS 8 TO 1', 0.9, 0, top + 0.021, 0.44));
     for (const x of [-0.42, 0.42]) for (const d of [-0.045, 0.045]) g.add(card(x + d, top + 0.022, -0.05, 0));
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.13), M.woodDark);
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.13), GLOSS);
     tray.position.set(0, top + 0.035, -0.5);
     g.add(tray);
     [0, 0, 1, 1, 2, 2, 3, 3, 1].forEach((c, i) => g.add(chipStack(CHIP_COLS[c], -0.24 + i * 0.06, top + 0.045, -0.5)));
@@ -589,9 +768,9 @@ export async function mount({ stage, controls, info, casino }) {
   function buildRoulette() {
     const g = new THREE.Group();
     const top = 0.8;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.72, 1.05), M.woodDark);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.72, 1.05), GLOSS);
     body.position.y = 0.38;
-    const rim = new THREE.Mesh(new RoundedBoxGeometry(2.62, 0.08, 1.17, 2, 0.03), M.wood);
+    const rim = new THREE.Mesh(new RoundedBoxGeometry(2.62, 0.08, 1.17, 2, 0.03), GLOSS);
     rim.position.y = top - 0.03;
     const felt = new THREE.Mesh(new THREE.BoxGeometry(2.48, 0.02, 1.03), M.felt);
     felt.position.y = top + 0.01;
@@ -601,11 +780,11 @@ export async function mount({ stage, controls, info, casino }) {
     g.add(body, rim, felt, layout);
     const wheel = new THREE.Group();
     wheel.position.set(-0.85, top, 0);
-    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.38, 0.14, 48), M.wood);
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.38, 0.14, 48), GLOSS);
     bowl.position.y = 0.07;
     rotor = new THREE.Group();
     rotor.position.y = 0.13;
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.02, 48), [M.woodDark, new THREE.MeshStandardMaterial({ map: rotorTex(), roughness: 0.4 }), M.woodDark]);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.02, 48), [GLOSS, new THREE.MeshStandardMaterial({ map: rotorTex(), roughness: 0.4 }), GLOSS]);
     const turret = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 16), M.gold);
     turret.position.y = 0.07;
     for (let i = 0; i < 4; i++) {
@@ -1060,7 +1239,9 @@ export async function mount({ stage, controls, info, casino }) {
   const groups = [];
   const DIRS = [];
   STATIONS.forEach((st, k) => {
-    const g = shadowy(builders[st.id]());
+    const g = builders[st.id]();
+    bakeChairs(g);
+    shadowy(g);
     g.position.set(st.pos[0], 0, st.pos[1]);
     g.rotation.y = st.yaw;
     g.userData.k = k;
