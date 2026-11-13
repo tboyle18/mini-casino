@@ -534,6 +534,13 @@
   .fl-all.nudge::after { content: ""; position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
   .fl-btn.nudge::after { content: ""; position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: #ff5d6c; box-shadow: 0 0 0 2px #0b0907; }
   .fl-sheet-body { display: flex; flex-direction: column; gap: 12px; }
+  .bonus-pop { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding-top: 4px; }
+  .bonus-pop .bp-em { font-size: 52px; line-height: 1; }
+  .bonus-pop h2 { margin: 4px 0 0; }
+  .bonus-pop .bp-amt { margin: 0; font: 900 40px/1.1 var(--font-display); color: var(--gold); }
+  .bonus-pop .bp-sub { margin: 0 0 8px; color: var(--ink-2); font-size: 14px; }
+  .bonus-pop .btn { width: 100%; }
+  .bonus-pop .bp-fine { margin: 6px 0 0; color: var(--ink-2); font-size: 13px; line-height: 1.4; }
   .fl-sheet-body > * { margin: 0; }
   .fl-sheet-body h2 { margin: 0; }
   .fl-go { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -3514,7 +3521,7 @@ async function claimDaily(at) {
     if (d.wallet) walletFrom(d.wallet);
     if (d.ok) {
       buzz([15, 50, 25]);
-      if (at === 'cashier') bigWin(0, 1000, 'Cashier · Daily bonus', 'payday', 250);
+      if (at === 'cashier' || at === 'popup') bigWin(0, 1000, at === 'cashier' ? 'Cashier · Daily bonus' : 'Daily bonus', 'payday', 250);
       else toast('Daily bonus: +$1,000. See you tomorrow.');
     }
   } catch (e) {
@@ -5720,14 +5727,44 @@ function floorGoList() {
   }
   return out;
 }
+/* Today's bonus, offered once a day when you arrive on the floor: collect it right here, or
+   later at the cashier */
+function bonusCard() {
+  const box = document.createElement('div');
+  box.className = 'bonus-pop';
+  box.innerHTML = '<div class="bp-em" aria-hidden="true">💰</div><h2>Your daily bonus is ready</h2>'
+    + '<p class="bp-amt">$1,000</p><p class="bp-sub">Free play money, every day.</p>';
+  const b = document.createElement('button');
+  b.className = 'btn primary block';
+  b.textContent = 'Collect $1,000';
+  b.addEventListener('click', () => { flPopClose(); claimDaily('popup'); });
+  const fine = document.createElement('p');
+  fine.className = 'bp-fine';
+  fine.textContent = 'Not now? You can collect it any time today at the cashier on the casino floor.';
+  box.append(b, fine);
+  return [box];
+}
+const BONUS_POP_KEY = 'mini-casino.bonus-pop';
+function maybeBonusPop() {
+  clearTimeout(maybeBonusPop.t);
+  maybeBonusPop.t = setTimeout(() => {
+    if (app.view !== 'floor' || !bonusReady() || flPop.kind || !ui.auth.hidden) return;
+    let seen = '';
+    try { seen = localStorage.getItem(BONUS_POP_KEY) || ''; } catch (e) { /* storage unavailable */ }
+    if (seen === localDay()) return;   // once a day
+    try { localStorage.setItem(BONUS_POP_KEY, localDay()); } catch (e) { /* storage unavailable */ }
+    flPopOpen('bonus');
+  }, 1200);
+}
 function flPopOpen(kind) {
   flPopClose();
-  const nodes = kind === 'go' ? floorGoList() : kind === 'lb' ? [ui.lbList.closest('.lcard')]
+  const nodes = kind === 'bonus' ? bonusCard() : kind === 'go' ? floorGoList() : kind === 'lb' ? [ui.lbList.closest('.lcard')]
     : [ui.account.closest('.lcard'), ui.pfDaily.closest('.lcard'), ui.pfLearn, ui.pfVibe.closest('.lcard')];
-  flPop.moved = kind === 'go' ? [] : nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
+  flPop.moved = kind === 'go' || kind === 'bonus' ? [] : nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
   flPop.kind = kind;
   ui.flSheetBody.replaceChildren(...nodes);
-  ui.flSheetDialog.setAttribute('aria-label', kind === 'go' ? 'All games' : kind === 'lb' ? 'Leaderboard' : 'Your account');
+  ui.flSheetClose.textContent = kind === 'bonus' ? 'Later' : 'Done';
+  ui.flSheetDialog.setAttribute('aria-label', kind === 'bonus' ? 'Daily bonus' : kind === 'go' ? 'All games' : kind === 'lb' ? 'Leaderboard' : 'Your account');
   if (kind === 'lb') { renderBoard(); lbLoad(); } else if (kind === 'acct') renderProfile();
   ui.flSheet.hidden = false;
   buzz(6);
@@ -5749,6 +5786,7 @@ function renderFloorHud() {
   else ui.flAv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>';
   ui.flAcct.classList.toggle('nudge', cloud.ready && !signedIn());   // a nudge to sign in
   ui.flWelcome.hidden = !cloud.ready || signedIn();
+  maybeBonusPop();
   ui.flGo.classList.toggle('nudge', bonusReady());   // today's bonus is waiting at the cashier
   feedLoad();
   ui.flAcct.setAttribute('aria-label', name ? `Your account: ${name}` : 'Your account: sign in');
