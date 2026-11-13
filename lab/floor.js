@@ -152,6 +152,16 @@ export async function mount({ stage, controls, info, casino }) {
     rowGroup.add(m);
   }
   scene.add(kit.bake(rowGroup));
+  // A short bank on the right wall, round the corner from the back row, facing into the room
+  const sideGroup = new THREE.Group();
+  ['m', 'c', 'm'].forEach((k, i) => {
+    const theme = rowThemes[(i * 4 + 2) % rowThemes.length];
+    const m = k === 'm' ? kit.modern(theme, { topper: i ? 'box' : 'arch' }) : kit.classic(theme, { chair: 'stool' });
+    m.position.set(ROOM.x1 - 0.42, 0, -1.2 + i * 0.85);
+    m.rotation.y = -Math.PI / 2;
+    sideGroup.add(m);
+  });
+  scene.add(kit.bake(sideGroup));
   const m4 = new THREE.Matrix4();
   const c = new THREE.Color();
 
@@ -746,60 +756,136 @@ export async function mount({ stage, controls, info, casino }) {
   }
 
 
-  // Video poker: a bar-top machine with a slanted screen and a row of hold buttons
+  /* Video poker, after the real uprights: a dark cabinet with a wide 4:3 screen showing the pay
+     table over a dealt hand, a button deck (bet one, max bet, five holds, deal/draw), a belly
+     glass, a lit topper, LED trim and a casino chair. */
   function vpScreenTex() {
-    const [cv, g] = canvas(512, 320);
-    g.fillStyle = '#0a1f7a';
-    g.fillRect(0, 0, 512, 320);
-    g.font = '900 40px Manrope, sans-serif';
+    const [cv, g] = canvas(1024, 768);
+    g.fillStyle = '#0a1a9e';
+    g.fillRect(0, 0, 1024, 768);
+    g.textBaseline = 'middle';
+    // the pay table: hands down the left, five columns of coins, the max-bet column lit
+    const rows = [['ROYAL FLUSH', 250, 4000], ['STRAIGHT FLUSH', 50], ['4 OF A KIND', 25], ['FULL HOUSE', 9], ['FLUSH', 6], ['STRAIGHT', 4], ['3 OF A KIND', 3], ['TWO PAIR', 2], ['JACKS OR BETTER', 1]];
+    const tx = 18, ty = 16, rh = 34, colW = 118, nameW = 300;
+    g.fillStyle = '#c9101e';
+    g.fillRect(tx + nameW + colW * 4, ty, colW, rh * rows.length + 6);
+    g.strokeStyle = '#ffd23f';
+    g.lineWidth = 3;
+    g.strokeRect(tx, ty, nameW + colW * 5, rh * rows.length + 6);
+    rows.forEach(([name, k, top], r) => {
+      const y = ty + 6 + r * rh + rh / 2;
+      g.font = '900 25px Manrope, sans-serif';
+      g.textAlign = 'left';
+      g.fillStyle = '#ffd23f';
+      g.fillText(name, tx + 12, y);
+      g.textAlign = 'right';
+      for (let c = 0; c < 5; c++) {
+        g.fillStyle = c === 4 ? '#fff6c8' : '#ffd23f';
+        g.fillText(String(c === 4 && top ? top : k * (c + 1)), tx + nameW + colW * (c + 1) - 14, y);
+      }
+    });
+    // the dealt hand, two of them held
+    const hand = [['K', '♠'], ['K', '♥'], ['7', '♦'], ['3', '♣'], ['J', '♠']];
+    const cw = 172, chh = 240, cy = 372, gap = (1024 - cw * 5) / 6;
+    hand.forEach(([rank, su], i) => {
+      const x = gap + i * (cw + gap);
+      const red = su === '♥' || su === '♦';
+      if (i < 2) { g.font = '900 30px Manrope, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#fff6c8'; g.fillText('HELD', x + cw / 2, cy - 22); }
+      g.fillStyle = '#fbf8f1';
+      g.beginPath(); g.roundRect(x, cy, cw, chh, 14); g.fill();
+      g.fillStyle = red ? '#c8102e' : '#16141a';
+      g.textAlign = 'left';
+      g.font = '900 52px Manrope, sans-serif';
+      g.fillText(rank, x + 12, cy + 38);
+      g.font = '44px "Apple Symbols", "Segoe UI Symbol", sans-serif';
+      g.fillText(su, x + 14, cy + 86);
+      g.textAlign = 'center';
+      g.font = '120px "Apple Symbols", "Segoe UI Symbol", sans-serif';
+      g.fillText(su, x + cw / 2 + 14, cy + 160);
+    });
+    // the meters along the bottom
+    g.font = '900 34px Manrope, sans-serif';
+    g.fillStyle = '#ffd23f';
+    g.textAlign = 'left';
+    g.fillText('WIN 0', 24, 690);
+    g.textAlign = 'center';
+    g.fillText('BET 5', 512, 690);
+    g.textAlign = 'right';
+    g.fillText('CREDIT 1,000', 1000, 690);
+    g.font = '900 30px Manrope, sans-serif';
+    g.fillStyle = '#fff';
+    g.textAlign = 'center';
+    g.fillText('JACKS OR BETTER', 512, 738);
+    return keep(tex(cv, renderer));
+  }
+  function vpPanelTex(lines, bg, fg, w, h) {
+    const [cv, g] = canvas(w, h);
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, bg[0]);
+    grad.addColorStop(1, bg[1]);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillStyle = '#ffd23f';
-    g.fillText('JACKS OR BETTER', 256, 46);
-    ['A', 'K', 'Q', 'J', '10'].forEach((r, i) => {
-      const x = 16 + i * 98;
-      g.fillStyle = '#fbf8f0';
-      g.fillRect(x, 96, 86, 124);
-      g.fillStyle = i % 2 ? '#141414' : '#c8102e';
-      g.font = '900 46px Manrope, sans-serif';
-      g.fillText(r, x + 43, 158);
+    lines.forEach(([t, size, col], i) => {
+      g.font = `900 ${size}px Manrope, sans-serif`;
+      const k = Math.min(1, (w - 40) / g.measureText(t).width);
+      g.font = `900 ${Math.floor(size * k)}px Manrope, sans-serif`;
+      g.fillStyle = col || fg;
+      g.fillText(t, w / 2, h * (lines.length === 1 ? 0.5 : 0.36 + i * 0.36));
     });
-    g.font = '800 26px Manrope, sans-serif';
-    g.fillStyle = '#fff';
-    g.fillText('ROYAL FLUSH  ·  800 FOR 1', 256, 270);
     return keep(tex(cv, renderer));
   }
   function buildVideoPoker() {
     const g = new THREE.Group();
-    const blue = std(0x15306a, 0.4, 0.1);
-    const base = new THREE.Mesh(new RoundedBoxGeometry(0.72, 0.95, 0.6, 3, 0.05), blue);
-    base.position.y = 0.475;
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.05, 0.26), M.chrome);
-    deck.position.set(0, 0.97, 0.2);
+    const { part, rbox, box } = kit;
+    const W = 0.7, body = 0x1b1d2a, trim = 0x5ee0e0;
+    const flat = (map, w, h, x, y, z, rx = 0) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map, toneMapped: false }));
+      m.position.set(x, y, z);
+      m.rotation.x = rx;
+      return m;
+    };
+    g.add(part(box(W - 0.06, 0.1, 0.52), 'dark', 0x0a090d, 0, 0.05, -0.02));          // toe kick
+    g.add(part(rbox(W, 0.76, 0.6, 0.035), 'paint', body, 0, 0.48, 0));                // lower cabinet
+    g.add(part(box(W + 0.01, 0.03, 0.61), 'chrome', 0xe8e8ee, 0, 0.11, 0));
+    g.add(flat(vpPanelTex([['VIDEO POKER', 64, '#fff6dc'], ['DOUBLE UP  ·  PLAY 5 COINS', 30, '#5ee0e0']], ['#0f2a8a', '#06103a'], '#fff', 512, 192), 0.56, 0.21, 0, 0.5, 0.302));
+    g.add(part(box(0.58, 0.012, 0.01), 'glow', trim, 0, 0.63, 0.302));
+    // the button deck: bet one, max bet, five holds, deal/draw
+    const deck = new THREE.Group();
+    deck.position.set(0, 0.885, 0.16);
     deck.rotation.x = 0.18;
-    g.add(base, deck);
-    const btnGeo = new THREE.BoxGeometry(0.08, 0.025, 0.05);
-    const lit = glowMat(0xffd23f);
-    for (let i = 0; i < 5; i++) {
-      const b = new THREE.Mesh(btnGeo, i === 2 ? glowMat(0xff5d6c) : lit);
-      b.position.set(-0.24 + i * 0.12, 1.0, 0.24);
-      b.rotation.x = 0.18;
-      g.add(b);
+    deck.add(part(rbox(W + 0.03, 0.06, 0.34, 0.025), 'dark', 0x22242e, 0, 0, 0));
+    deck.add(part(box(W - 0.04, 0.004, 0.06), 'chrome', 0xe8e8ee, 0, 0.031, -0.12));
+    for (let i = 0; i < 5; i++) deck.add(part(rbox(0.07, 0.022, 0.05, 0.008), 'glow', i < 2 ? 0xffffff : 0xfff1a8, -0.2 + i * 0.1, 0.036, 0.06));
+    deck.add(part(rbox(0.07, 0.022, 0.045, 0.008), 'glow', 0x6be7ff, -0.27, 0.036, -0.03));   // bet one
+    deck.add(part(rbox(0.07, 0.022, 0.045, 0.008), 'glow', 0xffd23f, -0.18, 0.036, -0.03));   // max bet
+    deck.add(part(rbox(0.1, 0.024, 0.05, 0.01), 'glow', 0x7cff6b, 0.25, 0.036, -0.03));      // deal / draw
+    deck.add(part(box(0.12, 0.03, 0.07), 'dark', 0x0a090d, 0.12, 0.035, -0.09));             // bill slot
+    deck.add(part(box(0.1, 0.006, 0.004), 'glow', 0x7cff6b, 0.12, 0.05, -0.054));
+    g.add(deck);
+    // the screen housing, the screen leaning back, speakers under it
+    g.add(part(rbox(W, 0.66, 0.44, 0.035), 'paint', body, 0, 1.25, -0.08));
+    const scr = new THREE.Group();
+    scr.position.set(0, 1.26, 0.142);
+    scr.rotation.x = -0.1;
+    scr.add(part(rbox(W - 0.04, 0.5, 0.03, 0.012), 'dark', 0x0a090d, 0, 0, 0));
+    scr.add(part(rbox(W - 0.06, 0.48, 0.006, 0.006), 'chrome', 0xc8c8d0, 0, 0, 0.012));
+    scr.add(flat(vpScreenTex(), 0.6, 0.45, 0, 0, 0.017));
+    g.add(scr);
+    for (const sx of [-0.22, 0.22]) g.add(part(new THREE.CylinderGeometry(0.032, 0.032, 0.012, 16).rotateX(Math.PI / 2), 'dark', 0x0a090d, sx, 0.955, 0.14));
+    // the topper: a lit sign box with a chrome cap
+    g.add(part(rbox(W, 0.3, 0.34, 0.035), 'paint', body, 0, 1.74, -0.08));
+    g.add(flat(vpPanelTex([['JACKS OR BETTER', 70, '#ffd23f'], ['ROYAL PAYS 4000', 34, '#ffffff']], ['#c9101e', '#5a0610'], '#fff', 512, 160), 0.62, 0.2, 0, 1.74, 0.092));
+    g.add(part(box(W + 0.01, 0.02, 0.35), 'chrome', 0xe8e8ee, 0, 1.9, -0.08));
+    // LED strips up the front edges, and a candle light on top
+    for (const sx of [-1, 1]) {
+      g.add(part(box(0.022, 0.74, 0.022), 'led', 0xffffff, sx * (W / 2 + 0.004), 0.48, 0.295));
+      g.add(part(box(0.022, 0.64, 0.022), 'led', 0xffffff, sx * (W / 2 + 0.004), 1.25, 0.135));
     }
-    const head = new THREE.Group();
-    head.position.set(0, 1.0, 0.0);
-    head.rotation.x = -0.22;
-    const box = new THREE.Mesh(new RoundedBoxGeometry(0.72, 0.72, 0.36, 3, 0.04), blue);
-    box.position.y = 0.36;
-    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.375), new THREE.MeshBasicMaterial({ map: vpScreenTex(), toneMapped: false }));
-    screen.position.set(0, 0.38, 0.182);
-    const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.42, 0.01), M.chrome);
-    bezel.position.set(0, 0.38, 0.176);
-    head.add(box, bezel, screen);
-    const topper = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.12, 0.08), glowMat(0x5ee0e0));
-    topper.position.set(0, 1.76, -0.13);
-    g.add(head, topper);
-    g.add(stool(0, 0.75));
+    g.add(part(new THREE.CylinderGeometry(0.035, 0.035, 0.1, 16), 'glow', trim, 0, 1.96, -0.08));
+    g.add(part(new THREE.CylinderGeometry(0.035, 0.035, 0.05, 16), 'glow', 0xff3d3d, 0, 2.035, -0.08));
+    g.add(stool(0, 0.8));
     return g;
   }
   /* Roulette, after the game's own wheel: a lacquered bowl and ball track turned on a lathe,
@@ -1029,42 +1115,83 @@ export async function mount({ stage, controls, info, casino }) {
     });
     return keep(tex(cv, renderer));
   }
+  /* Duck Drop, built like an arcade prize cabinet: a white peg board behind glass with chrome
+     pegs, chrome dividers over the prize slots, a chrome frame with LED edges, a lit arch
+     marquee with chasing bulbs, side art panels, and a control deck with the big drop button
+     and a coin door. */
   function buildPlinko() {
     const g = new THREE.Group();
-    const W = 1.4, purple = std(0x3a1260, 0.45, 0.1);
-    const base = new THREE.Mesh(new RoundedBoxGeometry(W + 0.1, 0.8, 0.7, 3, 0.05), purple);
-    base.position.y = 0.4;
-    const cab = new THREE.Mesh(new RoundedBoxGeometry(W, 1.85, 0.36, 3, 0.05), purple);
-    cab.position.set(0, 1.72, -0.12);
-    const board = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.16, 1.6), new THREE.MeshStandardMaterial({ color: 0x150828, emissive: 0x2a0d4a, emissiveIntensity: 0.8, roughness: 0.6 }));
-    board.position.set(0, 1.74, 0.061);
-    const bins = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.16, 0.16), new THREE.MeshBasicMaterial({ map: dropBinsTex(), toneMapped: false }));
-    bins.position.set(0, DROP.bottom - 0.04, 0.063);
-    const glass = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.12, 1.78), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, roughness: 0.05, metalness: 0.2, depthWrite: false }));
-    glass.position.set(0, 1.72, 0.1);
-    const ledge = new THREE.Mesh(new THREE.BoxGeometry(W + 0.1, 0.06, 0.32), M.chrome);
-    ledge.position.set(0, 0.83, 0.2);
-    const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 24), glowMat(0x7cff6b));
-    btn.position.set(0, 0.88, 0.24);
-    const marquee = new THREE.Mesh(new THREE.CircleGeometry(0.66, 40, 0, Math.PI), new THREE.MeshBasicMaterial({ map: keep(tex(signCanvas('DUCK DROP', 'UP TO 10×'), renderer)), toneMapped: false }));
-    marquee.position.set(0, 2.64, -0.02);
-    const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.69, 0.69, 0.3, 40, 1, false, -Math.PI / 2, Math.PI), purple);
-    arch.rotation.x = Math.PI / 2;
-    arch.position.set(0, 2.64, -0.18);
-    g.add(base, cab, board, bins, glass, ledge, btn, marquee, arch);
-    // The pegs: a triangle of glowing studs
+    const { part, rbox, box } = kit;
+    const W = 1.4, purple = 0x3a1260, deep = 0x1c0832;
+    const BY = (DROP.top + DROP.bottom) / 2 + 0.05, BH = DROP.top - DROP.bottom + 0.3;
+    // the base: cabinet, chrome kick, coin door, a control deck with the button
+    g.add(part(box(W, 0.1, 0.62), 'dark', 0x0a090d, 0, 0.05, 0));
+    g.add(part(rbox(W + 0.1, 0.72, 0.7, 0.04), 'paint', purple, 0, 0.44, 0));
+    g.add(part(box(W + 0.11, 0.03, 0.71), 'chrome', 0xe8e8ee, 0, 0.12, 0));
+    g.add(part(rbox(0.3, 0.34, 0.02, 0.015), 'chrome', 0xc8c8d0, -0.34, 0.45, 0.355));   // coin door
+    g.add(part(box(0.05, 0.08, 0.01), 'glow', 0xff3d3d, -0.34, 0.5, 0.367));
+    g.add(part(box(0.2, 0.02, 0.01), 'dark', 0x0a090d, -0.34, 0.36, 0.367));
+    g.add(part(rbox(0.3, 0.34, 0.02, 0.015), 'chrome', 0xc8c8d0, 0.34, 0.45, 0.355));
+    g.add(part(box(0.05, 0.08, 0.01), 'glow', 0x7cff6b, 0.34, 0.5, 0.367));
+    g.add(part(box(0.2, 0.02, 0.01), 'dark', 0x0a090d, 0.34, 0.36, 0.367));
+    const deck = new THREE.Group();
+    deck.position.set(0, 0.83, 0.2);
+    deck.rotation.x = 0.16;
+    deck.add(part(rbox(W + 0.14, 0.06, 0.34, 0.025), 'dark', 0x22242e, 0, 0, 0));
+    deck.add(part(new THREE.CylinderGeometry(0.1, 0.11, 0.03, 32), 'chrome', 0xe8e8ee, 0, 0.035, 0.04));
+    deck.add(part(new THREE.SphereGeometry(0.085, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), 'glow', 0x7cff6b, 0, 0.05, 0.04));
+    for (const sx of [-0.42, 0.42]) deck.add(part(rbox(0.12, 0.022, 0.06, 0.008), 'glow', sx < 0 ? 0x6be7ff : 0xffd23f, sx, 0.036, 0.04));
+    g.add(deck);
+    // the cabinet body round the board, side art panels, the chrome frame
+    g.add(part(rbox(W + 0.1, BH + 0.2, 0.36, 0.04), 'paint', purple, 0, BY, -0.14));
+    for (const sx of [-1, 1]) {
+      g.add(part(box(0.02, BH + 0.1, 0.3), 'paint', deep, sx * (W / 2 + 0.056), BY, -0.14));
+      g.add(part(box(0.024, BH + 0.16, 0.024), 'led', 0xffffff, sx * (W / 2 + 0.02), BY, 0.05));
+      for (let i = 0; i < 6; i++) g.add(part(new THREE.SphereGeometry(0.018, 8, 6), 'glow', i % 2 ? 0xffd23f : 0x7cff6b, sx * (W / 2 + 0.057), BY - BH / 2 + 0.15 + i * (BH - 0.3) / 5, 0.0));
+    }
+    g.add(part(box(W + 0.02, 0.035, 0.05), 'chrome', 0xe8e8ee, 0, BY + BH / 2 + 0.02, 0.05));
+    g.add(part(box(W + 0.02, 0.035, 0.05), 'chrome', 0xe8e8ee, 0, DROP.bottom - 0.14, 0.05));
+    // the board: bright white with a soft violet glow at its edges, chrome pegs standing out of it
+    const [bcv, bg] = canvas(256, 512);
+    const grad = bg.createRadialGradient(128, 230, 20, 128, 256, 300);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.7, '#f1e8ff');
+    grad.addColorStop(1, '#bfa3ee');
+    bg.fillStyle = grad;
+    bg.fillRect(0, 0, 256, 512);
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.12, BH - 0.04), new THREE.MeshStandardMaterial({ map: keep(tex(bcv, renderer)), roughness: 0.5, emissive: 0xffffff, emissiveIntensity: 0.25, emissiveMap: keep(tex(bcv, renderer)) }));
+    board.position.set(0, BY, 0.04);
+    g.add(board);
     const xs = [];
     for (let r = 0; r < DROP.rows; r++) for (let i = 0; i <= r + 2; i++) xs.push([(i - (r + 2) / 2) * DROP.gap * 0.95, DROP.top - 0.08 - r * 0.15]);
-    const pegs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.013, 8, 6), glowMat(0xffe7a0), xs.length);
-    xs.forEach(([x, y], i) => pegs.setMatrixAt(i, m4.makeTranslation(x, y, 0.075)));
+    const pegs = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.011, 0.011, 0.05, 10).rotateX(Math.PI / 2), std(0xe2e6ee, 0.22, 0.55), xs.length);
+    xs.forEach(([x, y], i) => pegs.setMatrixAt(i, m4.makeTranslation(x, y, 0.065)));
+    pegs.castShadow = true;
     g.add(pegs);
-    // Bulbs round the marquee
-    const bulbGeo = new THREE.SphereGeometry(0.02, 8, 6);
+    // the prize slots along the bottom, with chrome dividers between them
+    const bins = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.16, 0.16), new THREE.MeshBasicMaterial({ map: dropBinsTex(), toneMapped: false }));
+    bins.position.set(0, DROP.bottom - 0.04, 0.045);
+    g.add(bins);
+    const slotW = (W - 0.16) / 9;
+    for (let i = 0; i <= 9; i++) g.add(part(box(0.008, 0.2, 0.05), 'chrome', 0xe8e8ee, -(W - 0.16) / 2 + i * slotW, DROP.bottom - 0.02, 0.065));
+    // the glass over it all
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.04, BH + 0.1), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.06, roughness: 0.04, metalness: 0.1, depthWrite: false }));
+    glass.position.set(0, BY, 0.1);
+    g.add(glass);
+    // the arch marquee, its bulbs chasing
+    const top = BY + BH / 2 + 0.06;
+    const marquee = new THREE.Mesh(new THREE.CircleGeometry(0.66, 40, 0, Math.PI), new THREE.MeshBasicMaterial({ map: keep(tex(signCanvas('DUCK DROP', 'UP TO 10×'), renderer)), toneMapped: false }));
+    marquee.position.set(0, top, 0.02);
+    const arch = part(new THREE.CylinderGeometry(0.73, 0.73, 0.34, 40, 1, false, -Math.PI / 2, Math.PI), 'paint', purple, 0, top, -0.15);
+    arch.rotation.x = Math.PI / 2;
+    const ring = part(new THREE.TorusGeometry(0.735, 0.018, 8, 40, Math.PI), 'chrome', 0xe8e8ee, 0, top, 0.02);
+    g.add(marquee, arch, ring);
+    const bulbGeo = new THREE.SphereGeometry(0.022, 8, 6);
     const on = glowMat(0xb6ffa8), off = glowMat(0x2d5a28);
     for (let i = 0; i <= 18; i++) {
       const a = (i / 18) * Math.PI;
       const b = new THREE.Mesh(bulbGeo, on);
-      b.position.set(Math.cos(a) * 0.71, 2.64 + Math.sin(a) * 0.71, -0.02);
+      b.position.set(Math.cos(a) * 0.7, top + Math.sin(a) * 0.7, 0.03);
       b.userData = { on, off, i };
       bulbs.push(b);
       g.add(b);
