@@ -10,6 +10,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { gsap } from 'gsap';
 import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
 import { EMOJI, canvas, tex, carpetCanvas, signCanvas, duckGeometry } from './arcade.js';
+import { slotKit } from './slotcabs.js';
 
 const TAU = Math.PI * 2;
 const ROOM = { x0: -11.6, x1: 11.6, z0: -4.4, z1: 7 };   // the part of the floor the map shows
@@ -133,30 +134,25 @@ export async function mount({ stage, controls, info, casino }) {
     scene.add(tube);
   }
 
-  // A row of slot machines along the back wall (just scenery for now: themed machines go here later)
+  // A row of slot machines along the back wall: a mix of modern video slots and classic lever
+  // machines in different themes, merged into a few meshes so the whole row is a few draws
+  const kit = slotKit({ texture: cv => keep(tex(cv, renderer)) });
   const ROW = Math.floor((SPAN - 1.3) / 0.9) + 1;
-  const cabGeo = new RoundedBoxGeometry(0.62, 1.55, 0.5, 2, 0.04);
-  const cabs = new THREE.InstancedMesh(cabGeo, std(0xffffff, 0.4, 0.1), ROW);
-  const screens = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.44, 0.32), new THREE.MeshBasicMaterial({ toneMapped: false }), ROW);
-  const toppers = new THREE.InstancedMesh(new THREE.BoxGeometry(0.56, 0.16, 0.06), new THREE.MeshBasicMaterial({ toneMapped: false }), ROW);
-  const cabCols = [0x8a1424, 0x1d3f8a, 0x6a1a8a, 0x146a52];
-  const scrCols = [0xff6bb5, 0x6be7ff, 0xffd23f, 0x7cff6b, 0xff8a3d];
-  const m4 = new THREE.Matrix4();
-  const c = new THREE.Color();
+  const KINDS = ['m', 'm', 'c', 'm', 'm', 'c', 'm', 'c'];   // modern and classic, mixed
+  const rowThemes = kit.themes.slice(1);                     // every theme but Lucky Duck's (that one's playable)
+  const rowGroup = new THREE.Group();
   const rowX = [];
   for (let i = 0; i < ROW; i++) {
     const x = ROOM.x0 + 0.65 + i * 0.9;
     rowX.push(x);
-    const z = ROOM.z0 + 0.5;
-    cabs.setMatrixAt(i, m4.makeTranslation(x, 0.775, z));
-    cabs.setColorAt(i, c.setHex(cabCols[i % cabCols.length]));
-    screens.setMatrixAt(i, m4.makeTranslation(x, 1.1, z + 0.252));
-    screens.setColorAt(i, c.setHex(scrCols[i % scrCols.length]).multiplyScalar(0.9));
-    toppers.setMatrixAt(i, m4.makeTranslation(x, 1.62, z + 0.2));
-    toppers.setColorAt(i, c.setHex(scrCols[(i + 2) % scrCols.length]));
+    const theme = rowThemes[(i * 3) % rowThemes.length];
+    const m = KINDS[i % KINDS.length] === 'm' ? kit.modern(theme, { topper: i % 3 === 1 ? 'arch' : 'box' }) : kit.classic(theme, { chair: i % 2 ? 'stool' : 'chair' });
+    m.position.set(x, 0, ROOM.z0 + 0.42);
+    rowGroup.add(m);
   }
-  cabs.castShadow = cabs.receiveShadow = true;
-  scene.add(cabs, screens, toppers);
+  scene.add(kit.bake(rowGroup));
+  const m4 = new THREE.Matrix4();
+  const c = new THREE.Color();
 
   // An LED ticker along the back wall, above the machines, scrolling everyone's recent big wins.
   // The text is drawn once into a strip that repeats; scrolling just slides the texture.
@@ -275,27 +271,6 @@ export async function mount({ stage, controls, info, casino }) {
     g.strokeStyle = '#d9a93c';
     g.lineWidth = 6;
     for (const r of [0.55, 0.92]) { g.beginPath(); g.arc(R, R, R * r, 0, TAU); g.stroke(); }
-    return keep(tex(cv, renderer));
-  }
-  function reelsTex() {
-    const [cv, g] = canvas(512, 256);
-    g.fillStyle = '#20060c';
-    g.fillRect(0, 0, 512, 256);
-    g.font = `110px ${EMOJI}`;
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    ['🍒', '🦆', '🔔'].forEach((s, i) => {
-      const x = 16 + i * 164;
-      const grad = g.createLinearGradient(0, 0, 0, 256);
-      grad.addColorStop(0, '#bdb6a6');
-      grad.addColorStop(0.5, '#ffffff');
-      grad.addColorStop(1, '#bdb6a6');
-      g.fillStyle = grad;
-      g.fillRect(x, 12, 152, 232);
-      g.fillText(s, x + 76, 134);
-    });
-    g.fillStyle = 'rgba(255, 40, 60, .85)';
-    g.fillRect(0, 124, 512, 6);
     return keep(tex(cv, renderer));
   }
   // A sign post's board: the station's name over its one-line pitch, edged in its colour
@@ -652,42 +627,21 @@ export async function mount({ stage, controls, info, casino }) {
   }
   const bulbs = [];
   let duck = null;
+  const DUCK_Y = 1.84;   // the duck bobbing on top of Lucky Duck's arch
   function buildSlots() {
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(new RoundedBoxGeometry(0.82, 1.6, 0.62, 3, 0.06), M.red);
-    body.position.y = 0.8;
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.31), new THREE.MeshBasicMaterial({ map: reelsTex(), toneMapped: false }));
-    win.position.set(0, 1.18, 0.312);
-    const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.37, 0.02), M.chrome);
-    bezel.position.set(0, 1.18, 0.302);
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.06, 0.2), M.chrome);
-    deck.position.set(0, 0.86, 0.36);
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.12), M.chrome);
-    tray.position.set(0, 0.22, 0.34);
-    const marquee = new THREE.Mesh(new THREE.CircleGeometry(0.41, 40, 0, Math.PI), new THREE.MeshBasicMaterial({ map: keep(tex(signCanvas('LUCKY DUCK', '3000'), renderer)), toneMapped: false }));
-    marquee.position.set(0, 1.6, 0.14);
-    const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.3, 40, 1, false, -Math.PI / 2, Math.PI), M.red);
-    arch.rotation.x = Math.PI / 2;
-    arch.position.set(0, 1.6, -0.02);
-    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.5, 8), M.chrome);
-    rod.position.set(0.47, 1.2, 0.05);
-    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 12), std(0xe8102e, 0.25));
-    knob.position.set(0.47, 1.47, 0.05);
-    g.add(body, win, bezel, deck, tray, marquee, arch, rod, knob);
-    const bulbGeo = new THREE.SphereGeometry(0.018, 8, 6);
     const on = glowMat(0xffe7a0), off = glowMat(0x6a4a20);
-    for (let i = 0; i <= 14; i++) {
-      const a = (i / 14) * Math.PI;
-      const b = new THREE.Mesh(bulbGeo, on);
-      b.position.set(Math.cos(a) * 0.45, 1.6 + Math.sin(a) * 0.45, 0.15);
-      b.userData = { on, off, i };
-      bulbs.push(b);
-      g.add(b);
-    }
+    const g = kit.classic(kit.themes[0], {
+      bulbs: (geo, pos, i, grp) => {
+        const b = new THREE.Mesh(geo, on);
+        b.position.set(...pos);
+        b.userData = { on, off, i };
+        bulbs.push(b);
+        grp.add(b);
+      },
+    });
     duck = new THREE.Mesh(duckGeometry(0.11), std(0xffffff, 0.35, 0, { vertexColors: true }));
-    duck.position.set(0, 2.14, 0);
+    duck.position.set(0, DUCK_Y, 0);
     g.add(duck);
-    g.add(stool(0, 0.75));
     return g;
   }
 
@@ -919,6 +873,180 @@ export async function mount({ stage, controls, info, casino }) {
     g.add(bonusCoin);
     return g;
   }
+  // ---- Casino dressing: the things that make it a room, not just games ----
+  // Columns and palms in the gaps behind the tables, cocktail tables with drinks, giant dice
+  // and a chip tower by the left wall, rope lanes at the cashier, neon along the back wall.
+  // Built from the slot kit's parts and merged into a few meshes, like the slot row.
+  {
+    const { part, rbox, box } = kit;
+    const GOLD = 0xe9b949, CREAM = 0xf3e7d0, PLUM = 0x3a1430, GREEN = 0x2f8a3a, LEAF = 0x46b04a;
+    const decor = new THREE.Group();
+    const cyl = (rt, rb, h, n = 24) => new THREE.CylinderGeometry(rt, rb, h, n);
+    const at = (o, x, z, ry = 0) => { o.position.set(x, 0, z); o.rotation.y = ry; decor.add(o); return o; };
+
+    // A column: plinth, a cream marble shaft, gold rings and a gold capital, up past the camera
+    function column() {
+      const g = new THREE.Group();
+      g.add(part(rbox(0.56, 0.3, 0.56, 0.03), 'paint', PLUM, 0, 0.15, 0));
+      g.add(part(cyl(0.25, 0.27, 0.06, 32), 'chrome', GOLD, 0, 0.33, 0));
+      g.add(part(cyl(0.2, 0.22, 3.6, 32), 'paint', CREAM, 0, 2.16, 0));
+      for (const y of [0.9, 1.9, 2.9]) g.add(part(new THREE.TorusGeometry(0.212, 0.018, 8, 32).rotateX(Math.PI / 2), 'chrome', GOLD, 0, y, 0));
+      g.add(part(cyl(0.3, 0.21, 0.24, 32), 'chrome', GOLD, 0, 4.0, 0));
+      return g;
+    }
+    // A potted palm: a gold-banded pot, a ringed trunk, and fronds fanning out
+    function palm(seed) {
+      const g = new THREE.Group();
+      g.add(part(cyl(0.26, 0.19, 0.5, 24), 'paint', PLUM, 0, 0.25, 0));
+      g.add(part(new THREE.TorusGeometry(0.255, 0.02, 8, 24).rotateX(Math.PI / 2), 'chrome', GOLD, 0, 0.46, 0));
+      g.add(part(cyl(0.24, 0.24, 0.02, 24), 'dark', 0x2a1a10, 0, 0.49, 0));
+      for (let i = 0; i < 6; i++) g.add(part(cyl(0.05 - i * 0.004, 0.058 - i * 0.004, 0.22, 10), 'paint', i % 2 ? 0x7a5230 : 0x8f6238, Math.sin(i * 0.9 + seed) * 0.02, 0.6 + i * 0.2, 0));
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * TAU + seed;
+        const frond = new THREE.Group();
+        frond.position.set(0, 1.78, 0);
+        frond.rotation.y = a;
+        const leaf = part(new THREE.SphereGeometry(0.5, 12, 6).scale(1, 0.05, 0.16), 'leather', i % 2 ? LEAF : GREEN, 0.42, 0, 0);
+        leaf.rotation.z = -0.35 - (i % 3) * 0.12;
+        frond.add(leaf);
+        g.add(frond);
+      }
+      return g;
+    }
+    // A high-top cocktail table with a martini, a short drink and a stack of chips
+    function cocktail() {
+      const g = new THREE.Group();
+      g.add(part(cyl(0.22, 0.26, 0.03, 24), 'chrome', GOLD, 0, 0.015, 0));
+      g.add(part(cyl(0.03, 0.03, 1.02, 10), 'chrome', GOLD, 0, 0.53, 0));
+      g.add(part(cyl(0.32, 0.32, 0.04, 32), 'paint', 0x14101a, 0, 1.06, 0));
+      g.add(part(new THREE.TorusGeometry(0.32, 0.012, 6, 32).rotateX(Math.PI / 2), 'chrome', GOLD, 0, 1.06, 0));
+      // martini: stem, cone, olive
+      g.add(part(cyl(0.035, 0.035, 0.005, 16), 'glass', 0xffffff, -0.1, 1.083, 0.04));
+      g.add(part(cyl(0.004, 0.004, 0.09, 6), 'chrome', 0xdddddd, -0.1, 1.13, 0.04));
+      g.add(part(new THREE.ConeGeometry(0.055, 0.07, 18, 1, true).rotateX(Math.PI), 'glow', 0x9ff0ff, -0.1, 1.2, 0.04));
+      g.add(part(new THREE.SphereGeometry(0.012, 8, 6), 'paint', 0x7a9a20, -0.1, 1.2, 0.04));
+      // a short glass with something amber
+      g.add(part(cyl(0.035, 0.03, 0.08, 16), 'glow', 0xffa63d, 0.08, 1.12, -0.06));
+      // chips
+      const cc = [0xd8202e, 0x1d5fd1, 0x111111, 0x7a2ab0, 0x0f9a50];
+      for (let i = 0; i < 6; i++) g.add(part(cyl(0.032, 0.032, 0.012, 16), 'paint', cc[i % cc.length], 0.12, 1.087 + i * 0.013, 0.12));
+      for (let i = 0; i < 4; i++) g.add(part(cyl(0.032, 0.032, 0.012, 16), 'paint', cc[(i + 2) % cc.length], 0.05, 1.087 + i * 0.013, 0.17));
+      return g;
+    }
+    // Giant dice on a round pedestal: white with dark pips, one tipped on its edge
+    function dice() {
+      const g = new THREE.Group();
+      g.add(part(cyl(0.5, 0.55, 0.36, 40), 'paint', PLUM, 0, 0.18, 0));
+      g.add(part(new THREE.TorusGeometry(0.5, 0.025, 8, 40).rotateX(Math.PI / 2), 'chrome', GOLD, 0, 0.36, 0));
+      const S = 0.38;
+      const pips = {   // face → pip spots, in units of S/4
+        px: [[0, 0]], nx: [[-1, -1], [1, 1], [-1, 1], [1, -1], [0, 0]], py: [[-1, -1], [1, 1]],
+        ny: [[-1, -1], [1, 1], [-1, 1], [1, -1]], pz: [[-1, -1], [0, 0], [1, 1]], nz: [[-1, -1], [1, 1], [-1, 1], [1, -1], [-1, 0], [1, 0]],
+      };
+      function die() {
+        const d = new THREE.Group();
+        d.add(part(rbox(S, S, S, 0.06), 'paint', 0xf6f2ea, 0, 0, 0));
+        const o = S / 2 + 0.001, k = S / 4;
+        for (const [face, spots] of Object.entries(pips)) for (const [a, b] of spots) {
+          const pip = part(cyl(0.032, 0.032, 0.01, 14), 'dark', face === 'px' ? 0xc8102e : 0x1a1418, 0, 0, 0);
+          if (face === 'px' || face === 'nx') { pip.rotation.z = Math.PI / 2; pip.position.set(face === 'px' ? o : -o, a * k, b * k); }
+          else if (face === 'py' || face === 'ny') pip.position.set(a * k, face === 'py' ? o : -o, b * k);
+          else { pip.rotation.x = Math.PI / 2; pip.position.set(a * k, b * k, face === 'pz' ? o : -o); }
+          d.add(pip);
+        }
+        return d;
+      }
+      const a = die();
+      a.position.set(-0.18, 0.36 + S / 2, 0.05);
+      a.rotation.y = 0.5;
+      const b = die();
+      b.position.set(0.22, 0.36 + S * 0.62, -0.05);
+      b.rotation.set(0.6, -0.4, Math.PI / 4);
+      g.add(a, b);
+      return g;
+    }
+    // A tower of giant chips, a little off-true, on a pedestal
+    function chipTower() {
+      const g = new THREE.Group();
+      g.add(part(cyl(0.42, 0.46, 0.3, 40), 'paint', PLUM, 0, 0.15, 0));
+      g.add(part(new THREE.TorusGeometry(0.42, 0.022, 8, 40).rotateX(Math.PI / 2), 'chrome', GOLD, 0, 0.3, 0));
+      const cols = [0xd8202e, 0x1d5fd1, 0x111111, 0x7a2ab0, 0x0f9a50, 0xff8a1f];
+      for (let i = 0; i < 14; i++) {
+        const y = 0.34 + i * 0.075;
+        const ox = Math.sin(i * 1.3) * 0.015, oz = Math.cos(i * 1.7) * 0.015;
+        g.add(part(cyl(0.3, 0.3, 0.07, 36), 'paint', cols[i % cols.length], ox, y, oz));
+        g.add(part(new THREE.TorusGeometry(0.3, 0.012, 6, 36).rotateX(Math.PI / 2), 'paint', 0xffffff, ox, y, oz));   // the edge stripe
+      }
+      return g;
+    }
+    // A chrome stanchion, and a red velvet rope sagging between two of them
+    function post(x, z) {
+      at(part(cyl(0.13, 0.15, 0.03, 20), 'chrome', GOLD, 0, 0.015, 0), x, z);
+      decor.add(part(cyl(0.022, 0.022, 0.9, 10), 'chrome', GOLD, x, 0.47, z));
+      decor.add(part(new THREE.SphereGeometry(0.04, 14, 10), 'chrome', GOLD, x, 0.94, z));
+    }
+    function rope(a, b) {
+      const pts = [];
+      for (let i = 0; i <= 8; i++) {
+        const t = i / 8;
+        pts.push(new THREE.Vector3(a[0] + (b[0] - a[0]) * t, 0.88 - Math.sin(t * Math.PI) * 0.16, a[1] + (b[1] - a[1]) * t));
+      }
+      decor.add(part(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.022, 8), 'leather', 0x8a0a1e));
+    }
+    // Where a station's local spot lands on the floor
+    const local = (id, lx, lz) => {
+      const st = STATIONS.find(s => s.id === id);
+      const c = Math.cos(st.yaw), sn = Math.sin(st.yaw);
+      return [st.pos[0] + lx * c + lz * sn, st.pos[1] - lx * sn + lz * c];
+    };
+
+    // The gaps behind and between the tables
+    at(palm(0.3), -8.5, -2.65);
+    at(column(), -5.7, -2.7);
+    at(cocktail(), -2.9, -2.55);
+    at(column(), -0.1, -2.75);
+    at(palm(1.4), 3.05, -2.75);
+    at(cocktail(), 6.3, -2.6);
+    // The left wall: dice, chips, palms
+    at(dice(), -11.05, -2.55, 0.4);
+    at(chipTower(), -11.25, 0.2);
+    at(palm(2.2), -11.35, 1.6);
+    // Rope lanes leading up to the cashier
+    const lanes = [[-1.05, 0.55], [-1.05, 1.45], [1.05, 0.55], [1.05, 1.45]].map(([x, z]) => local('cashier', x, z));
+    for (const p of lanes) post(...p);
+    rope(lanes[0], lanes[1]);
+    rope(lanes[2], lanes[3]);
+    scene.add(kit.bake(decor));
+
+    // Neon along the top of the back wall, over the ticker
+    function neonSign(text, color, w) {
+      const [cv, g] = canvas(1024, 256);
+      g.font = '900 150px Manrope, sans-serif';
+      const fit = Math.min(1, 960 / g.measureText(text).width);
+      g.font = `900 ${Math.floor(150 * fit)}px Manrope, sans-serif`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.lineJoin = 'round';
+      g.shadowColor = color;
+      g.shadowBlur = 40;
+      g.lineWidth = 14;
+      g.strokeStyle = color;
+      g.strokeText(text, 512, 134);
+      g.shadowBlur = 12;
+      g.lineWidth = 4;
+      g.strokeStyle = '#ffffff';
+      g.strokeText(text, 512, 134);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), new THREE.MeshBasicMaterial({ map: keep(tex(cv, renderer)), transparent: true, depthWrite: false, toneMapped: false }));
+      return m;
+    }
+    const NEON = [['♠ ♥ ♦ ♣', '#ff3d6e', 1.7], ['JACKPOT', '#ffd23f', 2.0], ['777', '#ff3d3d', 1.3], ['WIN BIG', '#6be7ff', 1.9], ['HIGH LIMIT', '#c9a2ff', 2.1]];
+    NEON.forEach(([text, color, w], i) => {
+      const sign = neonSign(text, color, w);
+      sign.position.set(ROOM.x0 + 2.2 + i * ((SPAN - 4.4) / (NEON.length - 1)), 2.82, ROOM.z0 + 0.05);
+      scene.add(sign);
+    });
+  }
+
   const builders = { table: buildBlackjack, threecard: buildThreeCard, war: buildWar, reddog: buildRedDog, roulette: buildRoulette, baccarat: buildBaccarat, poker: buildVideoPoker, slots: buildSlots, plinko: buildPlinko, crash: buildRocket, cashier: buildCashier };
   // Where each sign post stands, beside the station and toward the aisle: [x, z] in the
   // station's own frame (it faces +z), and how far the board turns back toward the camera
@@ -1296,7 +1424,8 @@ export async function mount({ stage, controls, info, casino }) {
     if (ballPivot) ballPivot.rotation.y -= dt * 2.1;
     for (const b of bulbs) b.material = (b.userData.i + Math.floor(now * 5)) % 3 ? b.userData.on : b.userData.off;
     if (duck) duck.rotation.y = Math.sin(now * 0.8) * 0.4;
-    if (duck) duck.position.y = 2.14 + Math.sin(now * 2.2) * 0.01;
+    if (duck) duck.position.y = DUCK_Y + Math.sin(now * 2.2) * 0.01;
+    kit.led.color.setHSL((now * 0.06) % 1, 0.85, 0.62);   // the slot machines' LED trim drifts through the colours
     if (dropDuck) dropAt(now * 0.45);
     if (rocketGlow) rocketGlow.intensity = 0.5 + Math.sin(now * 3) * 0.2;
     if (tickTex) tickTex.offset.x = (tickTex.offset.x + dt * 0.35 * tickTex.repeat.x / (TICK.len)) % 1;
@@ -1352,6 +1481,7 @@ export async function mount({ stage, controls, info, casino }) {
       map.remove();
       style.remove();
       disposeScene(scene);
+      kit.dispose();
       for (const t of textures) t.dispose();
       envTex.dispose();
       renderer.dispose();
