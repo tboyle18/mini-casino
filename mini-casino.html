@@ -446,6 +446,70 @@
   .acct-text b { color: var(--ink); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .acct-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .acct-actions { display: flex; gap: 8px; }
+  .acct-legal { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); }
+  .acct-legal a { color: var(--ink-2); }
+  .acct-legal .linkbtn.danger { margin-left: auto; color: var(--lose); }
+  .acct-delete { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; border: 1px solid rgba(255, 154, 154, .4); background: rgba(120, 20, 20, .25); }
+  .acct-delete p { margin: 0; font-size: 14px; line-height: 1.4; color: var(--ink); }
+  .btn.danger { background: #b3262f; color: #fff; }
+  .home-foot a { color: inherit; }
+  .auth-legal { margin: 0; font-size: 12px; }
+  .auth-legal a, .age-card a { color: var(--gold); }
+  .ad-offer { position: fixed; z-index: 28; top: calc(var(--safe-top) + 64px); left: max(12px, var(--gl)); right: max(12px, var(--gr)); max-width: 420px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px; padding: 10px 8px 10px 12px; border-radius: 16px; background: linear-gradient(#f6eedc, #e6d9bb); color: #2b2418;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45); animation: adoIn .25s ease-out; }
+  html.floor .ad-offer { top: calc(var(--safe-top) + 118px); }
+  @keyframes adoIn { from { opacity: 0; transform: translateY(-10px); } }
+  .ado-icon { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #2b2418; color: #f6eedc; }
+  .ado-icon svg { width: 18px; height: 18px; margin-left: 2px; }
+  .ado-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .ado-text b { font-size: 15px; }
+  .ado-text span { font-size: 12.5px; color: #6b5d40; }
+  .ado-watch { flex: none; min-height: 42px; padding: 0 16px; border: 0; border-radius: 12px; background: #2b2418; color: #f6eedc; font: 800 15px/1 inherit; cursor: pointer; }
+  .ado-x { flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #6b5d40; cursor: pointer; display: grid; place-items: center; }
+  .ado-x svg { width: 18px; height: 18px; }
+  /* The same offer, kept at the top of the floor and the Casino tab until it runs out */
+  @keyframes undoPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 93, 108, .75), 0 6px 18px rgba(0, 0, 0, .4); } 60% { box-shadow: 0 0 0 10px rgba(255, 93, 108, 0), 0 6px 18px rgba(0, 0, 0, .4); } }
+  @keyframes undoFlash { 0%, 100% { filter: none; } 50% { filter: brightness(1.18); } }
+  .fl-all.fl-undo { background: linear-gradient(#ff7a86, #d93a4c); color: #fff; animation: undoPulse 1.4s ease-out infinite, undoFlash 1.4s ease-in-out infinite; }
+  .fl-all.fl-undo svg { width: 16px; height: 16px; }
+  .home-undo { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 12px; padding: 12px 14px; border: 0; border-radius: 16px; cursor: pointer; text-align: left;
+    background: linear-gradient(#ff7a86, #c9303f); color: #fff; font: inherit; animation: undoPulse 1.4s ease-out infinite, undoFlash 1.4s ease-in-out infinite; }
+  .home-undo .hu-icon { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .22); }
+  .home-undo .hu-icon svg { width: 18px; height: 18px; margin-left: 2px; }
+  .home-undo .hu-text { flex: 1; display: flex; flex-direction: column; line-height: 1.25; }
+  .home-undo .hu-text b { font-size: 16px; }
+  .home-undo .hu-text span { font-size: 13px; opacity: .88; }
+  .home-undo .hu-go { font-size: 26px; line-height: 1; opacity: .85; }
+  @media (prefers-reduced-motion: reduce) { .fl-undo, .home-undo { animation: none; } }
+  .ad-test { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; gap: 16px; padding: calc(var(--safe-top) + 16px) 16px calc(var(--safe-bottom) + 16px); background: #0b0b0f; color: #fff; }
+  .adt-top { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; color: rgba(255, 255, 255, .7); }
+  .adt-tag { padding: 3px 8px; border-radius: 6px; background: #f5c542; color: #1a1400; }
+  .adt-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; border-radius: 18px; border: 2px dashed rgba(255, 255, 255, .25); padding: 24px; }
+  .adt-box b { font-size: 26px; }
+  .adt-box span { color: rgba(255, 255, 255, .6); max-width: 260px; }
+  .adt-em { font-size: 56px; }
+  .adt-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tour { position: fixed; inset: 0; z-index: 60; }
+  .tour-spot { position: fixed; border-radius: 16px; box-shadow: 0 0 0 2px var(--fl-ink), 0 0 0 9999px rgba(2, 10, 6, .62); transition: all .3s ease; pointer-events: none; }
+  .tour-card { position: fixed; left: max(16px, var(--gl)); right: max(16px, var(--gr)); max-width: 380px; margin: 0 auto; padding: 14px 16px 12px; border-radius: 16px;
+    background: linear-gradient(#f6eedc, #e6d9bb); color: #2b2418; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); transition: top .3s ease; }
+  .tour-step { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #8a7a58; }
+  .tour-card p { margin: 4px 0 12px; font-size: 16px; line-height: 1.4; font-weight: 600; }
+  .tour-btns { display: flex; justify-content: space-between; gap: 10px; }
+  .tour-btns button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; font: 800 15px/1 inherit; cursor: pointer; }
+  .tour-skip { background: transparent; color: #6b5d40; }
+  .tour-next { margin-left: auto; background: #2b2418; color: #f6eedc; min-width: 110px; }
+  .age-gate { z-index: 80; background: rgba(2, 14, 9, .92); }
+  .age-card { text-align: center; }
+  .age-card h2, .age-card p { margin: 0; }
+  .age-card p { line-height: 1.45; color: var(--ink-2); }
+  .age-card p b { color: var(--ink); }
+  .age-em { font-size: 44px; line-height: 1; }
+  .age-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .age-sorry { color: var(--lose) !important; font-weight: 700; }
+  .fl-welcome .fw-fine { margin: 10px 0 0; font-size: 11px; color: rgba(240, 230, 208, .6); }
+  .fl-welcome .fw-fine a { color: inherit; }
   .acct-actions .btn { flex: 1; }
   /* ---------- Bottom tab bar ---------- */
   /* A floating bar: inset from the edges, rounded, see-through and blurred, with the open tab
@@ -1570,6 +1634,7 @@
       </div>
     </div>
     <div class="ticker" id="ticker" aria-label="Recent wins"><div class="ticker-track" id="ticker-track"></div></div>
+    <button class="home-undo" id="home-undo" hidden><span class="hu-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span><span class="hu-text"><b></b><span>Watch a short ad to win it back</span></span><span class="hu-go" aria-hidden="true">›</span></button>
     <div class="wallet-card" id="wallet-card">
       <div class="wc-fly" id="wc-fly" aria-hidden="true"></div>
       <div class="wc-art" id="wc-art" aria-hidden="true"></div>
@@ -1588,14 +1653,14 @@
     <button class="floor-cta" id="floor-cta"><span class="fc-k">3D</span><b>Back to the casino floor</b><span class="fc-sub">Glide between the tables in 3D, then take a seat</span><span class="fc-go" aria-hidden="true">›</span></button>
     <div class="section-label">Table games</div>
     <div class="tiles" id="tiles"></div>
-    <div class="home-foot">Play money only</div>
+    <div class="home-foot">Play money only · 18+ · <a href="/terms.html" target="_blank" rel="noopener">Terms</a> · <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></div>
   </section>
 
   <!-- ================= Arcade tab ================= -->
   <section class="view" id="arcade-view" hidden>
     <div class="tab-head"><h1>Arcade</h1><p>3D games, straight from your wallet</p></div>
     <div class="tiles arcade-tiles" id="arcade-tiles"></div>
-    <div class="home-foot">Play money only</div>
+    <div class="home-foot">Play money only · 18+ · <a href="/terms.html" target="_blank" rel="noopener">Terms</a> · <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></div>
   </section>
 
   <!-- ================= Arcade game (Duck Drop, Duck Rocket) ================= -->
@@ -1617,6 +1682,7 @@
         <button class="fl-btn" id="fl-lb" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11M12 13v4M8.5 20h7M9.5 17h5v3h-5z"/></svg></button>
       </div>
       <button class="fl-all" id="fl-go" aria-label="All games: jump to a table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>All games</button>
+      <button class="fl-all fl-undo" id="fl-undo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg><span></span></button>
       <span id="fl-info"></span>
     </div></div>
     <div class="fl-welcome" id="fl-welcome" hidden>
@@ -1625,6 +1691,7 @@
         <button class="fw-guest" id="fl-guest">Play as a guest</button>
         <button class="fw-in" id="fl-signin">Sign in</button>
       </div>
+      <p class="fw-fine">18+ · play money only, no real-money gambling · <a href="/terms.html" target="_blank" rel="noopener">Terms</a> · <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></p>
     </div>
     <div class="dock ag-dock"><div class="ag-controls" id="fl-controls"></div></div>
   </section>
@@ -1679,6 +1746,7 @@
     <div class="section-label">Settings</div>
     <div class="lcard settings">
       <label class="toggle-row"><span><b>Vibration</b><span>A little buzz when you bet, deal and win</span></span><input type="checkbox" id="pf-vibe"></label>
+      <label class="toggle-row" id="pf-ads-row" hidden><span><b>Ad offers</b><span>After a loss, offer a short ad to win it back</span></span><input type="checkbox" id="pf-ads"></label>
       <label class="toggle-row"><span><b>Blackjack hints</b><span>Highlight the basic-strategy move</span></span><input type="checkbox" id="pf-hints"></label>
     </div>
     <div class="section-label">Experimental</div>
@@ -1687,7 +1755,7 @@
       <span class="sl-text"><b>Casino floor<i class="sl-tag">Beta</i></b><span>Glide between the tables in 3D and sit down to play</span></span>
       <span class="sl-go" aria-hidden="true">›</span>
     </a>
-    <div class="home-foot">Mini Casino · play money only</div>
+    <div class="home-foot">Mini Casino · play money only · 18+ · <a href="/terms.html" target="_blank" rel="noopener">Terms</a> · <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a></div>
   </section>
 
   <!-- ================= Stats ================= -->
@@ -2674,6 +2742,48 @@
   </div>
 </div>
 
+<!-- Rewarded ads: after a loss, a short ad wins it back (src/ads.js decides and pays) -->
+<div class="ad-offer" id="ad-offer" role="status" hidden>
+  <span class="ado-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></span>
+  <span class="ado-text"><b id="ado-title"></b><span id="ado-sub"></span></span>
+  <button class="ado-watch" id="ado-watch">Watch</button>
+  <button class="ado-x" id="ado-x" aria-label="No thanks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+<!-- Local testing only: stands in for a real ad when no provider is set -->
+<div class="ad-test" id="ad-test" hidden role="dialog" aria-modal="true" aria-label="Test ad">
+  <div class="adt-top"><span class="adt-tag">Test ad</span><span id="adt-count"></span></div>
+  <div class="adt-box"><div class="adt-em" aria-hidden="true">📺</div><b>Your ad here</b><span>A real ad plays here once an ad provider is set up.</span></div>
+  <div class="adt-btns"><button class="btn" id="adt-skip">Skip ad</button><button class="btn primary" id="adt-close" disabled>Close</button></div>
+</div>
+
+<!-- First visit on the floor: a few coach marks over the HUD -->
+<div class="tour" id="tour" hidden>
+  <div class="tour-spot" id="tour-spot"></div>
+  <div class="tour-card" id="tour-card" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="tour-step" id="tour-step"></div>
+    <p id="tour-text"></p>
+    <div class="tour-btns">
+      <button class="tour-skip" id="tour-skip">Skip</button>
+      <button class="tour-next" id="tour-next">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- First visit: play money only, adults only -->
+<div class="overlay top age-gate" id="age-gate" hidden>
+  <div class="auth-card age-card" role="dialog" aria-modal="true" aria-labelledby="age-title">
+    <div class="age-em" aria-hidden="true">🎰</div>
+    <h2 id="age-title">Welcome to Mini Casino</h2>
+    <p>A free casino game played with <b>play money only</b>. You can’t bet, win or cash out real money, and there’s nothing to buy.</p>
+    <p class="fine">Mini Casino is for adults. By continuing you confirm you’re <b>18 or older</b> and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>.</p>
+    <div class="age-btns" id="age-btns">
+      <button class="btn primary" id="age-yes">I’m 18 or older</button>
+      <button class="btn" id="age-no">I’m under 18</button>
+    </div>
+    <p class="age-sorry" id="age-sorry" hidden>Sorry, Mini Casino is only for adults. Come back when you’re 18.</p>
+  </div>
+</div>
+
 <div class="overlay top" id="auth" hidden>
   <form class="auth-card" id="auth-form" novalidate>
     <h2 id="auth-title">Sign in</h2>
@@ -2693,6 +2803,7 @@
     <p class="auth-error" id="auth-error" role="alert"></p>
     <button class="btn primary" type="submit" id="auth-submit">Sign in</button>
     <div class="auth-or" id="auth-guest-row"><span>or</span><button type="button" class="btn" id="auth-guest">Play as a guest</button></div>
+    <p class="fine auth-legal">Play money only. By playing you confirm you’re 18+ and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>.</p>
     <div class="auth-links">
       <button type="button" class="linkbtn" id="auth-switch"></button>
       <button type="button" class="linkbtn" id="auth-close">Cancel</button>
@@ -2758,6 +2869,11 @@ const GAMES = [
 /* @@WAR@@ */
 /* @@THREECARD@@ */
 /* @@REDDOG@@ */
+// Player-name filter, shared with the server (src/names.js)
+const { cleanName, badName } = (() => {
+/* @@NAMES@@ */
+return { cleanName, badName };
+})();
 
 /* ================= App state ================= */
 const app = {
@@ -2920,10 +3036,10 @@ function inviteURL(code) {
   return `${location.origin}/#table-${code}`;
 }
 function prefsLoad() {
-  try { const p = JSON.parse(localStorage.getItem('bj.rooms.prefs') || '{}'); app.hints = !!p.hints; app.vibe = p.vibe !== false; } catch (e) { /* storage unavailable */ }
+  try { const p = JSON.parse(localStorage.getItem('bj.rooms.prefs') || '{}'); app.hints = !!p.hints; app.vibe = p.vibe !== false; app.adOffers = p.ads !== false; } catch (e) { /* storage unavailable */ }
 }
 function prefsSave() {
-  try { localStorage.setItem('bj.rooms.prefs', JSON.stringify({ hints: app.hints, vibe: app.vibe })); } catch (e) { /* storage unavailable */ }
+  try { localStorage.setItem('bj.rooms.prefs', JSON.stringify({ hints: app.hints, vibe: app.vibe, ads: app.adOffers !== false })); } catch (e) { /* storage unavailable */ }
 }
 
 /* ================= Routing ================= */
@@ -3459,6 +3575,7 @@ async function walletFetch() {
    the payout to keep off the shown balance until the game shows it. */
 async function api(game, action, args, hold) {
   if (!signedIn()) { toast('Sign in to play.'); return null; }
+  adOfferHide();   // a new bet: the last loss's offer is gone
   let res, d;
   try {
     res = await fetch('/api/play', {
@@ -3483,8 +3600,167 @@ async function api(game, action, args, hold) {
   }
   if (hold) wallet.held = Math.max(0, wallet.held + (hold(d.result) || 0));
   walletShow();
+  adsAfterPlay(d.log);
   return d.result;
 }
+
+/* ================= Rewarded ads =================
+   After a losing round, a card offers a short ad to win the loss back (up to the server's cap,
+   a few times a day). The server (src/ads.js) opens a ticket, the provider plays the ad, and
+   the server pays the ticket. Off until ADS_PROVIDER is set on the server; locally a test ad
+   stands in. To add a provider: a { load(cfg), show(cfg) } entry in AD_PROVIDERS, where show
+   resolves true (watched to the end), false (closed early) or null (no ad to show). */
+const ads = { cfg: null, cfgFor: null, timer: 0, hideT: 0, busy: false, pending: null, pendT: 0 };
+const AD_PROVIDERS = {
+  test: { load: async () => true, show: () => testAd() },
+  // Google H5 Games Ads (AdSense for games): rewarded ad breaks
+  h5: {
+    load(cfg) {
+      if (ads.h5) return ads.h5;
+      return (ads.h5 = new Promise(resolve => {
+        window.adsbygoogle = window.adsbygoogle || [];
+        window.adBreak = window.adConfig = o => window.adsbygoogle.push(o);
+        const s = document.createElement('script');
+        s.async = true;
+        s.crossOrigin = 'anonymous';
+        s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(cfg.client)}`;
+        s.dataset.adClient = cfg.client;
+        s.dataset.adFrequencyHint = '30s';
+        if (cfg.test) s.dataset.adbreakTest = 'on';
+        s.onload = () => { window.adConfig({ preloadAdBreaks: 'on', sound: 'on' }); resolve(true); };
+        s.onerror = () => { ads.h5 = null; resolve(false); };
+        document.head.appendChild(s);
+      }));
+    },
+    show() {
+      return new Promise(resolve => {
+        let offered = false, viewed = false;
+        window.adBreak({
+          type: 'reward',
+          name: 'undo-loss',
+          beforeReward(showAdFn) { offered = true; showAdFn(); },
+          adViewed() { viewed = true; },
+          adDismissed() { viewed = false; },
+          adBreakDone() { resolve(viewed ? true : offered ? false : null); },
+        });
+      });
+    },
+  },
+};
+async function adsConfig(fresh) {
+  const who = cloud.user ? cloud.user.id : '';
+  if (ads.cfg && ads.cfgFor === who && !fresh) return ads.cfg;
+  try {
+    const res = await fetch('/api/ads', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    ads.cfg = res.ok ? await res.json() : { provider: '' };
+  } catch (e) {
+    return { provider: '' };
+  }
+  ads.cfgFor = who;
+  document.getElementById('pf-ads-row').hidden = !(ads.cfg.provider && AD_PROVIDERS[ads.cfg.provider]);
+  return ads.cfg;
+}
+// The flashing "win it back" buttons: shown while the last loss can still be undone
+function adsPending(p) {
+  ads.pending = p;
+  clearTimeout(ads.pendT);
+  if (p) ads.pendT = setTimeout(() => adsPending(null), Math.max(0, p.until - Date.now()));
+  const on = !!p && app.adOffers !== false && signedIn();
+  const label = on ? `Win back ${money(p.amt)}` : '';
+  const fl = document.getElementById('fl-undo'), home = document.getElementById('home-undo');
+  fl.hidden = home.hidden = !on;
+  fl.querySelector('span').textContent = label;
+  home.querySelector('b').textContent = label;
+}
+function adOfferHide() {
+  clearTimeout(ads.timer);
+  clearTimeout(ads.hideT);
+  document.getElementById('ad-offer').hidden = true;
+}
+// A bet's reply: if its newest line is a loss, offer the ad once the game has shown it
+function adsAfterPlay(log) {
+  const e = log && log[0];
+  if (!e || !(e.a < 0) || e.u || app.adOffers === false || !signedIn() || ads.busy) { if (e && !ads.busy) adsPending(null); return; }
+  ads.timer = setTimeout(async () => {
+    const cfg = await adsConfig();
+    if (!cfg.provider || !AD_PROVIDERS[cfg.provider] || !(cfg.left > 0)) return;
+    adsPending({ amt: Math.min(-e.a, cfg.cap), until: Date.now() + 4.5 * 60000 });
+    if (!ui.auth.hidden) return;
+    document.getElementById('ado-title').textContent = `Win back ${money(Math.min(-e.a, cfg.cap))}`;
+    document.getElementById('ado-sub').textContent = `Short ad · ${cfg.left} left today`;
+    document.getElementById('ad-offer').hidden = false;
+    ads.hideT = setTimeout(adOfferHide, 12000);
+  }, 2600);
+}
+const AD_ERRORS = {
+  limit: 'That’s all the ad rewards for today. More tomorrow.',
+  nothing: 'That loss can’t be won back any more.',
+  expired: 'That offer ran out. Try again after your next round.',
+  ads_off: 'Ads aren’t available right now.',
+};
+async function adPost(step, body) {
+  try {
+    const res = await fetch('/api/ads/' + step, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const d = await res.json().catch(() => null);
+    if (res.ok && d) return d;
+    if (d && d.error === 'limit' && ads.cfg) ads.cfg.left = 0;
+    if (d && ['limit', 'nothing', 'expired', 'ads_off'].includes(d.error)) adsPending(null);
+    toast(AD_ERRORS[d && d.error] || 'That didn’t work. Try again later.');
+  } catch (e) {
+    toast('Couldn’t reach the casino. Check your connection.');
+  }
+  return null;
+}
+async function adWatch() {
+  if (ads.busy) return;
+  ads.busy = true;
+  adOfferHide();
+  try {
+    const cfg = await adsConfig();
+    const p = AD_PROVIDERS[cfg.provider];
+    if (!p) return;
+    const offer = await adPost('offer');
+    if (!offer) return;
+    const t0 = Date.now();
+    if (!(await p.load(cfg))) { toast('Ads aren’t available right now.'); return; }
+    const watched = await p.show(cfg);
+    if (watched === null) { toast('No ad is ready right now. Try again later.'); return; }
+    if (!watched) { toast('The ad was closed early, so nothing was won back.'); return; }
+    await new Promise(r => setTimeout(r, Math.max(0, 5300 - (Date.now() - t0))));   // the server wants 5 s
+    const d = await adPost('claim', { id: offer.id });
+    if (!d) return;
+    wallet.real = d.balance;
+    if (Array.isArray(d.log)) mergeLog(d.log);
+    walletShow();
+    if (ads.cfg) ads.cfg.left = d.left;
+    adsPending(null);
+    render();
+    buzz([20, 40, 20]);
+    toast(`${money(d.granted)} is back in your wallet.`);
+  } finally {
+    ads.busy = false;
+  }
+}
+// The stand-in ad: a countdown, then Close pays; Skip doesn't
+function testAd() {
+  return new Promise(resolve => {
+    const el = document.getElementById('ad-test'), count = document.getElementById('adt-count');
+    const close = document.getElementById('adt-close'), skip = document.getElementById('adt-skip');
+    let left = 5;
+    const tick = () => { count.textContent = left > 0 ? `Reward in ${left}` : 'Reward earned'; close.disabled = left > 0; };
+    const iv = setInterval(() => { left--; tick(); if (left <= 0) clearInterval(iv); }, 1000);
+    const done = ok => { clearInterval(iv); el.hidden = true; close.onclick = skip.onclick = null; syncLock(); resolve(ok); };
+    close.onclick = () => done(true);
+    skip.onclick = () => done(false);
+    tick();
+    el.hidden = false;
+    document.body.classList.add('locked');
+  });
+}
+document.getElementById('ado-watch').addEventListener('click', adWatch);
+document.getElementById('fl-undo').addEventListener('click', adWatch);
+document.getElementById('home-undo').addEventListener('click', adWatch);
+document.getElementById('ado-x').addEventListener('click', adOfferHide);
 
 // Today's date where the player is, as YYYY-MM-DD
 function localDay(d = new Date()) {
@@ -5686,6 +5962,7 @@ async function floorEnsure() {
     inst.setTicker && inst.setTicker(floorTickerLines());
     if (mine !== fl.token) { inst.dispose(); return; }
     fl.inst = inst;
+    maybeTour();
     ui.flInfo.textContent = '';   // loaded: the room speaks for itself
   } catch (err) {
     if (staleReload(err)) return;   // an update went out while the app was open
@@ -5794,7 +6071,7 @@ const BONUS_POP_KEY = 'mini-casino.bonus-pop';
 function maybeBonusPop() {
   clearTimeout(maybeBonusPop.t);
   maybeBonusPop.t = setTimeout(() => {
-    if (app.view !== 'floor' || !bonusReady() || flPop.kind || !ui.auth.hidden) return;
+    if (app.view !== 'floor' || !bonusReady() || flPop.kind || !ui.auth.hidden || tour.on || !tourSeen()) return;
     let seen = '';
     try { seen = localStorage.getItem(BONUS_POP_KEY) || ''; } catch (e) { /* storage unavailable */ }
     if (seen === localDay()) return;   // once a day
@@ -5832,6 +6109,7 @@ function renderFloorHud() {
   else ui.flAv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/></svg>';
   ui.flAcct.classList.toggle('nudge', cloud.ready && !signedIn());   // a nudge to sign in
   ui.flWelcome.hidden = !cloud.ready || signedIn();
+  maybeTour();
   maybeBonusPop();
   ui.flGo.classList.toggle('nudge', bonusReady());   // today's bonus is waiting at the cashier
   feedLoad();
@@ -6179,7 +6457,7 @@ async function cloudInit() {
     cloud.user = d && d.user ? d.user : null;
   } catch (e) { done(); return; }
   done();
-  if (cloud.user) { await walletFetch(); cloudPull(); }
+  if (cloud.user) { await walletFetch(); cloudPull(); adsConfig(true); }
   render();
 }
 
@@ -6303,7 +6581,7 @@ function renderAccount() {
     const actions = document.createElement('div');
     actions.className = 'acct-actions';
     actions.append(btn('Sign in', () => openAuth('in')), btn('Create account', () => openAuth('up'), true));
-    el.append(text, actions);
+    el.append(text, actions, acctLegal());
   } else if (u) {
     ui.acctTitle.textContent = 'Your account';
     const name = document.createElement('b');
@@ -6318,7 +6596,7 @@ function renderAccount() {
     status.textContent = { loading: 'Loading your save…', saving: 'Saving…', saved: 'Progress saved', error: 'Couldn’t save. Will retry on your next move.' }[cloud.state]
       || 'Your progress saves to your account.';
     text.appendChild(status);
-    el.append(text, btn('Sign out', signOut));
+    el.append(text, btn('Sign out', signOut), acctLegal());
   } else {
     ui.acctTitle.textContent = 'Save your progress';
     const line = document.createElement('span');
@@ -6337,6 +6615,7 @@ function renderProfile() {
     : dailyClaimed() ? `Today’s $1,000 is in your wallet. The next one arrives in ${untilMidnight()}, at midnight your time.`
     : 'Today’s $1,000 is ready. Collect it from the cashier on the casino floor, or on the Casino tab.';
   ui.pfVibe.checked = app.vibe !== false;
+  document.getElementById('pf-ads').checked = app.adOffers !== false;
   ui.pfHints.checked = !!app.hints;
 }
 
@@ -6384,7 +6663,9 @@ async function authSubmit(e) {
   const password = ui.authPassword.value;
   if (!/^\S+@\S+\.\S+$/.test(email)) { ui.authError.textContent = 'Enter a valid email address.'; return; }
   if (password.length < 8) { ui.authError.textContent = 'Passwords need at least 8 characters.'; return; }
-  const body = up ? { name: ui.authName.value.trim() || email.split('@')[0], email, password } : { email, password };
+  const typed = ui.authName.value.trim();
+  if (up && typed && badName(typed)) { ui.authError.textContent = 'Other players see your name, so pick a different one.'; return; }
+  const body = up ? { name: cleanName(typed, '') || cleanName(email.split('@')[0], 'Player'), email, password } : { email, password };
   ui.authSubmit.disabled = true;
   ui.authError.textContent = '';
   try {
@@ -6436,6 +6717,126 @@ async function playAsGuest() {
     ui.authGuest.disabled = ui.flGuest.disabled = false;
   }
 }
+// Terms, Privacy and Delete account, under the account card
+function acctLegal() {
+  const row = document.createElement('div');
+  row.className = 'acct-legal';
+  row.innerHTML = '<a href="/terms.html" target="_blank" rel="noopener">Terms</a> <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>';
+  const del = document.createElement('button');
+  del.className = 'linkbtn danger';
+  del.textContent = 'Delete account';
+  del.addEventListener('click', () => row.replaceWith(deleteConfirm(row)));
+  row.appendChild(del);
+  return row;
+}
+function deleteConfirm(row) {
+  const box = document.createElement('div');
+  box.className = 'acct-delete';
+  const guest = !!(cloud.user && cloud.user.guest);
+  const p = document.createElement('p');
+  p.innerHTML = `<b>Delete your ${guest ? 'guest game' : 'account'}?</b> Your wallet, stats and save are erased${guest ? '' : ', along with your sign-in'}. This can’t be undone.`;
+  const yes = document.createElement('button');
+  yes.className = 'btn danger';
+  yes.textContent = 'Delete forever';
+  const no = document.createElement('button');
+  no.className = 'btn';
+  no.textContent = 'Keep it';
+  no.addEventListener('click', () => box.replaceWith(row));
+  yes.addEventListener('click', async () => {
+    yes.disabled = no.disabled = true;
+    yes.textContent = 'Deleting…';
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ confirm: 'DELETE' }) });
+      if (!res.ok) throw new Error('delete failed');
+      try { await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: '{}' }); } catch (e) { /* the session is gone anyway */ }
+      // This device's copy goes too: stats, saves, settings (but not the 18+ answer)
+      try { localStorage.clear(); localStorage.setItem(AGE_KEY, 'ok'); sessionStorage.setItem('mc-deleted', '1'); } catch (e) { /* storage unavailable */ }
+      location.replace('/');
+    } catch (e) {
+      yes.disabled = no.disabled = false;
+      yes.textContent = 'Delete forever';
+      toast('Couldn’t delete your account. Check your connection and try again.');
+    }
+  });
+  const btns = document.createElement('div');
+  btns.className = 'acct-actions';
+  btns.append(no, yes);
+  box.append(p, btns);
+  return box;
+}
+
+/* First visit: it's play money only and for adults. Asked once per device. */
+const AGE_KEY = 'mini-casino.age';
+function ageGate() {
+  let ok = false;
+  try { ok = localStorage.getItem(AGE_KEY) === 'ok'; } catch (e) { /* storage unavailable: ask every visit */ }
+  if (ok) return;
+  const gate = document.getElementById('age-gate');
+  gate.hidden = false;
+  document.body.classList.add('locked');
+  document.getElementById('age-yes').addEventListener('click', () => {
+    try { localStorage.setItem(AGE_KEY, 'ok'); } catch (e) { /* storage unavailable */ }
+    gate.hidden = true;
+    syncLock();
+    window.dispatchEvent(new Event('mc-age-ok'));
+  });
+  document.getElementById('age-no').addEventListener('click', () => {
+    document.getElementById('age-btns').hidden = true;
+    document.getElementById('age-sorry').hidden = false;
+  });
+}
+
+/* First time on the floor (once they have a wallet): point out the arrows, Sit,
+   All games and the top buttons, one at a time. Asked once per device. */
+const TOUR_KEY = 'mini-casino.tour';
+const tour = { on: false, i: 0, steps: [] };
+function tourSeen() {
+  try { return localStorage.getItem(TOUR_KEY) === 'done' || localStorage.getItem(AGE_KEY) !== 'ok'; } catch (e) { return true; }
+}
+function maybeTour() {
+  clearTimeout(maybeTour.t);
+  if (tour.on || tourSeen()) return;
+  maybeTour.t = setTimeout(() => {
+    if (tour.on || tourSeen() || app.view !== 'floor' || !signedIn() || flPop.kind || !ui.auth.hidden) return;
+    const arrows = ui.flControls.querySelectorAll('.fl-arrow'), sit = ui.flControls.querySelector('.primary');
+    if (!arrows.length || !sit) return;   // the floor hasn't loaded yet, or they're seated
+    tour.steps = [
+      { el: ui.flControls, text: 'Tap the arrows, or swipe across the room, to glide from table to table.' },
+      { el: sit, text: 'When a game you like is in front of you, tap Sit down to play it.' },
+      { el: ui.flGo, text: 'All games jumps straight to any table. The cashier pays a free bonus every day.' },
+      { el: ui.flAcct.parentNode, text: 'Your account and stats, the classic 2D casino, and the leaderboard live up here.' },
+    ];
+    tour.on = true;
+    tour.i = 0;
+    document.getElementById('tour').hidden = false;
+    tourShow();
+  }, 900);
+}
+function tourShow() {
+  const st = tour.steps[tour.i], r = st.el.getBoundingClientRect(), pad = 6;
+  const spot = document.getElementById('tour-spot'), card = document.getElementById('tour-card');
+  Object.assign(spot.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+  document.getElementById('tour-step').textContent = `${tour.i + 1} of ${tour.steps.length}`;
+  document.getElementById('tour-text').textContent = st.text;
+  const last = tour.i === tour.steps.length - 1;
+  document.getElementById('tour-next').textContent = last ? 'Let’s play' : 'Next';
+  document.getElementById('tour-skip').hidden = last;
+  // The card sits on the far side of the screen from what it points at
+  const h = card.offsetHeight || 150, below = r.top + r.height / 2 < innerHeight / 2;
+  card.style.top = (below ? r.bottom + pad + 14 : r.top - pad - 14 - h) + 'px';
+  document.getElementById('tour-next').focus({ preventScroll: true });
+}
+function tourEnd() {
+  tour.on = false;
+  document.getElementById('tour').hidden = true;
+  try { localStorage.setItem(TOUR_KEY, 'done'); } catch (e) { /* storage unavailable */ }
+  maybeBonusPop();
+}
+document.getElementById('tour-next').addEventListener('click', () => { if (++tour.i >= tour.steps.length) tourEnd(); else tourShow(); });
+document.getElementById('tour-skip').addEventListener('click', tourEnd);
+addEventListener('resize', () => { if (tour.on) tourShow(); });
+window.addEventListener('mc-age-ok', () => maybeTour());
+
 async function signOut() {
   if (cloud.timer || cloud.saving) await cloudPush();
   try {
@@ -6448,6 +6849,8 @@ async function signOut() {
   wallet.real = wallet.held = wallet.balance = 0;
   wallet.log = [];
   soloT = null;
+  adOfferHide();
+  adsPending(null);
   toast('Signed out. Your wallet is safe in your account.');
   route();
 }
@@ -7280,6 +7683,7 @@ ui.flSheetClose.addEventListener('click', flPopClose);
 ui.flSheet.addEventListener('click', e => { if (e.target === ui.flSheet) flPopClose(); });
 ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? 'home' : t.dataset.tab); window.scrollTo(0, 0); }));
 ui.pfVibe.addEventListener('change', () => { app.vibe = ui.pfVibe.checked; prefsSave(); buzz(10); });
+document.getElementById('pf-ads').addEventListener('change', e => { app.adOffers = e.target.checked; prefsSave(); if (!app.adOffers) adOfferHide(); adsPending(ads.pending); });
 ui.pfHints.addEventListener('change', () => { app.hints = ui.pfHints.checked; prefsSave(); render(); });
 ui.vpDeal.addEventListener('click', vpDeal);
 ui.bcGo.addEventListener('click', bcDeal);
@@ -7532,6 +7936,8 @@ async function boot() {
   rdRecover();
   route();
   cloudInit();
+  ageGate();
+  try { if (sessionStorage.getItem('mc-deleted')) { sessionStorage.removeItem('mc-deleted'); toast('Your account and its data were deleted.'); } } catch (e) { /* storage unavailable */ }
   // The wheel's numbers are painted once per size; repaint them in Manrope when it arrives
   if (document.fonts) document.fonts.ready.then(() => { wheelImgs.clear(); if (!rl.anim) rlDraw(); });
 }

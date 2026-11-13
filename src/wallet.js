@@ -16,6 +16,7 @@
 //     rounds jsonb not null default '{}',
 //     updated_at timestamptz not null default now()
 //   );
+import { cleanName } from './names.js';
 
 export const START_BALANCE = 1000;
 export const DAILY_BONUS = 1000;
@@ -156,9 +157,9 @@ export async function leaderboard(sql, board, userId, now, withTest) {
   return {
     board: board === 'balance' ? 'balance' : 'week',
     week: wk,
-    rows: rows.map((r, i) => ({ rank: i + 1, name: r.name, value: Number(r.value), me: r.user_id === userId })),
+    rows: rows.map((r, i) => ({ rank: i + 1, name: cleanName(r.name), value: Number(r.value), me: r.user_id === userId })),
     me,
-    podium: podium.map(p => ({ name: p.name, value: Number(p.value) })),
+    podium: podium.map(p => ({ name: cleanName(p.name), value: Number(p.value) })),
   };
 }
 
@@ -175,5 +176,5 @@ export async function recentWins(sql, now, withTest) {
       and e->>'w' not like 'Daily bonus%' and e->>'w' not like 'Wallet opened%'
     order by (e->>'at')::bigint desc
     limit 24`;
-  return rows.map(r => ({ name: r.name, game: String(r.what || '').split(' · ')[0], amount: Number(r.amount), at: Number(r.at) }));
+  return rows.map(r => ({ name: cleanName(r.name), game: String(r.what || '').split(' · ')[0], amount: Number(r.amount), at: Number(r.at) }));
 }

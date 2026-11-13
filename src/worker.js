@@ -12,17 +12,22 @@
 //                money lives in the wallets table (src/wallet.js)
 //   /api/daily   claims the signed-in player's $1,000 daily bonus, once per calendar day
 //   /api/leaderboard  this week's net winnings, or everyone's balance
+//   /api/account/delete  delete your account, wallet and save (POST, confirm: 'DELETE')
+//   /api/ads     rewarded ads (src/ads.js): GET the provider and limits, POST /offer and
+//                /claim to pay back a loss after an ad. Off until ADS_PROVIDER is set.
 //   /api/feed    recent big wins across everyone, for the home screen's ticker
 //   /api/rooms   multiplayer blackjack: POST creates a room, /api/rooms/{code} says
 //                whether it exists, /api/rooms/{code}/ws connects to it. Each room
 //                is a Durable Object (src/room.js).
 
+import { cleanName } from './names.js';
 import { neon } from '@neondatabase/serverless';
 import { makeCode } from './rules.js';
 import { TableRoom } from './room.js';
 import { play, roundsView, PlayError } from './play.js';
 import { loadWallet, withWallet, leaderboard, recentWins, rollWeek, DAILY_BONUS } from './wallet.js';
 import { note } from './play.js';
+import { adsConfig, adOffer, adClaim, undosLeft } from './ads.js';
 
 export { TableRoom };
 
@@ -37,12 +42,14 @@ export default {
     try {
       if (url.pathname.startsWith('/api/auth/')) return await proxyAuth(request, env, url);
       if (url.pathname === '/api/me') return await me(request, env, url);
+      if (url.pathname === '/api/account/delete') return await deleteAccount(request, env, url);
       if (url.pathname === '/api/guest') return await guestRoute(request, env, url);
       if (url.pathname === '/api/save') return await save(request, env, url);
       if (url.pathname === '/api/daily') return await daily(request, env, url);
       if (url.pathname === '/api/wallet') return await walletRoute(request, env, url);
       if (url.pathname === '/api/play') return await playRoute(request, env, url);
       if (url.pathname === '/api/leaderboard') return await boardRoute(request, env, url);
+      if (url.pathname === '/api/ads' || url.pathname.startsWith('/api/ads/')) return await adsRoute(request, env, url);
       if (url.pathname === '/api/feed') return await feedRoute(request, env, url);
       if (url.pathname === '/api/rooms') return await createRoom(request, env, url);
       const room = url.pathname.match(/^\/api\/rooms\/([a-z0-9]{4,12})(\/ws)?$/);
@@ -177,6 +184,26 @@ async function adoptGuest(sql, guestId, userId, name) {
 const userView = user => ({ id: user.id, name: user.name || '', email: user.email || '', ...(user.dev ? { dev: true } : {}), ...(user.guest ? { guest: true } : {}) });
 
 /* ---------- API ---------- */
+/* Delete your account: the wallet and save go, and for a signed-in player the sign-in itself
+   (the neon_auth user row; its sessions and password go with it, by cascade). A guest's
+   cookie is cleared too. It can't be undone, so the page asks first and sends confirm. */
+async function deleteAccount(request, env, url) {
+  if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!sameOrigin(request, url)) return json({ error: 'bad_origin' }, 403);
+  const body = await request.json().catch(() => null);
+  if (!body || body.confirm !== 'DELETE') return json({ error: 'not_confirmed' }, 400);
+  const user = await currentUser(request, env, url);
+  if (!user) return json({ error: 'signed_out' }, 401);
+  const sql = neon(env.DATABASE_URL);
+  const guest = await guestUser(request, env, url);
+  const ids = [user.id, ...(guest && guest.id !== user.id ? [guest.id] : [])];
+  await sql`delete from wallets where user_id = any(${ids})`;
+  await sql`delete from saves where user_id = any(${ids})`;
+  if (!user.guest && !user.dev) await sql`delete from neon_auth."user" where id = ${user.id}`;
+  const res = json({ ok: true });
+  res.headers.append('set-cookie', `${GUEST_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`);
+  return res;
+}
 async function me(request, env, url) {
   const user = await currentUser(request, env, url);
   return json({ user: user ? userView(user) : null });
@@ -314,6 +341,35 @@ async function playRoute(request, env, url) {
   }
 }
 
+/* Rewarded ads (src/ads.js). GET /api/ads: which provider, the limits and (signed in) how
+   many undos are left today. POST /api/ads/offer opens a ticket for the newest loss; POST
+   /api/ads/claim { id } pays it once the ad has played. */
+async function adsRoute(request, env, url) {
+  const cfg = adsConfig(env, url);
+  const user = await currentUser(request, env, url);
+  const sql = user && cfg.provider ? neon(env.DATABASE_URL) : null;
+  if (url.pathname === '/api/ads') {
+    if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+    let left = 0;
+    if (sql) { const w = await loadWallet(sql, user.id, displayName(user)); w.rounds = w.rounds || {}; left = undosLeft(w, Date.now()); }
+    return json({ ...cfg, left });
+  }
+  const step = url.pathname.slice('/api/ads/'.length);
+  if (step !== 'offer' && step !== 'claim') return json({ error: 'not_found' }, 404);
+  if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!sameOrigin(request, url)) return json({ error: 'bad_origin' }, 403);
+  if (!cfg.provider) return json({ error: 'ads_off' }, 404);
+  if (!user) return json({ error: 'signed_out' }, 401);
+  const body = await request.json().catch(() => ({}));
+  try {
+    const { w, result } = await withWallet(sql, user.id, displayName(user), (w, now) => step === 'offer' ? adOffer(w, now) : adClaim(w, now, body && body.id));
+    return json({ ...result, balance: w.balance, weekNet: w.weekNet, log: w.log.slice(0, 10) });
+  } catch (err) {
+    if (err && err.code) return json({ error: err.code }, 409);
+    throw err;
+  }
+}
+
 // Recent big wins for the home screen's ticker; public, like the leaderboard
 async function feedRoute(request, env, url) {
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
@@ -334,7 +390,7 @@ async function boardRoute(request, env, url) {
 // First name and last initial: shown to everyone at the table
 function displayName(user) {
   if (user.guest) return user.name;
-  const parts = String(user.name || '').trim().split(/\s+/).filter(Boolean);
+  const parts = cleanName(user.name, '').split(/\s+/).filter(Boolean);   // nothing offensive (src/names.js)
   if (!parts.length) return 'Player';
   const name = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
   return name.slice(0, 24);
@@ -350,7 +406,7 @@ async function createRoom(request, env, url) {
   const user = await currentUser(request, env, url);
   if (!user) return json({ error: 'signed_out' }, 401);
   const body = await request.json().catch(() => ({}));
-  const name = String((body && body.name) || '').replace(/\s+/g, ' ').trim().slice(0, 28) || 'Blackjack table';
+  const name = cleanName(body && body.name, 'Blackjack table', 28);
   for (let i = 0; i < 6; i++) {
     const code = makeCode(randomUnit);
     const res = await roomStub(env, code).fetch('https://room/init', {

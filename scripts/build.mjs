@@ -33,7 +33,18 @@ const head = [
   '<head>',
   '<meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">',
-  '<meta name="description" content="A play-money casino: blackjack, roulette, and a bank that hands out as much money as you want.">',
+  '<meta name="description" content="Blackjack, roulette, slots and more in a 3D casino you can walk around. Free, play money only, 18+.">',
+  // Link previews (iMessage, WhatsApp, Discord, X, Facebook)
+  '<meta property="og:type" content="website">',
+  '<meta property="og:site_name" content="Mini Casino">',
+  '<meta property="og:title" content="Mini Casino">',
+  '<meta property="og:description" content="Blackjack, roulette, slots and more in a 3D casino you can walk around. Free, play money only, 18+.">',
+  '<meta property="og:url" content="https://mini-casino.boyletb8.workers.dev/">',
+  '<meta property="og:image" content="https://mini-casino.boyletb8.workers.dev/og-image.png">',
+  '<meta property="og:image:width" content="1200">',
+  '<meta property="og:image:height" content="630">',
+  '<meta property="og:image:alt" content="Mini Casino: a gold spade on green felt">',
+  '<meta name="twitter:card" content="summary_large_image">',
   '<meta name="theme-color" content="#063a24">',
   `<link rel="icon" href="${favicon}">`,
   '<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">',
@@ -67,7 +78,7 @@ if (!page.includes('/* @@POKER@@ */')) throw new Error('mini-casino.html is miss
 const baccarat = (await readFile(join(root, 'src', 'baccarat.js'), 'utf8')).replace(/^export /gm, '');
 if (!page.includes('/* @@BACCARAT@@ */')) throw new Error('mini-casino.html is missing its /* @@BACCARAT@@ */ marker');
 let body = page.replace('/* @@RULES@@ */', () => rules).replace('/* @@POKER@@ */', () => poker).replace('/* @@BACCARAT@@ */', () => baccarat);
-for (const [file, marker] of [['war.js', 'WAR'], ['threecard.js', 'THREECARD'], ['reddog.js', 'REDDOG']]) {
+for (const [file, marker] of [['war.js', 'WAR'], ['threecard.js', 'THREECARD'], ['reddog.js', 'REDDOG'], ['names.js', 'NAMES']]) {
   const src = (await readFile(join(root, 'src', file), 'utf8')).replace(/^export /gm, '');
   if (!page.includes(`/* @@${marker}@@ */`)) throw new Error(`mini-casino.html is missing its /* @@${marker}@@ */ marker`);
   body = body.replace(`/* @@${marker}@@ */`, () => src);
