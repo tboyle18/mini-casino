@@ -4407,13 +4407,17 @@ async function rlSpin() {
   buzz(20);
   rlStageOpen();
   let secs = 0;
+  // Only this spin may settle this spin: a late call from an earlier one (its backup timer,
+  // or the wheel reporting back) would otherwise cut a new spin short
+  const tok = rl.spinTok = (rl.spinTok || 0) + 1;
+  const settleThis = () => { if (rl.spinTok === tok) rlSettle(); };
   if (rl3d.inst) {
-    try { secs = rl3d.inst.play(r.result, rlSettle); }
+    try { secs = rl3d.inst.play(r.result, settleThis); }
     catch (e) { rl3dDrop(true); }
   }
   if (secs) {
     rlAnimate(r.result, secs * 1000, false);      // the thumbnail wheel follows along underneath
-    setTimeout(rlSettle, secs * 1000 + 12000);    // in case the 3D wheel never reports back
+    setTimeout(settleThis, secs * 1000 + 12000);  // in case the 3D wheel never reports back
   } else rlAnimate(r.result);
   render();
 }
@@ -4465,6 +4469,7 @@ function rlStageClose() {
   clearTimeout(rl.stageTimer);
   rl.stage = null;
   ui.rStage.hidden = true;
+  if (rl3d.inst && !rl.live) rl3d.inst.stop();   // the 3D wheel stops coasting
   ui.rSlot.appendChild(ui.rWheel);
   syncLock();
   rlDraw();
@@ -4720,8 +4725,8 @@ function renderRoulette() {
     ui.rCapNum.textContent = done ? String(rl.result) : '…';
     ui.rCapTitle.textContent = done ? title : 'No more bets';
     ui.rCapSub.textContent = done ? sub : `${money(total)} on the table`;
-    ui.rCapHint.hidden = !done && !rl3d.inst;
-    ui.rCapHint.textContent = done ? 'Tap to place your next bets' : 'Tap to skip';
+    ui.rCapHint.hidden = !done;   // no skipping: the ball has to land
+    ui.rCapHint.textContent = 'Tap to place your next bets';
   }
 
   ui.rHist.textContent = '';
@@ -7726,7 +7731,6 @@ ui.chipsPanel.addEventListener('click', e => { if (e.target === ui.chipsPanel) c
 ui.invitePanel.addEventListener('click', e => { if (e.target === ui.invitePanel) closeInvite(); });
 ui.rStage.addEventListener('click', () => {
   if (rl.stage === 'result') rlStageClose();
-  else if (rl.stage === 'spin' && rl3d.inst) rl3d.inst.skip();
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;

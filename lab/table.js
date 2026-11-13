@@ -11,8 +11,6 @@ import { buzz, makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality
 const FELT_Y = 0.03;
 const CARD_W = 0.063, CARD_H = 0.088, CARD_T = 0.0006;
 const CHIP_R = 0.0195, CHIP_T = 0.0034;
-const SUITS = { S: '♠', H: '♥', D: '♦', C: '♣' };
-const SYM = '"Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols 2", sans-serif';
 const CHIPS = [{ v: 5, c: '#c8303c' }, { v: 25, c: '#2f6fd0' }, { v: 100, c: '#25272c' }, { v: 500, c: '#7a3fb8' }, { v: 1000, c: '#d9822b' }];
 const BET_SPOT = new THREE.Vector3(0, FELT_Y, 0.3);
 const SHOE_MOUTH = new THREE.Vector3(0.5, FELT_Y + 0.06, -0.24);
@@ -102,51 +100,108 @@ function feltTexture(renderer) {
   return t;
 }
 
-function faceTexture(rank, suit, renderer) {
-  const W = 320, H = 448;
-  const [c, g] = canvas(W, H);
-  roundRect(g, 2, 2, W - 4, H - 4, 26);
-  g.fillStyle = '#fbfaf5';
-  g.fill();
-  g.lineWidth = 3;
-  g.strokeStyle = 'rgba(0,0,0,.12)';
-  g.stroke();
-  const col = suit === 'H' || suit === 'D' ? '#c8202e' : '#15171c';
-  const sym = SUITS[suit] + '︎';
-  g.fillStyle = col;
+/* Card faces, drawn like a real deck: corner indexes, pips laid out the classic way for 2-10
+   (the lower half upside down), one big pip on an ace, and a framed court card for J Q K.
+   Suits are drawn shapes, not font glyphs, so they're the same on every phone and sit dead
+   centre. Each shape fills a 100 x 100 box. */
+const SUIT_PATHS = {
+  H: 'M50 95C41 83 3 60 3 31C3 14 16 4 30 4C40 4 47 10 50 18C53 10 60 4 70 4C84 4 97 14 97 31C97 60 59 83 50 95Z',
+  D: 'M50 2C61 19 75 36 90 50C75 64 61 81 50 98C39 81 25 64 10 50C25 36 39 19 50 2Z',
+  S: 'M50 3C59 18 96 39 96 62C96 76 86 85 74 85C64 85 57 80 54 73C55 84 60 91 69 97L31 97C40 91 45 84 46 73C43 80 36 85 26 85C14 85 4 76 4 62C4 39 41 18 50 3Z',
+  C: 'M50 6A21 21 0 1 1 49.9 6ZM27 37A21 21 0 1 1 26.9 37ZM73 37A21 21 0 1 1 72.9 37ZM46 52L54 52C54 74 59 88 69 97L31 97C41 88 46 74 46 52Z',
+};
+const suitPath = {};
+function pip(g, suit, x, y, size, flip) {
+  const p = suitPath[suit] || (suitPath[suit] = new Path2D(SUIT_PATHS[suit]));
+  g.save();
+  g.translate(x, y);
+  if (flip) g.rotate(Math.PI);
+  g.scale(size / 100, size / 100);
+  g.translate(-50, -50);
+  g.fill(p);
+  g.restore();
+}
+// Text centred on its ink, not its font box, so every rank sits in the same place
+function inkText(g, text, x, y, px, squeeze = 1) {
+  g.font = `700 ${px}px Georgia, "Times New Roman", serif`;
+  const m = g.measureText(text);
+  g.save();
+  g.translate(x, y);
+  g.scale(squeeze, 1);
   g.textAlign = 'center';
   g.textBaseline = 'alphabetic';
+  g.fillText(text, 0, (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
+  g.restore();
+}
+// Where the pips go on 2-10: [column, row], columns 0-2 and rows 0-1 down the card
+const L = 0, M = 1, R = 2;
+const PIPS = {
+  2: [[M, 0], [M, 1]],
+  3: [[M, 0], [M, 0.5], [M, 1]],
+  4: [[L, 0], [R, 0], [L, 1], [R, 1]],
+  5: [[L, 0], [R, 0], [M, 0.5], [L, 1], [R, 1]],
+  6: [[L, 0], [R, 0], [L, 0.5], [R, 0.5], [L, 1], [R, 1]],
+  7: [[L, 0], [R, 0], [M, 0.25], [L, 0.5], [R, 0.5], [L, 1], [R, 1]],
+  8: [[L, 0], [R, 0], [M, 0.25], [L, 0.5], [R, 0.5], [M, 0.75], [L, 1], [R, 1]],
+  9: [[L, 0], [R, 0], [L, 1 / 3], [R, 1 / 3], [M, 0.5], [L, 2 / 3], [R, 2 / 3], [L, 1], [R, 1]],
+  10: [[L, 0], [R, 0], [M, 1 / 6], [L, 1 / 3], [R, 1 / 3], [L, 2 / 3], [R, 2 / 3], [M, 5 / 6], [L, 1], [R, 1]],
+};
+const FACE_W = 500, FACE_H = 700;
+function faceTexture(rank, suit, renderer) {
+  const W = FACE_W, H = FACE_H;
+  const [c, g] = canvas(W, H);
+  roundRect(g, 3, 3, W - 6, H - 6, 34);
+  g.fillStyle = '#fdfcf7';
+  g.fill();
+  g.lineWidth = 4;
+  g.strokeStyle = 'rgba(0,0,0,.14)';
+  g.stroke();
+  const col = suit === 'H' || suit === 'D' ? '#c8102e' : '#141414';
+  g.fillStyle = col;
+  // Corner indexes, top left and (upside down) bottom right
   const corner = () => {
-    g.font = `800 ${rank === '10' ? 56 : 64}px Manrope, sans-serif`;
-    g.fillText(rank, 48, 76);
-    g.font = `48px ${SYM}`;
-    g.fillText(sym, 48, 126);
+    inkText(g, rank, 56, 74, rank === '10' ? 80 : 88, rank === '10' ? 0.74 : 1);
+    pip(g, suit, 56, 152, 54);
   };
   corner();
   g.save(); g.translate(W, H); g.rotate(Math.PI); corner(); g.restore();
-  g.textBaseline = 'middle';
-  if ('JQK'.includes(rank)) {
-    roundRect(g, 78, 108, W - 156, H - 216, 14);
-    g.lineWidth = 4;
+
+  if (rank === 'A') {
+    pip(g, suit, W / 2, H / 2, suit === 'S' ? 230 : 170);
+  } else if ('JQK'.includes(rank)) {
+    // A framed court card: the letter and suit at the top, mirrored at the bottom
+    const fx = 100, fy = 92, fw = W - 200, fh = H - 184;
+    roundRect(g, fx, fy, fw, fh, 16);
+    g.fillStyle = suit === 'H' || suit === 'D' ? '#fbecec' : '#eef0f3';
+    g.fill();
+    g.lineWidth = 5;
     g.strokeStyle = col;
     g.stroke();
-    g.fillStyle = col + '14';
-    g.fill();
+    roundRect(g, fx + 12, fy + 12, fw - 24, fh - 24, 10);
+    g.lineWidth = 2;
+    g.strokeStyle = '#c9a227';
+    g.stroke();
+    g.beginPath(); g.moveTo(fx + 12, H / 2); g.lineTo(fx + fw - 12, H / 2); g.stroke();
     g.fillStyle = col;
-    g.font = '800 150px Manrope, sans-serif';
-    g.fillText(rank, W / 2, H / 2 - 18);
-    g.font = `70px ${SYM}`;
-    g.fillText(sym, W / 2, H / 2 + 92);
+    const half = () => {
+      inkText(g, rank, W / 2, fy + 112, 140);
+      pip(g, suit, W / 2, fy + 220, 74);
+    };
+    half();
+    g.save(); g.translate(W, H); g.rotate(Math.PI); half(); g.restore();
   } else {
-    g.font = `${rank === 'A' ? 210 : 150}px ${SYM}`;
-    g.fillText(sym, W / 2, H / 2 + 6);
+    const cols = [W * 0.31, W / 2, W * 0.69];
+    const top = H * 0.2, span = H * 0.6;
+    const size = Number(rank) >= 9 ? 84 : 92;
+    for (const [cx, row] of PIPS[rank]) pip(g, suit, cols[cx], top + row * span, size, row > 0.5);
   }
   return tex(c, renderer);
 }
 
 function backTexture(renderer) {
   const W = 320, H = 448;
-  const [c, g] = canvas(W, H);
+  const [c, g] = canvas(FACE_W, FACE_H);
+  g.scale(FACE_W / W, FACE_H / H);   // drawn at the faces' size, so the back is as sharp
   roundRect(g, 2, 2, W - 4, H - 4, 26);
   g.fillStyle = '#fbfaf5';
   g.fill();
@@ -320,7 +375,10 @@ function buildTable(stage, opts = {}) {
   function faceFor(code) {
     if (!/^(10|[2-9AJQK])[SHDC]$/.test(code || '')) return backMat;
     let face = faceMats.get(code);
+    if (face) { faceMats.delete(code); faceMats.set(code, face); }   // most recently used last
     if (!face) {
+      // Faces are big for sharpness: free the GPU copy of ones not used for a while
+      if (faceMats.size >= 20) { const [, old] = faceMats.entries().next().value; old.map.dispose(); faceMats.delete(faceMats.keys().next().value); }
       face = new THREE.MeshPhysicalMaterial({ map: keep(faceTexture(code.slice(0, -1), code.slice(-1), renderer)), roughness: 0.45, clearcoat: 0.3, alphaTest: 0.5 });
       faceMats.set(code, face);
     }
@@ -370,7 +428,8 @@ function chipsFor(amount) {
 export async function mountCasinoTable(container) {
   await fontReady();
   const Q = casinoQuality();
-  const B = buildTable(container, { maxDpr: Q.maxDpr, alpha: true, shadow: Q.shadow, softShadows: Q.softShadows });
+  // Sharper than the other 3D scenes on a phone: it's a small scene and the cards have to read
+  const B = buildTable(container, { maxDpr: Q.small && Q.maxDpr >= 1.5 ? 2 : Q.maxDpr, alpha: true, shadow: Q.shadow, softShadows: Q.softShadows });
   const { renderer, envTex, scene, camera, chipMats, cardMesh, faceFor, cardGeo, chipGeo, textures } = B;
   scene.background = null;
   scene.fog = null;

@@ -148,7 +148,7 @@ export function createWheelPhysics(rand = Math.random) {
   const state = { omega: 1.1, spinning: false, still: 0, time: 0, phase: 'idle', theta: 0, v: 0 };
   const WALL_R = 0.3902;
   const WALL_Y = 0.0532;
-  const TAU = 4.2;       // how quickly the ball loses speed while it circles the wall (seconds)
+  const TAU = 5.2;       // how quickly the ball loses speed while it circles the wall (seconds)
   const DROP_V = 1.35;   // below this speed (m/s) it leaves the wall and physics takes over
 
   // While the ball is fast it just circles the outer wall, so that part is calculated directly
@@ -165,7 +165,7 @@ export function createWheelPhysics(rand = Math.random) {
     launch() {
       if (inWorld) { world.removeBody(ballBody); inWorld = false; }
       state.theta = rand() * Math.PI * 2;
-      state.v = 4.6 + rand() * 1.1;
+      state.v = 5.6 + rand() * 1.0;   // about 7-9 seconds of laps before it drops, like a real croupier's spin
       state.omega = 1.0 + rand() * 0.3;
       state.phase = 'track';
       state.spinning = true;
@@ -188,7 +188,7 @@ export function createWheelPhysics(rand = Math.random) {
           inWorld = true;
         }
       }
-      world.step(1 / 360, dt, 24);
+      world.step(1 / 720, dt, 48);   // small steps, so the ball can't slip through a fret or the rotor
       if (!state.spinning) return 'idle';
       state.time += dt;
       if (state.phase === 'track') return 'rolling';
@@ -197,7 +197,7 @@ export function createWheelPhysics(rand = Math.random) {
       if (p.y < -0.15 || r > 0.6) return 'escaped';
       const rel = Math.hypot(v.x - state.omega * p.z, v.y, v.z + state.omega * p.x);
       state.still = rel < 0.04 && r > 0.18 && r < 0.262 && p.y < 0.022 ? state.still + dt : 0;
-      if (state.still > 0.9 || state.time > 35) { state.spinning = false; state.phase = 'rest'; return 'landed'; }
+      if (state.still > 0.9 || state.time > 45) { state.spinning = false; state.phase = 'rest'; return 'landed'; }
       return 'rolling';
     },
     pocket() {
@@ -350,7 +350,7 @@ export function recordSpin(rand = Math.random) {
   function start() {
     phys = createWheelPhysics(rand);
     phys.launch();
-    buf = new Float32Array(FRAME * REC_FPS * 40);
+    buf = new Float32Array(FRAME * REC_FPS * 55);
     n = 0;
     drop = 0;
   }
@@ -385,7 +385,7 @@ function keepRecording() {
   const tick = () => {
     if (job.rec) return;                       // finished (maybe by play)
     if (document.visibilityState === 'hidden') { setTimeout(tick, 500); return; }
-    if (!job.work(6)) setTimeout(tick, 16);
+    if (!job.work(10)) setTimeout(tick, 16);   // ~40% of each frame while the player bets
   };
   setTimeout(tick, 0);
 }
@@ -415,8 +415,8 @@ export async function mountCasinoWheel(container) {
   const Y = new THREE.Vector3(0, 1, 0);
   const q1 = new THREE.Quaternion(), q2 = new THREE.Quaternion();
   let play = null, raf = 0, disposed = false;
-  const TRACK_RATE = 1.6;   // the ball's laps on the wall play faster than life,
-  const FREE_RATE = 1.15;   // and the drop and bounces a touch faster
+  const TRACK_RATE = 1;   // the whole spin plays in real time,
+  const FREE_RATE = 1;    // from the laps on the wall to the last bounce
 
   function poseAt(f) {
     const { rec, offset } = play;
@@ -446,20 +446,44 @@ export async function mountCasinoWheel(container) {
       W.homeView.lastW = container.clientWidth;
       W.homeView.lastH = container.clientHeight;
     }
-    const f = play.skipped ? play.rec.count - 1 : frameAt((now - play.t0) / 1000);
+    if (play.coast) { coast(now); raf = requestAnimationFrame(draw); return; }
+    const f = frameAt((now - play.t0) / 1000);
     poseAt(f);
     renderer.render(scene, camera);
     if (f >= play.rec.count - 1) {
       glow.intensity = 0.6;
-      renderer.render(scene, camera);
+      // The wheel keeps turning, carrying the ball in its pocket, until the screen closes
+      const a = play.rec.frames, n = play.rec.count;
+      const k = Math.max(1, Math.min(30, n - 1));
+      play.coast = { t: now, omega: (a[(n - 1) * FRAME] - a[(n - 1 - k) * FRAME]) / (k / REC_FPS), until: now + 25000 };
       const done = play.onLanded;
-      play = null;
-      governor.idle();
+      play.onLanded = null;
       keepRecording();               // record the next spin now the ball has stopped
-      if (done) done();
-      return;
+      setTimeout(() => { if (done) done(); }, 700);   // a beat to see where it landed
     }
     raf = requestAnimationFrame(draw);
+  }
+  const yawQ = new THREE.Quaternion();
+  function coast(now) {
+    const c = play.coast;
+    const dt = Math.min(0.1, (now - c.t) / 1000);
+    c.t = now;
+    c.omega *= Math.exp(-dt / 12);
+    const d = c.omega * dt;
+    yawQ.setFromAxisAngle(Y, d);
+    rotor.quaternion.premultiply(yawQ);
+    ball.position.applyQuaternion(yawQ);
+    ball.quaternion.premultiply(yawQ);
+    glow.position.set(ball.position.x, ball.position.y + 0.03, ball.position.z);
+    renderer.render(scene, camera);
+    if (now > c.until) stop();
+  }
+  function stop() {
+    cancelAnimationFrame(raf);
+    raf = 0;
+    if (play && play.onLanded) { const done = play.onLanded; play = null; done(); }
+    play = null;
+    governor.idle();
   }
 
   return {
@@ -473,7 +497,7 @@ export async function mountCasinoWheel(container) {
         if (disposed) return;
         const rec = job.rec;
         const k = (((WHEEL.indexOf(result) - rec.landed) % 37) + 37) % 37;
-        play = { rec, offset: k * STEP, t0: performance.now(), onLanded, skipped: false };
+        play = { rec, offset: k * STEP, t0: performance.now(), onLanded, coast: null };
         ball.visible = true;
         glow.intensity = 0;
         W.homeView.lastW = -1;
@@ -481,11 +505,12 @@ export async function mountCasinoWheel(container) {
       };
       if (job.work(8)) { start(); return secsOf(job.rec); }
       // Not recorded yet (Spin came very quickly): finish it a little at a time, then play
-      const more = () => { if (disposed) return; if (job.work(12)) start(); else setTimeout(more, 0); };
+      const more = () => { if (disposed) return; if (job.work(40)) start(); else setTimeout(more, 0); };
       setTimeout(more, 0);
-      return 8.5;
+      return 15;
     },
-    skip() { if (play) play.skipped = true; },
+    // The spin screen closed: stop drawing (the wheel was only coasting by now)
+    stop,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
