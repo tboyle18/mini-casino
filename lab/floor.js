@@ -30,7 +30,7 @@ const STATIONS = [
   { id: 'roulette', name: 'Roulette', blurb: 'Spin the real-physics wheel', color: '#ff5d6c', pos: [1.5, -1.9], yaw: 0, w: 2.5, h: 1.1, look: 0.78, seat: [1.15, 1.55] },
   { id: 'baccarat', name: 'Baccarat', blurb: 'Player or Banker, closest to 9', color: '#c9a2ff', pos: [4.7, -0.6], yaw: -0.1, w: 2.7, h: 1.1, look: 0.72, seat: [1.3, 1.5] },
   { id: 'poker', name: 'Video Poker', blurb: 'Hold, draw, and hope for a royal', color: '#5ee0e0', pos: [7.3, -1.7], yaw: -0.2, w: 1.3, h: 2.7, look: 1.15, seat: [1, 1.3] },
-  { id: 'slots', name: 'Lucky Duck 3000', blurb: 'Pull the lever. The duck is wild', color: '#ffd23f', pos: [9.15, -0.5], yaw: -0.3, w: 1.2, h: 2.3, look: 1.05, seat: [1.15, 1.35] },
+  { id: 'slots', name: 'Slot Machines', blurb: 'Pick a machine and pull the lever', color: '#ffd23f', pos: [9.15, -0.5], yaw: -0.3, w: 2.2, h: 2.8, look: 1.25, seat: [1.15, 1.35] },
   // Round the corner: the arcade machines along the right-hand wall…
   { id: 'plinko', name: 'Duck Drop', blurb: 'Drop ducks down the peg board. The edges pay big', color: '#7cff6b', pos: [11.15, 1.9], yaw: -1.35, w: 1.7, h: 4, look: 1.85, seat: [1.15, 1.6], seatLook: 1.55 },
   { id: 'crash', name: 'Duck Rocket', blurb: 'Cash out before the rocket blows', color: '#ff8a3d', pos: [11.2, 4.4], yaw: -1.8, w: 1.2, h: 3.2, look: 1.4, seat: [0.4, 1.45], seatLook: 1.45 },
@@ -152,16 +152,6 @@ export async function mount({ stage, controls, info, casino }) {
     rowGroup.add(m);
   }
   scene.add(kit.bake(rowGroup));
-  // A short bank on the right wall, round the corner from the back row, facing into the room
-  const sideGroup = new THREE.Group();
-  ['m', 'c', 'm'].forEach((k, i) => {
-    const theme = rowThemes[(i * 4 + 2) % rowThemes.length];
-    const m = k === 'm' ? kit.modern(theme, { topper: i ? 'box' : 'arch' }) : kit.classic(theme, { chair: 'stool' });
-    m.position.set(ROOM.x1 - 0.42, 0, -1.2 + i * 0.85);
-    m.rotation.y = -Math.PI / 2;
-    sideGroup.add(m);
-  });
-  scene.add(kit.bake(sideGroup));
   const m4 = new THREE.Matrix4();
   const c = new THREE.Color();
 
@@ -1091,6 +1081,43 @@ export async function mount({ stage, controls, info, casino }) {
     duck = new THREE.Mesh(duckGeometry(0.11), std(0xffffff, 0.35, 0, { vertexColors: true }));
     duck.position.set(0, DUCK_Y, 0);
     g.add(duck);
+    // The rest of the machines you can pick, round a carousel behind Lucky Duck: eight
+    // machines facing out from a mirrored column, a lit SLOT MACHINES drum on top
+    const R = 0.95, ids = ['duck', 'cherry', 'diamond', 'gold', 'dragon', 'cosmic', 'mermaid', 'buffalo'];
+    const ring = new THREE.Group();
+    ids.forEach((id, i) => {
+      if (!i) return;   // Lucky Duck is the one in front, already built
+      const a = (i / ids.length) * TAU;
+      const m = kit.classic(kit.themes.find(t => t.id === id) || kit.themes[i], { chair: 'stool' });
+      m.position.set(Math.sin(a) * R, 0, -R + Math.cos(a) * R);
+      m.rotation.y = a;
+      ring.add(m);
+    });
+    const { part } = kit;
+    ring.add(part(new THREE.CylinderGeometry(0.6, 0.66, 1.9, 40), 'chrome', 0x9a8a6a, 0, 0.95, -R));
+    ring.add(part(new THREE.CylinderGeometry(0.98, 1.0, 0.06, 48), 'dark', 0x1a1218, 0, 0.03, -R));
+    ring.add(part(new THREE.CylinderGeometry(0.8, 0.8, 0.04, 48), 'chrome', 0xe9b949, 0, 1.94, -R));
+    ring.add(part(new THREE.CylinderGeometry(0.8, 0.8, 0.04, 48), 'chrome', 0xe9b949, 0, 2.36, -R));
+    g.add(kit.bake(ring));
+    // the drum's lettering, all the way round
+    const [cv, cg] = canvas(2048, 192);
+    cg.fillStyle = '#1a0610';
+    cg.fillRect(0, 0, 2048, 192);
+    cg.font = '900 96px Manrope, sans-serif';
+    cg.textAlign = 'center';
+    cg.textBaseline = 'middle';
+    for (let k = 0; k < 2; k++) {
+      cg.shadowColor = '#ff3d6e';
+      cg.shadowBlur = 24;
+      cg.fillStyle = '#fff1d6';
+      cg.fillText('SLOT MACHINES', 512 + k * 1024 - 60, 100);
+      cg.fillStyle = '#ffd23f';
+      cg.fillText('★', 512 + k * 1024 + 420, 100);
+    }
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.38, 48, 1, true), new THREE.MeshBasicMaterial({ map: keep(tex(cv, renderer)), toneMapped: false }));
+    drum.position.set(0, 2.15, -R);
+    drum.rotation.y = -Math.PI / 2;   // the lettering faces the aisle
+    g.add(drum);
     return g;
   }
 
@@ -1818,7 +1845,7 @@ export async function mount({ stage, controls, info, casino }) {
     const st = STATIONS[k];
     prevBtn.disabled = k === 0;
     nextBtn.disabled = k === LAST;
-    sitBtn.textContent = locked() ? 'Sign in to play' : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : `Sit at ${st.name}`;
+    sitBtn.textContent = locked() ? 'Sign in to play' : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : st.id === 'slots' ? 'Pick a machine' : `Sit at ${st.name}`;
   }
   let glide = null;
   function go(k) {
@@ -1836,9 +1863,10 @@ export async function mount({ stage, controls, info, casino }) {
   function sit() {
     if (busy) return;
     if (locked()) { casino.ask(); return; }
+    const k = Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST));
+    if (STATIONS[k].id === 'slots' && casino.pickSlot) { casino.pickSlot(); return; }   // pick a machine first
     busy = true;
     if (glide) { glide.kill(); glide = null; }
-    const k = Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST));
     buzz(10);
     map.classList.add('off');
     gsap.to(cam, { s: k, seat: 1, duration: calm ? 0.2 : 1.05, ease: 'power2.inOut', onComplete: () => { if (!dead) casino.sit(STATIONS[k].id); } });

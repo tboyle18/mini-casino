@@ -6,6 +6,9 @@ export const games = {
   slots: () => import('./slots.js'),
 };
 
+// The slot machines to pick from (lab/slot-themes.js: names, colours and symbols, no 3D)
+export const slotThemes = () => import('./slot-themes.js');
+
 
 // The 3D roulette wheel for the spin screen (lab/roulette.js, mountCasinoWheel)
 export const roulette = () => import('./roulette.js');

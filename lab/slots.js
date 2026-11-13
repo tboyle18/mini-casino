@@ -13,6 +13,7 @@ import { gsap } from 'gsap';
 import { button, buzz, reducedMotion, makeRenderer, disposeScene, fontReady, loadCredits, saveCredits, LAB_START } from './shared.js';
 import { makeSound, createWinFx } from './fx.js';
 import { EMOJI, canvas, tex, rrect, signCanvas, casinoScene, bloomComposer, glow } from './arcade.js';
+import { machine as pickMachine } from './slot-themes.js';
 import { GLYPH, NAME, PAYS, TWO_CHERRIES, STRIPS, evaluate, bestPossible, randomSymbol, stopFor } from './slots-math.js';
 
 const TAU = Math.PI * 2;
@@ -70,10 +71,10 @@ const CSS = `
 .slot-7 { color: #ff3b47; font-weight: 900; -webkit-text-stroke: 1px #ffd23f; }
 `;
 
-function drawSymbol(g, sym, size) {
+function drawSymbol(g, sym, size, glyphs = GLYPH) {
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  if (sym === 'seven') {
+  if (glyphs[sym] === '7') {
     g.font = `900 ${Math.round(size * 1.25)}px Manrope, sans-serif`;
     g.lineJoin = 'round';
     g.lineWidth = size * 0.17;
@@ -90,13 +91,13 @@ function drawSymbol(g, sym, size) {
   } else {
     g.font = `${size}px ${EMOJI}`;
     g.fillStyle = '#000';
-    g.fillText(GLYPH[sym], 0, size * 0.05);
+    g.fillText(glyphs[sym], 0, size * 0.05);
   }
 }
 
 /* One reel's strip. Canvas x runs around the reel (down the screen); canvas y runs across
    it (right to left on screen), so each symbol is drawn turned a quarter turn. */
-function reelCanvas(strip) {
+function reelCanvas(strip, glyphs) {
   const W = 2048, H = 256, cw = W / N;
   const [c, g] = canvas(W, H);
   const bg = g.createLinearGradient(0, 0, 0, H);
@@ -112,7 +113,7 @@ function reelCanvas(strip) {
     g.save();
     g.translate((i + 0.5) * cw, H / 2);
     g.rotate(-Math.PI / 2);
-    drawSymbol(g, strip[i], 116);
+    drawSymbol(g, strip[i], 116, glyphs);
     g.restore();
   }
   return c;
@@ -226,7 +227,11 @@ function speedAt(p, t) {
   return 0;
 }
 
-export async function mount({ stage, controls, info, bank }) {
+export async function mount({ stage, controls, info, bank, machine: machineId }) {
+  // Which machine this is: its name, cabinet colour and reel symbols (the duck stays wild)
+  const M = pickMachine(machineId);
+  const GL = { ...M.sym, duck: GLYPH.duck };
+  const NM = { ...M.names, duck: NAME.duck };
   const server = !!(bank && bank.server);
   await fontReady();
   const calm = reducedMotion();
@@ -264,7 +269,7 @@ export async function mount({ stage, controls, info, bank }) {
   scene.add(reelLight);
 
   // ---- Materials ----
-  const paint = new THREE.MeshPhysicalMaterial({ color: 0xa8001c, metalness: 0.2, roughness: 0.38, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
+  const paint = new THREE.MeshPhysicalMaterial({ color: M.body, metalness: 0.2, roughness: 0.38, clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 0.7 });
   const chrome = new THREE.MeshStandardMaterial({ color: 0xf4f4f6, metalness: 1, roughness: 0.1 });
   const gold = new THREE.MeshStandardMaterial({ color: 0xf0c050, metalness: 1, roughness: 0.22 });
   const black = new THREE.MeshStandardMaterial({ color: 0x0b0a0d, roughness: 0.55 });
@@ -300,7 +305,7 @@ export async function mount({ stage, controls, info, bank }) {
 
   // ---- Reels ----
   const reels = STRIPS.map((strip, i) => {
-    const sharp = reelCanvas(strip);
+    const sharp = reelCanvas(strip, GL);
     const tSharp = keep(tex(sharp, renderer));
     const tSoft = keep(tex(blurCanvas(sharp), renderer));
     const mat = new THREE.MeshStandardMaterial({ map: tSharp, roughness: 0.6, color: 0xe2ddd4, envMapIntensity: 0.5 });
@@ -348,7 +353,7 @@ export async function mount({ stage, controls, info, bank }) {
   archShape.lineTo(ARCH_R, 0);
   add(new THREE.Mesh(new THREE.ExtrudeGeometry(archShape, { depth: 0.3, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 48 }), paint))
     .position.set(0, TOP_Y - 0.01, -0.07);
-  const sign = new THREE.Mesh(new THREE.CircleGeometry(ARCH_R - 0.025, 64, 0, Math.PI), new THREE.MeshBasicMaterial({ map: keep(tex(signCanvas('LUCKY DUCK', '3000'), renderer)), color: new THREE.Color(1.25, 1.25, 1.25) }));
+  const sign = new THREE.Mesh(new THREE.CircleGeometry(ARCH_R - 0.025, 64, 0, Math.PI), new THREE.MeshBasicMaterial({ map: keep(tex(signCanvas(M.sign[0], M.sign[1]), renderer)), color: new THREE.Color(1.25, 1.25, 1.25) }));
   sign.position.set(0, TOP_Y - 0.01, 0.247);
   machine.add(sign);
   add(new THREE.Mesh(new THREE.TorusGeometry(ARCH_R + 0.004, 0.014, 12, 72, Math.PI), gold)).position.set(0, TOP_Y - 0.01, 0.245);
@@ -493,10 +498,10 @@ export async function mount({ stage, controls, info, bank }) {
   const pays = document.createElement('div');
   pays.className = 'slot-pays';
   pays.hidden = true;
-  const glyphHTML = s => (s === 'seven' ? '<span class="slot-7">7</span>' : GLYPH[s]);
-  const rows = Object.keys(PAYS).reverse().map(s => `<tr><td>${glyphHTML(s).repeat(3)}</td><td>${s === 'duck' ? 'Duck jackpot' : NAME[s]}</td><td>${PAYS[s]}×</td></tr>`).join('');
-  pays.innerHTML = `<h3>Payouts</h3>
-    <table>${rows}<tr><td>${GLYPH.cherry}${GLYPH.cherry}</td><td>Any two cherries</td><td>${TWO_CHERRIES}×</td></tr></table>
+  const glyphHTML = s => (GL[s] === '7' ? '<span class="slot-7">7</span>' : GL[s]);
+  const rows = Object.keys(PAYS).reverse().map(s => `<tr><td>${glyphHTML(s).repeat(3)}</td><td>${s === 'duck' ? 'Duck jackpot' : NM[s]}</td><td>${PAYS[s]}×</td></tr>`).join('');
+  pays.innerHTML = `<h3>${M.name} payouts</h3>
+    <table>${rows}<tr><td>${GL.cherry}${GL.cherry}</td><td>Any two ${M.id === 'duck' ? 'cherries' : NM.cherry.toLowerCase() + 's'}</td><td>${TWO_CHERRIES}×</td></tr></table>
     <p>Pays on the middle line, as a multiple of your bet. The ${GLYPH.duck} is wild: it counts as whatever completes a win.</p>
     <div class="slot-row"></div>`;
   const bribeBtn = button('Bribe the duck', () => {
@@ -683,7 +688,7 @@ export async function mount({ stage, controls, info, bank }) {
     floatText(`+${money(win)}`);
     if (res.kind === 'small') {
       setMode('win', 1.5);
-      led.say(`${pick(QUIPS.small)} +${money(win)}`, { color: '#7cff6b' });
+      led.say(`${M.id === 'duck' ? pick(QUIPS.small) : 'A LITTLE SOMETHING.'} +${money(win)}`, { color: '#7cff6b' });
       sound.win(1);
       sprayCoins(5);
       buzz([10, 40, 10]);

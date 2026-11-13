@@ -555,6 +555,10 @@
   .fl-go.two button, .fl-go button.wide { flex-direction: row; gap: 10px; min-height: 56px; }
   .fl-go button.wide { grid-column: 1 / -1; }
   .fl-go .em { font-size: 26px; line-height: 1; }
+  .fl-go.slots button { border-left: 4px solid var(--m); text-align: left; justify-content: flex-start; }   /* the slot machine picker: each machine's colour down its edge */
+  .fl-go.slots button .nm { display: flex; flex-direction: column; gap: 2px; }
+  .fl-go.slots button small { font-size: 12px; font-weight: 600; opacity: .7; letter-spacing: 2px; }
+  .fl-sheet-body .slot-pick-sub { margin: -4px 0 0; font-size: 14px; color: var(--ink-2); line-height: 1.4; }
   #ag-info { font-weight: 700; font-size: 14px; text-shadow: 0 1px 6px rgba(0, 0, 0, .7); }
   .ag-controls { display: flex; gap: 8px; }
   .ag-controls .lab-btn {
@@ -5572,8 +5576,11 @@ function renderRedDog() {
    through the server: it drops the ducks (picking each one's seed and paying it at once)
    and flies the rocket (drawing the crash point and keeping it secret). Winnings stay off
    the shown balance until the game reveals them. */
-const ARC_NAME = { plinko: 'Duck Drop', crash: 'Duck Rocket', slots: 'Lucky Duck 3000' };
+const ARC_NAME = { plinko: 'Duck Drop', crash: 'Duck Rocket', slots: 'Slot machines' };
 const arc = { game: '', inst: null, token: 0, stake: 0 };
+// The slot machine you last picked on the floor (lab/slot-themes.js); they all play the same game
+const SLOT_KEY = 'mini-casino.slot-machine';
+function slotMachine() { try { return localStorage.getItem(SLOT_KEY) || 'duck'; } catch (e) { return 'duck'; } }
 function arcCrashDone(r) {
   if (r && (r.cashed || r.at != null || r.refunded) && arc.stake) {
     if (!r.refunded) recordArcade('crash', arc.stake, r.payout || 0);
@@ -5616,7 +5623,7 @@ async function arcOpen(name) {
     const mod = await import('/lab/embed.js');
     const game = await mod.games[name]();
     if (mine !== arc.token) return;
-    const inst = await game.mount({ stage: ui.agStage, controls: ui.agControls, info: ui.agInfo, bank: arcadeBank });
+    const inst = await game.mount({ stage: ui.agStage, controls: ui.agControls, info: ui.agInfo, bank: arcadeBank, machine: name === 'slots' ? slotMachine() : undefined });
     if (mine !== arc.token) { inst.dispose(); return; }
     arc.inst = inst;
   } catch (err) {
@@ -5638,7 +5645,7 @@ function arcClose() {
    to sit, and its own screen opens. From a seat, the top bar's Floor button stands you back
    up on the floor, and its arrows glide you through the floor into the next seat. */
 const FLOOR_ORDER = ['table', 'threecard', 'war', 'reddog', 'roulette', 'baccarat', 'poker', 'slots', 'plinko', 'crash', 'cashier'];   // as lab/floor.js lays them out
-const FLOOR_NAME = { table: 'Blackjack', threecard: 'Three Card', war: 'Casino War', reddog: 'Red Dog', roulette: 'Roulette', baccarat: 'Baccarat', poker: 'Video Poker', slots: 'Lucky Duck', plinko: 'Duck Drop', crash: 'Duck Rocket', cashier: 'Cashier' };
+const FLOOR_NAME = { table: 'Blackjack', threecard: 'Three Card', war: 'Casino War', reddog: 'Red Dog', roulette: 'Roulette', baccarat: 'Baccarat', poker: 'Video Poker', slots: 'Slot Machines', plinko: 'Duck Drop', crash: 'Duck Rocket', cashier: 'Cashier' };
 const FLOOR_GO = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcade-slots', plinko: 'arcade-plinko', crash: 'arcade-crash', cashier: 'stats' };
 const FLOOR_TARGET = { table: 'solo', threecard: 'threecard', war: 'war', reddog: 'reddog', roulette: 'roulette', baccarat: 'baccarat', poker: 'poker', slots: 'arcadegame', plinko: 'arcadegame', crash: 'arcadegame', cashier: 'stats' };   // route()'s view for each
 const FLOOR_VIEW = { ...FLOOR_TARGET, table: 'table' };   // app.view while you're at each one
@@ -5675,7 +5682,7 @@ async function floorEnsure() {
     const mod = await import('/lab/embed.js');
     const floor = await mod.floor();
     if (mine !== fl.token) return;
-    const inst = await floor.mount({ stage: ui.flStage, controls: ui.flControls, info: ui.flInfo, casino: { start, sit: floorSit, bonusReady, locked: () => !signedIn(), ask: floorAsk } });
+    const inst = await floor.mount({ stage: ui.flStage, controls: ui.flControls, info: ui.flInfo, casino: { start, sit: floorSit, pickSlot: () => flPopOpen('slots'), bonusReady, locked: () => !signedIn(), ask: floorAsk } });
     inst.setTicker && inst.setTicker(floorTickerLines());
     if (mine !== fl.token) { inst.dispose(); return; }
     fl.inst = inst;
@@ -5722,12 +5729,49 @@ function floorGoList() {
       const nm = document.createElement('span'); nm.textContent = id === 'cashier' && bonusReady() ? 'Cashier · collect $1,000' : FLOOR_NAME[id];
       b.append(em, nm);
       b.setAttribute('aria-label', `Go to ${FLOOR_NAME[id]}`);
-      b.addEventListener('click', () => { flPopClose(); if (fl.inst && fl.inst.jumpTo) fl.inst.jumpTo(id); });
+      b.addEventListener('click', () => { if (id === 'slots') { flPopOpen('slots'); return; } flPopClose(); if (fl.inst && fl.inst.jumpTo) fl.inst.jumpTo(id); });
       grid.appendChild(b);
     }
     out.push(grid);
   }
   return out;
+}
+/* The slot machines: pick one and you're walked to the seat and it starts. They all play the
+   same game; each has its own name, colours and reel symbols. */
+let slotMachines = null;
+function slotPickCard() {
+  const h = document.createElement('h2');
+  h.textContent = 'Pick a slot machine';
+  const sub = document.createElement('p');
+  sub.className = 'slot-pick-sub';
+  sub.textContent = 'Same odds on every machine. The duck 🦆 is always wild.';
+  const grid = document.createElement('div');
+  grid.className = 'fl-go two slots';
+  const fill = list => {
+    const cur = slotMachine();
+    grid.replaceChildren(...list.map(m => {
+      const b = document.createElement('button');
+      b.className = m.id === cur ? 'here' : '';
+      b.style.setProperty('--m', m.color);
+      const em = document.createElement('span'); em.className = 'em'; em.textContent = m.emoji; em.setAttribute('aria-hidden', 'true');
+      const nm = document.createElement('span'); nm.className = 'nm';
+      const t = document.createElement('span'); t.textContent = m.name;
+      const syms = document.createElement('small'); syms.textContent = [m.sym.seven, m.sym.diamond, m.sym.clover].join(' ');
+      nm.append(t, syms);
+      b.append(em, nm);
+      b.setAttribute('aria-label', `Play ${m.name}`);
+      b.addEventListener('click', () => {
+        try { localStorage.setItem(SLOT_KEY, m.id); } catch (e) { /* storage unavailable */ }
+        flPopClose();
+        if (fl.inst && fl.inst.jumpTo) fl.inst.jumpTo('slots');
+        else go('arcade-slots');
+      });
+      return b;
+    }));
+  };
+  if (slotMachines) fill(slotMachines);
+  else import('/lab/embed.js').then(e => e.slotThemes()).then(mod => { slotMachines = mod.MACHINES; fill(slotMachines); }).catch(() => { grid.textContent = 'Couldn’t load the machines. Try again.'; });
+  return [h, sub, grid];
 }
 /* Today's bonus, offered once a day when you arrive on the floor: collect it right here, or
    later at the cashier */
@@ -5760,13 +5804,13 @@ function maybeBonusPop() {
 }
 function flPopOpen(kind) {
   flPopClose();
-  const nodes = kind === 'bonus' ? bonusCard() : kind === 'go' ? floorGoList() : kind === 'lb' ? [ui.lbList.closest('.lcard')]
+  const nodes = kind === 'bonus' ? bonusCard() : kind === 'slots' ? slotPickCard() : kind === 'go' ? floorGoList() : kind === 'lb' ? [ui.lbList.closest('.lcard')]
     : [ui.account.closest('.lcard'), ui.pfDaily.closest('.lcard'), ui.pfLearn, ui.pfVibe.closest('.lcard')];
-  flPop.moved = kind === 'go' || kind === 'bonus' ? [] : nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
+  flPop.moved = kind === 'go' || kind === 'bonus' || kind === 'slots' ? [] : nodes.map(n => ({ n, parent: n.parentNode, next: n.nextSibling }));
   flPop.kind = kind;
   ui.flSheetBody.replaceChildren(...nodes);
-  ui.flSheetClose.textContent = kind === 'bonus' ? 'Later' : 'Done';
-  ui.flSheetDialog.setAttribute('aria-label', kind === 'bonus' ? 'Daily bonus' : kind === 'go' ? 'All games' : kind === 'lb' ? 'Leaderboard' : 'Your account');
+  ui.flSheetClose.textContent = kind === 'bonus' ? 'Later' : kind === 'slots' ? 'Not now' : 'Done';
+  ui.flSheetDialog.setAttribute('aria-label', kind === 'bonus' ? 'Daily bonus' : kind === 'slots' ? 'Slot machines' : kind === 'go' ? 'All games' : kind === 'lb' ? 'Leaderboard' : 'Your account');
   if (kind === 'lb') { renderBoard(); lbLoad(); } else if (kind === 'acct') renderProfile();
   ui.flSheet.hidden = false;
   buzz(6);
