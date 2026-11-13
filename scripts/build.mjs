@@ -46,6 +46,8 @@ const head = [
   '<meta property="og:image:alt" content="Mini Casino: a gold spade on green felt">',
   '<meta name="twitter:card" content="summary_large_image">',
   '<meta name="theme-color" content="#063a24">',
+  // AdSense: proves this site is ours. The ad script itself only loads when someone taps to watch an ad.
+  '<meta name="google-adsense-account" content="ca-pub-8224523419022796">',
   `<link rel="icon" href="${favicon}">`,
   '<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">',
   '<link rel="manifest" href="/manifest.webmanifest">',

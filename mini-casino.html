@@ -3632,18 +3632,25 @@ const AD_PROVIDERS = {
         document.head.appendChild(s);
       }));
     },
-    show() {
-      return new Promise(resolve => {
-        let offered = false, viewed = false;
+    // Google only offers a rewarded ad once one has preloaded, so ask twice before giving up
+    async show() {
+      const once = () => new Promise(resolve => {
+        let offered = false, viewed = false, finished = false;
+        const end = v => { if (!finished) { finished = true; resolve(v); } };
+        setTimeout(() => { if (!offered) end(null); }, 8000);   // no answer: no ad
         window.adBreak({
           type: 'reward',
           name: 'undo-loss',
           beforeReward(showAdFn) { offered = true; showAdFn(); },
           adViewed() { viewed = true; },
           adDismissed() { viewed = false; },
-          adBreakDone() { resolve(viewed ? true : offered ? false : null); },
+          adBreakDone() { end(viewed ? true : offered ? false : null); },
         });
       });
+      const first = await once();
+      if (first !== null) return first;
+      await new Promise(r => setTimeout(r, 1500));
+      return once();
     },
   },
 };
@@ -3690,6 +3697,7 @@ function adsAfterPlay(log) {
     document.getElementById('ado-sub').textContent = `Short ad · ${cfg.left} left today`;
     document.getElementById('ad-offer').hidden = false;
     ads.hideT = setTimeout(adOfferHide, 12000);
+    AD_PROVIDERS[cfg.provider].load(cfg);   // get the ad ready before they tap
   }, 2600);
 }
 const AD_ERRORS = {
