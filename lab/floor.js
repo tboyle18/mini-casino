@@ -1314,51 +1314,133 @@ export async function mount({ stage, controls, info, casino }) {
     return g;
   }
 
-  // The cashier's cage: a wood booth with brass bars, a window and a counter
+  /* The cashier's cage, after a real casino cage: a lacquered wood front with raised panels
+     and a brass kick, a marble counter, three teller windows behind brass grilles with arched
+     tops and glass, each with a money slot and a window number, a warm-lit back office with
+     chip racks on the shelves, and a lit CASHIER sign across the top. Today's bonus coin
+     spins in the middle window. */
   let bonusCoin = null, wasLocked = null;
+  function marbleTex() {
+    const [cv, g] = canvas(512, 256);
+    g.fillStyle = '#efe7da';
+    g.fillRect(0, 0, 512, 256);
+    for (let i = 0; i < 26; i++) {   // soft grey veins
+      g.strokeStyle = `rgba(${120 + (i * 13) % 50}, ${110 + (i * 7) % 40}, ${100 + (i * 11) % 40}, ${0.12 + (i % 4) * 0.05})`;
+      g.lineWidth = 1 + (i % 3);
+      g.beginPath();
+      let x = (i * 97) % 512, y = (i * 53) % 256;
+      g.moveTo(x, y);
+      for (let k = 0; k < 8; k++) { x += 30 + ((i + k) * 17) % 40; y += ((i * 5 + k * 23) % 50) - 25; g.lineTo(x, y); }
+      g.stroke();
+    }
+    return keep(tex(cv, renderer));
+  }
+  function windowNumTex(n) {
+    const [cv, g] = canvas(128, 64);
+    g.fillStyle = '#1a0f06';
+    g.fillRect(0, 0, 128, 64);
+    g.strokeStyle = '#e9b949';
+    g.lineWidth = 4;
+    g.strokeRect(4, 4, 120, 56);
+    g.font = '900 30px Manrope, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#ffd98a';
+    g.fillText(String(n), 64, 34);
+    return keep(tex(cv, renderer));
+  }
   function buildCashier() {
     const g = new THREE.Group();
-    const W = 1.8, H = 2.3, D = 0.9;
-    const booth = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), M.woodDark);
-    booth.position.set(0, H / 2, -D / 2);
-    const counter = new THREE.Mesh(new RoundedBoxGeometry(W + 0.12, 0.08, 0.36, 2, 0.02), M.wood);
-    counter.position.set(0, 1.08, 0.12);
-    const front = new THREE.Mesh(new THREE.BoxGeometry(W, 1.04, 0.06), M.wood);
-    front.position.set(0, 0.52, 0.03);
-    const inside = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.2, 0.95), new THREE.MeshStandardMaterial({ color: 0x3a2410, emissive: 0x6a4418, emissiveIntensity: 0.6, roughness: 0.8 }));
-    inside.position.set(0, 1.6, 0.01);
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(W + 0.06, 0.12, 0.1), M.gold);
-    lintel.position.set(0, 2.14, 0.04);
-    const sill = new THREE.Mesh(new THREE.BoxGeometry(W + 0.06, 0.05, 0.08), M.gold);
-    sill.position.set(0, 1.13, 0.03);
-    g.add(booth, counter, front, inside, lintel, sill);
-    // Brass bars, with a gap in the middle for the window
-    const xs = [];
-    for (let i = 0; i < 17; i++) {
-      const x = -W / 2 + 0.1 + (i * (W - 0.2)) / 16;
-      if (Math.abs(x) > 0.2) xs.push(x);
+    const W = 1.8, H = 2.3, D = 0.9, CT = 1.08;   // CT: the counter top
+    const { part, rbox, box } = kit;
+    const WOOD = 0x3b1f0e, LIGHT = 0x5a3216, GOLDC = 0xe9b949;
+    // the booth behind, and its warm-lit back office
+    const booth = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), GLOSS);
+    booth.position.set(0, H / 2, -D / 2 - 0.02);
+    g.add(booth);
+    const [ocv, og] = canvas(512, 256);
+    const og2 = og.createLinearGradient(0, 0, 0, 256);
+    og2.addColorStop(0, '#8a5a24');
+    og2.addColorStop(1, '#3a2410');
+    og.fillStyle = og2;
+    og.fillRect(0, 0, 512, 256);
+    for (const y of [86, 170]) { og.fillStyle = '#2a1608'; og.fillRect(0, y, 512, 10); }   // shelves
+    const chipCols = ['#7a2bb5', '#222', '#1f5fbf', '#c8102e', '#2a8a4a', '#e9b949'];
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 26; i++) { og.fillStyle = chipCols[(i + r * 3) % 6]; og.fillRect(8 + i * 19, (r ? 170 : 86) - 30 - (i % 3) * 6, 14, 30 + (i % 3) * 6); }
+    const office = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.1, 1.0), new THREE.MeshStandardMaterial({ map: keep(tex(ocv, renderer)), emissive: 0xffffff, emissiveMap: keep(tex(ocv, renderer)), emissiveIntensity: 0.55, roughness: 0.8 }));
+    office.position.set(0, CT + 0.5, -0.012);
+    g.add(office);
+    // the lower front: lacquered wood with raised panels, a brass kick and a brass rail
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.04, CT - 0.04, 0.12), GLOSS).translateY((CT - 0.04) / 2).translateZ(0.02));
+    for (let i = 0; i < 4; i++) {
+      const x = -W / 2 + 0.24 + i * ((W - 0.48) / 3);
+      g.add(part(rbox(0.34, 0.62, 0.03, 0.015), 'paint', LIGHT, x, 0.56, 0.085));
+      g.add(part(box(0.3, 0.008, 0.008), 'chrome', GOLDC, x, 0.88, 0.1));
+      g.add(part(box(0.3, 0.008, 0.008), 'chrome', GOLDC, x, 0.24, 0.1));
     }
-    const bars = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.012, 0.012, 0.98, 8), M.gold, xs.length);
-    xs.forEach((x, i) => bars.setMatrixAt(i, m4.makeTranslation(x, 1.63, 0.06)));
-    const arch = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 8, 24, Math.PI), M.gold);
-    arch.position.set(0, 1.5, 0.06);
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), glowMat(0xffe2a0));
-    lamp.position.set(0.55, 1.3, 0.05);
-    const shade = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.08, 16, 1, true), M.gold);
-    shade.position.set(0.55, 1.36, 0.05);
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.03, 0.22), M.chrome);
-    tray.position.set(0, 1.13, 0.16);
-    [0x7a2bb5, 0x222222, 0x1f5fbf, 0xc8102e, 0x2a8a4a].forEach((col, i) => {
-      const h = 0.04 + i * 0.015;
-      const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, h, 16), std(col, 0.4));
-      stack.position.set(-0.6 + i * 0.075, 1.14 + h / 2, 0.16);
-      g.add(stack);
+    g.add(part(box(W + 0.06, 0.1, 0.14), 'chrome', 0xc99a3c, 0, 0.05, 0.03));
+    g.add(part(new THREE.CylinderGeometry(0.018, 0.018, W - 0.1, 12).rotateZ(Math.PI / 2), 'chrome', GOLDC, 0, 0.72, 0.15));
+    for (const x of [-W / 2 + 0.08, W / 2 - 0.08]) g.add(part(box(0.03, 0.03, 0.08), 'chrome', GOLDC, x, 0.72, 0.12));
+    // the marble counter with a brass edge
+    const counter = new THREE.Mesh(new RoundedBoxGeometry(W + 0.14, 0.06, 0.4, 2, 0.02), new THREE.MeshPhysicalMaterial({ map: marbleTex(), roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08 }));
+    counter.position.set(0, CT, 0.1);
+    g.add(counter, part(box(W + 0.15, 0.014, 0.012), 'chrome', GOLDC, 0, CT - 0.03, 0.3));
+    // the upper front: three windows between wood pilasters, a header, a crown moulding
+    const WIN = [-0.58, 0, 0.58], ww = 0.42, wy0 = CT + 0.06, wh = 0.86;
+    for (const x of [-0.87, -0.29, 0.29, 0.87]) {
+      g.add(part(box(0.1, wh + 0.08, 0.1), 'paint', WOOD, x, wy0 + wh / 2, 0.0));
+      g.add(part(box(0.11, 0.03, 0.11), 'chrome', GOLDC, x, wy0 + 0.02, 0.0));
+      g.add(part(box(0.11, 0.03, 0.11), 'chrome', GOLDC, x, wy0 + wh - 0.02, 0.0));
+    }
+    WIN.forEach((x, n) => {
+      // brass grille: bars, a cross rail, an arch at the top
+      for (let i = 0; i < 9; i++) {
+        const bx = x - ww / 2 + 0.03 + i * ((ww - 0.06) / 8);
+        if (Math.abs(bx - x) < 0.09) {   // the opening where money passes
+          g.add(part(new THREE.CylinderGeometry(0.007, 0.007, wh - 0.36, 8), 'chrome', GOLDC, bx, wy0 + 0.36 + (wh - 0.36) / 2, 0.02));
+          continue;
+        }
+        g.add(part(new THREE.CylinderGeometry(0.007, 0.007, wh, 8), 'chrome', GOLDC, bx, wy0 + wh / 2, 0.02));
+      }
+      g.add(part(box(ww, 0.016, 0.016), 'chrome', GOLDC, x, wy0 + 0.36, 0.02));
+      g.add(part(box(ww, 0.016, 0.016), 'chrome', GOLDC, x, wy0 + wh - 0.14, 0.02));
+      const arc = part(new THREE.TorusGeometry(ww / 2 - 0.02, 0.009, 6, 24, Math.PI), 'chrome', GOLDC, x, wy0 + wh - 0.14, 0.02);
+      g.add(arc);
+      // the money slot in the counter, and the window's number on a little brass-edged plate
+      g.add(part(rbox(0.22, 0.02, 0.14, 0.008), 'dark', 0x0a090d, x, CT + 0.03, 0.02));
+      const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.06), new THREE.MeshBasicMaterial({ map: windowNumTex(n + 1), toneMapped: false }));
+      plate.position.set(x, wy0 + wh + 0.07, 0.083);
+      g.add(plate);
     });
-    g.add(bars, arch, lamp, shade, tray);
+    // glass in each window, kept separate so it can stay see-through
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, roughness: 0.04, depthWrite: false });
+    for (const x of WIN) { const gl = new THREE.Mesh(new THREE.PlaneGeometry(ww, wh - 0.38), glassMat); gl.position.set(x, wy0 + 0.38 + (wh - 0.38) / 2, 0.0); g.add(gl); }
+    // the header with the lit sign, and a crown on top
+    const headY = wy0 + wh + 0.2;
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(W + 0.04, 0.42, 0.14), GLOSS).translateY(headY + 0.08).translateZ(0.01));
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.275), new THREE.MeshBasicMaterial({ map: signTex('CASHIER', '#e9b949'), transparent: true, toneMapped: false }));
+    sign.position.set(0, headY + 0.12, 0.085);
+    g.add(sign);
+    g.add(part(box(W + 0.12, 0.05, 0.2), 'chrome', GOLDC, 0, headY + 0.31, 0.01));
+    g.add(part(box(W + 0.18, 0.04, 0.24), 'paint', WOOD, 0, headY + 0.355, 0.01));
+    // brass lamps either side of the sign
+    for (const x of [-0.72, 0.72]) {
+      g.add(part(box(0.02, 0.08, 0.06), 'chrome', GOLDC, x, headY + 0.1, 0.1));
+      g.add(part(new THREE.CylinderGeometry(0.03, 0.06, 0.08, 16, 1, true), 'chrome', GOLDC, x, headY + 0.14, 0.15));
+      g.add(part(new THREE.SphereGeometry(0.03, 12, 8), 'glow', 0xffe2a0, x, headY + 0.12, 0.15));
+    }
+    // a few things on the counter: chip racks, a bell, a stack of bills
+    [[-0.78, 0.18], [0.42, 0.2]].forEach(([x, z]) => {
+      g.add(part(box(0.22, 0.03, 0.09), 'paint', 0x1c1c22, x, CT + 0.045, z));
+      [0x7a2bb5, 0x222222, 0x1f5fbf, 0xc8102e, 0x2a8a4a].forEach((col, i) => g.add(part(new THREE.CylinderGeometry(0.018, 0.018, 0.17, 14).rotateZ(Math.PI / 2), 'paint', col, x, CT + 0.07, z - 0.032 + (i % 3) * 0.032).translateX(i < 3 ? -0.0 : 0)));
+    });
+    g.add(part(new THREE.CylinderGeometry(0.035, 0.045, 0.02, 20), 'chrome', GOLDC, -0.3, CT + 0.04, 0.2));
+    g.add(part(new THREE.SphereGeometry(0.035, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), 'chrome', GOLDC, -0.3, CT + 0.05, 0.2));
+    g.add(part(box(0.15, 0.03, 0.07), 'paint', 0x6aa86a, 0.78, CT + 0.045, 0.2));
     bonusCoin = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.03, 32), [M.gold, glowMat(0xffd84a), glowMat(0xffd84a)]);
     bonusCoin.rotation.order = 'YXZ';   // stood on its edge, then spun about the vertical
     bonusCoin.rotation.x = Math.PI / 2;
-    bonusCoin.position.set(0, 1.5, 0.3);   // in the cage's window, being handed over
+    bonusCoin.position.set(0, 1.5, 0.3);   // in the middle window, being handed over
     bonusCoin.visible = false;
     g.add(bonusCoin);
     return g;
