@@ -17,8 +17,9 @@
     // Neon Auth for the mini-casino Neon project (main branch). Public, not a secret.
     "NEON_AUTH_BASE_URL": "https://ep-long-pine-bdjdpkhe.neonauth.c-8.us-east-2.aws.neon.tech/neondb/auth",
     // Rewarded ads (src/ads.js): Google H5 Games Ads with our AdSense publisher id (public).
+    // Off for now (""): set "h5" to turn them on. AdSense needs a custom domain first.
     // ADS_TEST "1" asks Google for test ads; set it to "0" once H5 Games Ads is approved.
-    "ADS_PROVIDER": "h5",
+    "ADS_PROVIDER": "",
     "ADS_CLIENT": "ca-pub-8224523419022796",
     "ADS_TEST": "1"
   },
