@@ -3246,7 +3246,8 @@ const solo = { queue: Promise.resolve(), seq: 0 };
 function soloTake(T) {
   if (!T || !Array.isArray(T.seats) || !T.players || !T.players[SOLO_ID]) return;
   if (soloT && (T.rev || 0) < (soloT.rev || 0)) return;
-  if (T.round && T.round.over && T.round.n === solo.hide) T = { ...T, round: null };   // a hand you walked away from
+  // A hand you walked away from, or one that finished before the app was opened: start on a clean table
+  if (T.round && T.round.over && (!soloT || T.round.n === solo.hide)) { solo.hide = T.round.n; T = { ...T, round: null }; }
   soloT = T;
   const seen = (T.processed && T.processed[SOLO_ID]) || 0;
   if (seen > solo.seq) solo.seq = seen;

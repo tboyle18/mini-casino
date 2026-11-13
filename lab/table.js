@@ -9,7 +9,7 @@ import { gsap } from 'gsap';
 import { buzz, makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
 
 const FELT_Y = 0.03;
-const CARD_W = 0.063, CARD_H = 0.088, CARD_T = 0.0006;
+const CARD_W = 0.082, CARD_H = 0.115, CARD_T = 0.0006;   // a third bigger than a real card, so a phone can read them
 const CHIP_R = 0.0195, CHIP_T = 0.0034;
 const CHIPS = [{ v: 5, c: '#c8303c' }, { v: 25, c: '#2f6fd0' }, { v: 100, c: '#25272c' }, { v: 500, c: '#7a3fb8' }, { v: 1000, c: '#d9822b' }];
 const BET_SPOT = new THREE.Vector3(0, FELT_Y, 0.3);
@@ -100,9 +100,7 @@ function feltTexture(renderer) {
   return t;
 }
 
-/* Card faces, drawn like a real deck: corner indexes, pips laid out the classic way for 2-10
-   (the lower half upside down), one big pip on an ace, and a framed court card for J Q K.
-   Suits are drawn shapes, not font glyphs, so they're the same on every phone and sit dead
+/* Card faces. Suits are drawn shapes, not font glyphs, so they're the same on every phone and sit dead
    centre. Each shape fills a 100 x 100 box. */
 const SUIT_PATHS = {
   H: 'M50 95C41 83 3 60 3 31C3 14 16 4 30 4C40 4 47 10 50 18C53 10 60 4 70 4C84 4 97 14 97 31C97 60 59 83 50 95Z',
@@ -133,20 +131,10 @@ function inkText(g, text, x, y, px, squeeze = 1) {
   g.fillText(text, 0, (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
   g.restore();
 }
-// Where the pips go on 2-10: [column, row], columns 0-2 and rows 0-1 down the card
-const L = 0, M = 1, R = 2;
-const PIPS = {
-  2: [[M, 0], [M, 1]],
-  3: [[M, 0], [M, 0.5], [M, 1]],
-  4: [[L, 0], [R, 0], [L, 1], [R, 1]],
-  5: [[L, 0], [R, 0], [M, 0.5], [L, 1], [R, 1]],
-  6: [[L, 0], [R, 0], [L, 0.5], [R, 0.5], [L, 1], [R, 1]],
-  7: [[L, 0], [R, 0], [M, 0.25], [L, 0.5], [R, 0.5], [L, 1], [R, 1]],
-  8: [[L, 0], [R, 0], [M, 0.25], [L, 0.5], [R, 0.5], [M, 0.75], [L, 1], [R, 1]],
-  9: [[L, 0], [R, 0], [L, 1 / 3], [R, 1 / 3], [M, 0.5], [L, 2 / 3], [R, 2 / 3], [L, 1], [R, 1]],
-  10: [[L, 0], [R, 0], [M, 1 / 6], [L, 1 / 3], [R, 1 / 3], [L, 2 / 3], [R, 2 / 3], [M, 5 / 6], [L, 1], [R, 1]],
-};
 const FACE_W = 500, FACE_H = 700;
+/* Jumbo-index cards, the kind casinos use so cards read from across the table: a big rank and
+   suit in the top-left corner (the part that shows when cards overlap in a hand), the same
+   upside down bottom-right, and one large suit, or a framed letter for J Q K, in the middle. */
 function faceTexture(rank, suit, renderer) {
   const W = FACE_W, H = FACE_H;
   const [c, g] = canvas(W, H);
@@ -156,44 +144,28 @@ function faceTexture(rank, suit, renderer) {
   g.lineWidth = 4;
   g.strokeStyle = 'rgba(0,0,0,.14)';
   g.stroke();
-  const col = suit === 'H' || suit === 'D' ? '#c8102e' : '#141414';
+  const red = suit === 'H' || suit === 'D';
+  const col = red ? '#c8102e' : '#141414';
   g.fillStyle = col;
-  // Corner indexes, top left and (upside down) bottom right
   const corner = () => {
-    inkText(g, rank, 56, 74, rank === '10' ? 80 : 88, rank === '10' ? 0.74 : 1);
-    pip(g, suit, 56, 152, 54);
+    inkText(g, rank, 92, 112, rank === '10' ? 150 : 168, rank === '10' ? 0.6 : 1);
+    pip(g, suit, 92, 262, 112);
   };
   corner();
   g.save(); g.translate(W, H); g.rotate(Math.PI); corner(); g.restore();
-
-  if (rank === 'A') {
-    pip(g, suit, W / 2, H / 2, suit === 'S' ? 230 : 170);
-  } else if ('JQK'.includes(rank)) {
-    // A framed court card: the letter and suit at the top, mirrored at the bottom
-    const fx = 100, fy = 92, fw = W - 200, fh = H - 184;
-    roundRect(g, fx, fy, fw, fh, 16);
-    g.fillStyle = suit === 'H' || suit === 'D' ? '#fbecec' : '#eef0f3';
+  const cx = W / 2 + 22, cy = H / 2;
+  if ('JQK'.includes(rank)) {
+    roundRect(g, cx - 96, cy - 112, 192, 224, 18);
+    g.fillStyle = red ? '#fbecec' : '#eef0f3';
     g.fill();
     g.lineWidth = 5;
-    g.strokeStyle = col;
-    g.stroke();
-    roundRect(g, fx + 12, fy + 12, fw - 24, fh - 24, 10);
-    g.lineWidth = 2;
     g.strokeStyle = '#c9a227';
     g.stroke();
-    g.beginPath(); g.moveTo(fx + 12, H / 2); g.lineTo(fx + fw - 12, H / 2); g.stroke();
     g.fillStyle = col;
-    const half = () => {
-      inkText(g, rank, W / 2, fy + 112, 140);
-      pip(g, suit, W / 2, fy + 220, 74);
-    };
-    half();
-    g.save(); g.translate(W, H); g.rotate(Math.PI); half(); g.restore();
+    inkText(g, rank, cx, cy - 22, 150);
+    pip(g, suit, cx, cy + 66, 58);
   } else {
-    const cols = [W * 0.31, W / 2, W * 0.69];
-    const top = H * 0.2, span = H * 0.6;
-    const size = Number(rank) >= 9 ? 84 : 92;
-    for (const [cx, row] of PIPS[rank]) pip(g, suit, cols[cx], top + row * span, size, row > 0.5);
+    pip(g, suit, cx, cy, rank === 'A' ? 200 : 150);
   }
   return tex(c, renderer);
 }
@@ -410,7 +382,7 @@ function buildTable(stage, opts = {}) {
      bet,                     // chips on the spot for the next hand, while betting
    } */
 const DENOMS = [1000, 500, 100, 25, 5];
-const HAND_GAP = 0.165;          // between split hands
+const HAND_GAP = 0.19;          // between split hands
 const HAND_Z = 0.13;             // the first card of each hand
 const STACK_Z = 0.285;           // chips, on the printed betting spot
 const DEALER_Z = -0.27;
@@ -505,9 +477,10 @@ export async function mountCasinoTable(container) {
 
   // ---- Cards ----
   function cardTarget(i, n, dealer, handIndex, handCount, sideways) {
-    if (dealer) return new THREE.Vector3((i - (n - 1) / 2) * 0.07, FELT_Y + CARD_T / 2 + i * 0.0002, DEALER_Z);
+    if (dealer) return new THREE.Vector3((i - (n - 1) / 2) * 0.062, FELT_Y + CARD_T / 2 + i * 0.0002, DEALER_Z);
     const cx = (handIndex - (handCount - 1) / 2) * HAND_GAP;
-    return new THREE.Vector3(cx - 0.012 + i * 0.024, FELT_Y + CARD_T / 2 + i * 0.0009, HAND_Z - i * 0.013 - (sideways ? 0.01 : 0));
+    // fanned so each card's big corner index shows past the next one
+    return new THREE.Vector3(cx - 0.016 + i * 0.032, FELT_Y + CARD_T / 2 + i * 0.0009, HAND_Z - i * 0.016 - (sideways ? 0.01 : 0));
   }
   function dealCard(code, up, to, yaw, delay) {
     const m = cardMesh(code);
@@ -696,7 +669,7 @@ export async function mountCasinoTable(container) {
           kick((at + 1.2) * 1000);
         }
       }
-      const top = HAND_Z - (h.cards.length - 1) * 0.013 - CARD_H / 2 - 0.01;
+      const top = HAND_Z - (h.cards.length - 1) * 0.016 - CARD_H / 2 - 0.01;
       setLabel(H.label, [h.total, h.tag], new THREE.Vector3(cx, FELT_Y, top), false, h.active ? 'active' : '');
     });
     for (const C of orphans) remove(C.mesh, 0, 0);
