@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { gsap } from 'gsap';
+import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
 import { buzz, makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality, frameGovernor } from './shared.js';
 
 const FELT_Y = 0.03;
@@ -397,7 +398,10 @@ function chipsFor(amount) {
   return out;   // biggest first, so they sit at the bottom
 }
 
-export async function mountCasinoTable(container) {
+/* opts.cardHTML(code) -> { html, red, ace }: when given, each card is drawn by the browser as an
+   HTML card (the page's own 2D card) laid exactly on its 3D card, so it's as sharp as the
+   2D game; the 3D card underneath is invisible and only casts the shadow. */
+export async function mountCasinoTable(container, opts = {}) {
   await fontReady();
   const Q = casinoQuality();
   // Sharper than the other 3D scenes on a phone: it's a small scene and the cards have to read
@@ -407,6 +411,66 @@ export async function mountCasinoTable(container) {
   scene.fog = null;
   B.floor.visible = false;
   renderer.domElement.classList.add('t3-canvas');
+  // ---- HTML cards over the 3D ones ----
+  const html = typeof opts.cardHTML === 'function' ? opts.cardHTML : null;
+  const cssRenderer = html ? new CSS3DRenderer() : null;
+  const cssScene = html ? new THREE.Scene() : null;
+  const EL_W = 160, EL_H = Math.round(EL_W * CARD_H / CARD_W);
+  // The element stands in the XY plane facing +Z; the card lies flat with its face up (+Y)
+  const FLAT = new THREE.Matrix4().makeRotationX(-Math.PI / 2).multiply(new THREE.Matrix4().makeScale(CARD_W / EL_W, CARD_W / EL_W, CARD_W / EL_W));
+  const ghost = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });   // invisible, still casts a shadow
+  // CSS 3D works in pixels: its copy of the world (and camera) is scaled up from meters
+  const PX = 1000;
+  const toPx = new THREE.Matrix4().makeScale(PX, PX, PX);
+  const cssCamera = new THREE.PerspectiveCamera();
+  if (cssRenderer) {
+    cssRenderer.domElement.className = 't3-cards';
+    container.appendChild(cssRenderer.domElement);
+  }
+  function setFace(m, code) {
+    const css = m.userData.css;
+    if (!css || css.code === code) return;
+    css.code = code;
+    const real = /^(10|[2-9AJQK])[SHDC]$/.test(code || '');
+    const f = real ? html(code) : null;
+    css.face.innerHTML = f ? f.html : '';
+    css.el.classList.toggle('red', !!(f && f.red));
+    css.el.classList.toggle('ace', !!(f && f.ace));
+  }
+  function withHTML(m, code) {
+    if (!html) return m;
+    const el = document.createElement('div');
+    el.className = 'card t3c';
+    el.style.cssText = `--cw:${EL_W}px;--ch:${EL_H}px;width:${EL_W}px;height:${EL_H}px`;
+    el.innerHTML = '<div class="face"></div><div class="back cardback"></div>';
+    const obj = new CSS3DObject(el);
+    obj.matrixAutoUpdate = false;
+    cssScene.add(obj);
+    m.userData.css = { el, obj, face: el.firstElementChild, code: null };
+    setFace(m, code);
+    m.material = [ghost, ghost, ghost, ghost, ghost, ghost];
+    return m;
+  }
+  function dropHTML(m) {
+    if (m.userData.css) { cssScene.remove(m.userData.css.obj); m.userData.css.el.remove(); m.userData.css = null; }
+  }
+  function drawHTML() {
+    if (!cssRenderer) return;
+    for (const m of scene.children) {
+      const css = m.userData && m.userData.css;
+      if (!css) continue;
+      m.updateMatrixWorld();
+      css.obj.matrix.multiplyMatrices(toPx, m.matrixWorld).multiply(FLAT);
+    }
+    cssCamera.copy(camera);
+    cssCamera.position.multiplyScalar(PX);
+    cssCamera.near = camera.near * PX;
+    cssCamera.far = camera.far * PX;
+    cssCamera.updateProjectionMatrix();
+    cssCamera.updateMatrixWorld();
+    cssRenderer.render(cssScene, cssCamera);
+  }
+
   const layer = document.createElement('div');
   layer.className = 't3-labels';
   container.appendChild(layer);
@@ -430,8 +494,9 @@ export async function mountCasinoTable(container) {
     if (disposed) return;
     governor.tick(now);
     const key = container.clientWidth + 'x' + container.clientHeight + ':' + spread + ':' + renderer.getPixelRatio();
-    if (key !== viewKey) { viewKey = key; frameCamera(); }
+    if (key !== viewKey) { viewKey = key; frameCamera(); if (cssRenderer) cssRenderer.setSize(container.clientWidth, container.clientHeight); }
     renderer.render(scene, camera);
+    drawHTML();
     placeLabels();
     // Keep drawing while anything is still moving (tweens can run late if frames were missed)
     if (now < renderUntil || gsap.globalTimeline.getChildren(true, true, true).some(t => t.isActive())) raf = requestAnimationFrame(frame);
@@ -483,7 +548,7 @@ export async function mountCasinoTable(container) {
     return new THREE.Vector3(cx - 0.016 + i * 0.032, FELT_Y + CARD_T / 2 + i * 0.0009, HAND_Z - i * 0.016 - (sideways ? 0.01 : 0));
   }
   function dealCard(code, up, to, yaw, delay) {
-    const m = cardMesh(code);
+    const m = withHTML(cardMesh(code), code);
     m.position.copy(SHOE_MOUTH);
     m.rotation.set(0, 0.45, Math.PI);
     scene.add(m);
@@ -510,7 +575,7 @@ export async function mountCasinoTable(container) {
       .to(m.position, { y, duration: 0.28, ease: 'power2.in' }, 0.28);
   }
   function remove(m, delay = 0, dur = 0.5) {
-    gsap.delayedCall(delay + dur + 0.05, () => { gsap.killTweensOf(m.position); gsap.killTweensOf(m.rotation); scene.remove(m); });
+    gsap.delayedCall(delay + dur + 0.05, () => { gsap.killTweensOf(m.position); gsap.killTweensOf(m.rotation); scene.remove(m); dropHTML(m); });
   }
   // Everything from the last round goes to the discard pile
   function clearCards() {
@@ -601,7 +666,7 @@ export async function mountCasinoTable(container) {
         delay += 0.22;
         return;
       }
-      if (C.code !== d.code) { C.mesh.material[2] = faceFor(d.code); C.code = d.code; }
+      if (C.code !== d.code) { if (C.mesh.userData.css) setFace(C.mesh, d.code); else C.mesh.material[2] = faceFor(d.code); C.code = d.code; }
       if (C.up !== d.up) { flip(C.mesh, d.up, delay); C.up = d.up; delay += 0.5; }
       if (!C.target.equals(to)) { slide(C.mesh, to, null, delay, C.up); C.target = to; }
     });
@@ -702,6 +767,8 @@ export async function mountCasinoTable(container) {
       if (ro) ro.disconnect();
       scene.traverse(o => { gsap.killTweensOf(o.position); gsap.killTweensOf(o.rotation); });
       layer.remove();
+      if (cssRenderer) cssRenderer.domElement.remove();
+      ghost.dispose();
       disposeScene(scene);
       for (const t of textures) t.dispose();
       cardGeo.dispose();

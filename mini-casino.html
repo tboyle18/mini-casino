@@ -948,6 +948,11 @@
   .felt.three.t3-deal .msg, .felt.three.t3-deal .t3-labels { visibility: hidden; }
   .felt.t3-wait { background: radial-gradient(ellipse 150% 110% at 50% 18%, #145c3c 0%, #0b4029 60%, #062a1b 100%); }
   .felt.t3-wait > .mid { visibility: hidden; }
+  /* The in-play cards: HTML cards placed on the 3D table by three.js (lab/table.js) */
+  .felt .t3-cards { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  .t3c { transform-style: preserve-3d; perspective: none; pointer-events: none; }
+  .t3c .face { box-shadow: none; }
+  .t3c .back { transform: rotateY(180deg); box-shadow: none; }
   .t3-labels { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
   .t3-label { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 6px; padding: 2px 0; will-change: transform; }
   .t3-label .badge { font-size: 17px; box-shadow: 0 2px 8px rgba(0, 0, 0, .45); }
@@ -7369,7 +7374,8 @@ async function bj3dEnsure() {
   try {
     const mod = await import('/lab/embed.js');
     const table = await mod.table();
-    const inst = await table.mountCasinoTable(ui.felt);
+    // Cards are the 2D game's own HTML cards, laid on the 3D table so they stay sharp
+    const inst = await table.mountCasinoTable(ui.felt, { cardHTML: c => ({ html: faceHTML(c), red: 'HD'.includes(suitOf(c)), ace: rankOf(c) === 'A' }) });
     if (app.view !== 'table' || !app.solo) inst.dispose();
     else { bj3d.inst = inst; render(); }
   } catch (e) {
