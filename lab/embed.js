@@ -21,3 +21,6 @@ export const celebrate = () => import('./celebrate.js');
 
 // The casino floor (beta): glide between the games and take a seat (lab/floor.js)
 export const floor = () => import('./floor.js');
+
+// The title screen: the casino at night from across the parking lot (lab/title.js)
+export const title = () => import('./title.js');

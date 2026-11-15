@@ -719,6 +719,22 @@
   /* The floor goes edge to edge, under the status bar and the home indicator. Nothing sits on a
      bar: the buttons, your balance and the Sit button float over the 3D room. */
   html.floor, html.floor body::before { background: #07040c; }
+  /* The title screen */
+  html.title, html.title body::before { background: #0a0614; }
+  html.title .appbar, html.title .tabbar { display: none !important; }
+  #title-view { position: fixed; inset: 0; height: var(--app-h); margin: 0; padding: 0; z-index: 0; overflow: hidden; }
+  .tt-stage { position: absolute; inset: 0; }
+  .tt-stage canvas { display: block; width: 100% !important; height: 100% !important; }
+  .tt-ui { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .tt-play { pointer-events: auto; min-width: 190px; height: 66px; padding: 0 34px; border: 0; border-radius: 16px; cursor: pointer;
+    font: 800 24px/1 var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: #2b2418;
+    background: linear-gradient(#f6eedc, #ddcfae); box-shadow: 0 3px 0 #a3957a, 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 0 34px rgba(255, 63, 180, .35), 0 14px 30px rgba(0, 0, 0, .45);
+    transform: translateY(22vh); transition: transform .15s, opacity .3s; animation: tt-glow 2.6s ease-in-out infinite; }
+  .tt-play:active { transform: translateY(22vh) scale(.96); }
+  .tt-play.go { opacity: 0; pointer-events: none; animation: none; }
+  @keyframes tt-glow { 50% { box-shadow: 0 3px 0 #a3957a, 0 0 0 1px rgba(255, 255, 255, .25) inset, 0 0 52px rgba(255, 63, 180, .55), 0 14px 30px rgba(0, 0, 0, .45); } }
+  @media (prefers-reduced-motion: reduce) { .tt-play { animation: none; } }
+  .tt-fine { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 14px); margin: 0; text-align: center; color: rgba(240, 230, 208, .55); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
   html.floor #fl-stage { position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); margin: 0; z-index: 0; }
   html.floor .fl-hud { top: calc(var(--safe-top) + 8px); left: calc(var(--gl) + 2px); }
   html.floor .appbar { position: fixed; top: 0; left: 0; right: 0; margin: 0; padding: calc(var(--safe-top) + 8px) var(--gr) 0 var(--gl); pointer-events: none; }
@@ -1697,6 +1713,15 @@
   </section>
 
   <!-- ================= Casino floor (beta): lab/floor.js ================= -->
+  <!-- ================= Title screen: the casino at night, and Play ================= -->
+  <section class="view" id="title-view" hidden>
+    <div class="tt-stage" id="tt-stage"></div>
+    <div class="tt-ui">
+      <button class="tt-play" id="tt-play">Play</button>
+    </div>
+    <p class="tt-fine">Play money only · 18+</p>
+  </section>
+
   <section class="view has-dock" id="floor-view" hidden>
     <div class="ag-stage" id="fl-stage"><div class="hud fl-hud">
       <div class="fl-btns">
@@ -2913,7 +2938,7 @@ const TAB_HOME = new Set(['home', 'stats', 'profile']);
 // The pages the 2D casino and the 3D floor share. Opened from the floor (app.hub), they lead
 // back to the floor instead of showing the 2D tab bar.
 const HUB_PAGES = new Set(['profile', 'stats', 'history', 'settings', 'account', 'learn']);
-const OPEN_SIGNED_OUT = new Set(['floor', 'learn', 'profile', 'settings', 'account', 'stats']);
+const OPEN_SIGNED_OUT = new Set(['title', 'floor', 'learn', 'profile', 'settings', 'account', 'stats']);
 const GAME_VIEWS = new Set(['table', 'roulette', 'poker', 'baccarat', 'war', 'threecard', 'reddog', 'arcadegame']);
 const ARCADE = [
   { go: 'arcade-slots', name: 'Lucky Duck 3000', blurb: 'A ridiculous 3D slot machine. Drag the lever down. The duck is wild.', art: 'slots', emoji: '🎰' },
@@ -2969,7 +2994,7 @@ const ui = {
   floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flWelcome: $('fl-welcome'), flGuest: $('fl-guest'), flSignin: $('fl-signin'), flInfo: $('fl-info'), flControls: $('fl-controls'),
 
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
-  settingsView: $('settings-view'), accountView: $('account-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
+  titleView: $('title-view'), ttStage: $('tt-stage'), ttPlay: $('tt-play'), settingsView: $('settings-view'), accountView: $('account-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
   pfDaily: $('pf-daily'), pfLearn: $('pf-learn'), pfSettings: $('pf-settings'), pfAccount: $('pf-account'), pfAccountSub: $('pf-account-sub'), pfVol: $('pf-vol'), pfVolOut: $('pf-vol-out'), pfVibeRow: $('pf-vibe-row'), pfVibeSub: $('pf-vibe-sub'),
   acInfo: $('ac-info'), acPass: $('ac-pass'), acCur: $('ac-cur'), acNew: $('ac-new'), acNew2: $('ac-new2'), acOthers: $('ac-others'), acMsg: $('ac-msg'), acPassBtn: $('ac-pass-btn'), acDanger: $('ac-danger'), acDangerBody: $('ac-danger-body'), pfVibe: $('pf-vibe'), pfHints: $('pf-hints'),
   statsView: $('stats-view'), stSince: $('st-since'), stNet: $('st-net'), stRounds: $('st-rounds'), stBiggest: $('st-biggest'), stStreak: $('st-streak'),
@@ -3133,7 +3158,8 @@ function prefsSave() {
 /* ================= Routing ================= */
 function route() {
   const h = app.hashOverride != null ? app.hashOverride : decodeURIComponent(location.hash.slice(1));
-  let target = { view: 'floor', code: '' };   // the casino floor is the front door
+  let target = { view: 'title', code: '' };   // the title screen is the front door
+  if (h === 'floor') target = { view: 'floor', code: '' };
   if (h === 'home') target = { view: 'home', code: '' };   // the 2D casino
   else if (h === 'solo') target = { view: 'solo', code: SOLO_ID };
   else if (h === 'blackjack') target = { view: 'lobby', code: '' };
@@ -6053,6 +6079,52 @@ function floorSit(id) {
   go(FLOOR_GO[id]);
   if (id === 'cashier' && bonusReady()) claimDaily('cashier');   // the cashier pays out today's bonus
 }
+/* ================= Title screen =================
+   The casino at night from across the parking lot (lab/title.js), with a Play button. Play
+   glides in through the front doors and opens the 3D floor, or the 2D casino if that's where
+   you played last. Links to a game or table skip it. */
+const MODE_KEY = 'mini-casino.mode';
+const tt = { inst: null, loading: false, token: 0, going: false };
+async function titleEnsure() {
+  ui.ttPlay.classList.remove('go');
+  tt.going = false;
+  if (tt.inst || tt.loading) return;
+  const mine = ++tt.token;
+  tt.loading = true;
+  try {
+    const mod = await import('/lab/embed.js');
+    const title = await mod.title();
+    if (mine !== tt.token) return;
+    const inst = await title.mount({ stage: ui.ttStage });
+    if (mine !== tt.token) { inst.dispose(); return; }
+    tt.inst = inst;
+    mod.floor().catch(() => {});   // fetch the floor while they look
+  } catch (err) {
+    if (staleReload(err)) return;
+    console.error(err);   // no 3D here: Play still works
+  } finally {
+    if (mine === tt.token) tt.loading = false;
+  }
+}
+function titleDrop() {
+  if (!tt.inst && !tt.loading) return;
+  tt.token++;
+  tt.loading = false;
+  if (tt.inst) { try { tt.inst.dispose(); } catch (e) { /* already gone */ } tt.inst = null; }
+  ui.ttStage.textContent = '';
+}
+async function titlePlay() {
+  if (tt.going) return;
+  tt.going = true;
+  buzz(12);
+  ui.ttPlay.classList.add('go');
+  let mode = '3d';
+  try { mode = localStorage.getItem(MODE_KEY) || '3d'; } catch (e) { /* storage unavailable */ }
+  if (tt.inst) await Promise.race([tt.inst.play(), new Promise(r => setTimeout(r, 2500))]);
+  if (app.view !== 'title') return;
+  go(mode === '2d' && signedIn() ? 'home' : 'floor');
+}
+
 async function floorEnsure() {
   if (fl.inst || fl.loading) return;
   const mine = ++fl.token;
@@ -7229,6 +7301,7 @@ function render() {
   if (app.lastView !== v) { if (app.lastView) gameLeft(app.lastView); app.lastView = v; }
   ui.home.hidden = v !== 'home';
   ui.settingsView.hidden = v !== 'settings';
+  ui.titleView.hidden = v !== 'title';
   ui.accountView.hidden = v !== 'account';
   ui.arcadeGameView.hidden = v !== 'arcadegame';
   ui.floorView.hidden = v !== 'floor';
@@ -7249,9 +7322,10 @@ function render() {
   ui.gateView.hidden = !gated;
   if (gated) for (const el of [ui.rouletteView, ui.tableView, ui.pokerView, ui.baccaratView, ui.warView, ui.tcpView, ui.reddogView, ui.arcadeGameView]) el.hidden = true;
   // Game screens fill the screen exactly and never scroll
-  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog' || v === 'arcadegame' || v === 'floor');
+  document.documentElement.classList.toggle('game', v === 'table' || v === 'roulette' || v === 'poker' || v === 'baccarat' || v === 'war' || v === 'threecard' || v === 'reddog' || v === 'arcadegame' || v === 'floor' || v === 'title');
   document.documentElement.classList.toggle('arc', v === 'arcadegame' || v === 'floor');
   document.documentElement.classList.toggle('floor', v === 'floor');
+  document.documentElement.classList.toggle('title', v === 'title');
   document.documentElement.classList.toggle('bac', v === 'baccarat');
   document.documentElement.classList.toggle('war', v === 'war');
   document.documentElement.classList.toggle('tcp', v === 'threecard');
@@ -7291,7 +7365,8 @@ function render() {
   if (v === 'roulette') rl3dEnsure(); else rl3dDrop();
   if (v === 'table' && app.solo) bj3dEnsure(); else bj3dDrop();
   if (v === 'floor') floorEnsure(); else floorDrop();
-  if (v !== 'home') purse.shown = wallet.ready ? wallet.balance : null;   // wins elsewhere don't burst when you come back
+  if (v === 'title') titleEnsure(); else titleDrop();
+  if (v === 'floor' || v === 'home') { try { localStorage.setItem(MODE_KEY, v === 'home' ? '2d' : '3d'); } catch (e) { /* storage unavailable */ } }  if (v !== 'home') purse.shown = wallet.ready ? wallet.balance : null;   // wins elsewhere don't burst when you come back
   if (v === 'home') { renderDaily(); renderWalletCard(); renderTicker(); feedLoad(); renderLbw(); lbLoad(false, 'week'); }
   else if (v === 'profile') renderProfile();
   else if (v === 'settings') renderSettings();
@@ -7906,6 +7981,7 @@ ui.pfVol.addEventListener('input', () => volumeSet(ui.pfVol.value / 100));
 ui.acPass.addEventListener('submit', changePassword);
 ui.flGo.addEventListener('click', () => flPopOpen('go'));
 ui.fl2d.addEventListener('click', () => { if (signedIn()) { buzz(6); go('home'); } else floorAsk('home'); });
+ui.ttPlay.addEventListener('click', titlePlay);
 ui.flSheetClose.addEventListener('click', flPopClose);
 ui.flSheet.addEventListener('click', e => { if (e.target === ui.flSheet) flPopClose(); });
 ui.tabs.forEach(t => t.addEventListener('click', () => { buzz(4); go(t.dataset.tab === 'casino' ? 'home' : t.dataset.tab); window.scrollTo(0, 0); }));   // 3D Floor goes back to the floor
