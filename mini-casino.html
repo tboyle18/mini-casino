@@ -738,6 +738,7 @@
   .tt-play .tt-s.r { color: #ff5a72; text-shadow: 0 0 8px rgba(255, 90, 114, .6); }
   .tt-play:active { transform: translateY(22vh) scale(.95); }
   .tt-play.go { opacity: 0; pointer-events: none; }
+  @media (min-aspect-ratio: 1/1) { .tt-play { transform: translateY(31vh); } .tt-play:active { transform: translateY(31vh) scale(.95); } }   /* wide screens: below the doors */
   .tt-fine { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 14px); margin: 0; text-align: center; color: rgba(240, 230, 208, .55); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
   html.floor #fl-stage { position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); margin: 0; z-index: 0; }
   html.floor .fl-hud { top: calc(var(--safe-top) + 8px); left: calc(var(--gl) + 2px); }

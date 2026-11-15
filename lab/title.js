@@ -434,11 +434,11 @@ export async function mount({ stage }) {
   let aspect = 0;
   function frameShot() {
     const tall = aspect < 0.75;
-    const vfov = tall ? 62 : 46;
+    const vfov = tall ? 62 : 40;
     camera.fov = vfov;
     const hfov = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(vfov) / 2) * aspect);
-    const want = tall ? 21 : 30;   // metres of the building front across the screen
-    const d = THREE.MathUtils.clamp((want / 2) / Math.tan(hfov / 2), 22, 50);
+    const want = tall ? 21 : 40;   // metres of the building front across the screen
+    const d = THREE.MathUtils.clamp((want / 2) / Math.tan(hfov / 2), tall ? 22 : 34, 60);   // wide screens: far enough back for the roadside sign
     shot.pos.set(target.x + 0.4, 4.2, target.z + d);
     camera.updateProjectionMatrix();
   }
