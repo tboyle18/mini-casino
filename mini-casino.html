@@ -727,23 +727,17 @@
   .tt-stage { position: absolute; inset: 0; }
   .tt-stage canvas { display: block; width: 100% !important; height: 100% !important; }
   .tt-ui { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
-  /* Play: a little marquee: deep red, gold rims, and a ring of bulbs that chase */
+  /* Play: a little marquee: deep red with gold rims */
   .tt-play { pointer-events: auto; position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 10px; height: 50px; padding: 0 22px; border: 0; border-radius: 12px; cursor: pointer;
     font: 800 19px/1 var(--font-display); letter-spacing: .22em; text-indent: .22em; text-transform: uppercase; color: #ffdf8e;
     text-shadow: 0 0 10px rgba(255, 196, 80, .55), 0 1px 0 #5a0814;
     background: radial-gradient(120% 140% at 50% 0%, #b3152f, #5e0918 70%);
     box-shadow: inset 0 0 0 2px #e9c46a, inset 0 0 0 4px #5e0918, inset 0 0 0 5px rgba(233, 196, 106, .55), 0 0 0 2px #2a0309, 0 0 26px rgba(255, 63, 120, .35), 0 10px 22px rgba(0, 0, 0, .5);
     transform: translateY(22vh); transition: transform .15s, opacity .3s; }
-  .tt-play::before { content: ''; position: absolute; inset: -9px; border-radius: 17px; padding: 5px;
-    background: radial-gradient(circle, #fff4c8 0 2px, rgba(255, 210, 110, .55) 2.6px, transparent 3.4px) 0 0 / 11px 11px, #2a0309;
-    -webkit-mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor; z-index: -1; animation: tt-chase 1.2s steps(3) infinite; }
   .tt-play .tt-s { font-size: 14px; letter-spacing: 0; text-indent: 0; color: #ffcf6a; }
   .tt-play .tt-s.r { color: #ff5a72; text-shadow: 0 0 8px rgba(255, 90, 114, .6); }
   .tt-play:active { transform: translateY(22vh) scale(.95); }
   .tt-play.go { opacity: 0; pointer-events: none; }
-  @keyframes tt-chase { to { background-position: 11px 0, 0 0; } }
-  @media (prefers-reduced-motion: reduce) { .tt-play::before { animation: none; } }
   .tt-fine { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 14px); margin: 0; text-align: center; color: rgba(240, 230, 208, .55); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
   html.floor #fl-stage { position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); margin: 0; z-index: 0; }
   html.floor .fl-hud { top: calc(var(--safe-top) + 8px); left: calc(var(--gl) + 2px); }
