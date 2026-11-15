@@ -407,7 +407,7 @@
     gap: 4px;
   }
   .wc-label { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
-  .wc-amt { font: 800 clamp(38px, 12vw, 50px)/1.08 var(--font-display); letter-spacing: -.03em; color: var(--gold); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .wc-amt { font: 800 clamp(38px, 12vw, 50px)/1.08 var(--font-display); letter-spacing: -.03em; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .wc-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 10px; }
   .wc-fine { color: var(--ink-3); font-size: 13px; line-height: 1.35; }
   .wc-row .btn { flex: none; }
@@ -1679,7 +1679,6 @@
       <ol class="lbw-list" id="lbw-list"></ol>
       <div class="lbw-me" id="lbw-me"></div>
     </button>
-    <button class="floor-cta" id="floor-cta"><span class="fc-k">3D</span><b>Walk the casino floor</b><span class="fc-sub">The same games and wallet, in 3D. Glide between the tables and take a seat</span><span class="fc-go" aria-hidden="true">›</span></button>
     <div class="section-label">Table games</div>
     <div class="tiles" id="tiles"></div>
     <div class="section-label" id="arcade">Arcade</div>
@@ -2967,7 +2966,7 @@ const ui = {
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
   gateView: $('gate-view'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
-  floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flWelcome: $('fl-welcome'), flGuest: $('fl-guest'), flSignin: $('fl-signin'), flInfo: $('fl-info'), flControls: $('fl-controls'), floorCta: $('floor-cta'),
+  floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flWelcome: $('fl-welcome'), flGuest: $('fl-guest'), flSignin: $('fl-signin'), flInfo: $('fl-info'), flControls: $('fl-controls'),
 
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   settingsView: $('settings-view'), accountView: $('account-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
@@ -3045,6 +3044,25 @@ function moneyFull(n) {
     ? v.toLocaleString('en-US')
     : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (n < 0 ? '−' : '') + '$' + s;
+}
+/* The home wallet card's balance stays on one line: the full amount, shrunk to fit if it
+   has to, and the short form ($12.5M) once even that would be too small */
+function walletAmtFit() {
+  const el = ui.homeWallet;
+  el.style.fontSize = '';
+  el.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
+  if (!wallet.ready) return;
+  const cs = getComputedStyle(el);
+  const room = el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);   // beside the wallet picture
+  const textW = () => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width; };
+  const base = parseFloat(cs.fontSize) || 40;
+  let need = textW();
+  if (room <= 0 || need <= room) return;
+  const size = Math.floor(base * room / need);
+  if (size >= 30) { el.style.fontSize = size + 'px'; return; }
+  el.textContent = money(wallet.balance);
+  need = textW();
+  if (need > room) el.style.fontSize = Math.max(22, Math.floor(base * room / need)) + 'px';
 }
 /* Short form once the bank gets involved: $2.5M, $1T */
 function money(n) {
@@ -7266,7 +7284,7 @@ function render() {
   ui.balanceBtn.hidden = v === 'table' || v === 'learn';
   const bal = wallet.ready ? money(wallet.balance) : '—';
   ui.walletAmt.textContent = bal;
-  ui.homeWallet.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
+  if (v === 'home') walletAmtFit(); else ui.homeWallet.textContent = wallet.ready ? moneyFull(wallet.balance) : '—';
 
   if (v !== 'table') { ui.chipsPanel.hidden = true; ui.invitePanel.hidden = true; }
   if (v !== 'roulette' && rl.stage) rlStageClose();
@@ -7878,7 +7896,6 @@ ui.homeBtn.addEventListener('click', () => {
   go('home');
 });
 ui.helpBtn.addEventListener('click', openHelp);
-ui.floorCta.addEventListener('click', () => { buzz(6); go('floor'); });
 ui.pfLearn.addEventListener('click', () => go('learn'));
 ui.pfSettings.addEventListener('click', () => { buzz(4); go('settings'); });
 ui.pfAccount.addEventListener('click', () => { buzz(4); go('account'); });
