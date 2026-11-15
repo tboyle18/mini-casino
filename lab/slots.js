@@ -31,7 +31,7 @@ const LEVER_Y = 0.6, LEVER_Z = -0.02;
 const LEVER_REST = -0.18, LEVER_PULLED = 1.65;
 const EYE_R = 0.066, PUPIL_R = 0.03, EYE_Y = 0.885;
 const PUPIL_MAX = EYE_R - PUPIL_R - 0.004;
-const BETS = [5, 25, 100, 500];
+const BETS = [1, 5, 25, 100, 500];
 const STORE = 'mini-casino.lab-slots';
 
 const QUIPS = {

@@ -6,6 +6,14 @@ import confetti from 'canvas-confetti';
 
 /* ---------- Sound: tiny synthesized effects, no audio files ----------
    Nothing plays until the first tap (browsers require it), so call unlock() from a tap. */
+// The player's volume from Settings (0 to 1), shared by every game's sounds
+const VOL_KEY = 'mini-casino.volume';
+const readVolume = () => { try { const v = parseFloat(localStorage.getItem(VOL_KEY)); return v >= 0 && v <= 1 ? v : 1; } catch (e) { return 1; } };
+let volume = readVolume();
+const outs = new Set();
+const applyVolume = () => { volume = readVolume(); for (const g of outs) g.gain.value = 0.55 * volume; };
+if (typeof window !== 'undefined') { window.addEventListener('mc-volume', applyVolume); window.addEventListener('storage', applyVolume); }
+
 export function makeSound() {
   let ac = null, out = null, noise = null, enabled = true;
   function ctx() {
@@ -15,7 +23,8 @@ export function makeSound() {
       if (!AC) return null;
       ac = new AC();
       out = ac.createGain();
-      out.gain.value = 0.55;
+      out.gain.value = 0.55 * volume;
+      outs.add(out);
       out.connect(ac.destination);
       noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
       const d = noise.getChannelData(0);

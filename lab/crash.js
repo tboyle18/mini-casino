@@ -18,7 +18,7 @@ import { bloomComposer, glow, duckGeometry, canvas, tex } from './arcade.js';
 import { crashPoint, multAt } from './crash-math.js';
 
 const TAU = Math.PI * 2;
-const BETS = [5, 25, 100, 500];
+const BETS = [1, 5, 25, 100, 500];
 const AUTOS = [0, 1.5, 2, 3, 5, 10];        // auto cash-out targets; 0 is off
 const STORE = 'mini-casino.lab-crash';
 const PAD_TOP = 0.3;

@@ -12,7 +12,7 @@ import { buzz, makeRenderer, fitRenderer, disposeScene, fontReady, casinoQuality
 const FELT_Y = 0.03;
 const CARD_W = 0.082, CARD_H = 0.115, CARD_T = 0.0006;   // a third bigger than a real card, so a phone can read them
 const CHIP_R = 0.0195, CHIP_T = 0.0034;
-const CHIPS = [{ v: 5, c: '#c8303c' }, { v: 25, c: '#2f6fd0' }, { v: 100, c: '#25272c' }, { v: 500, c: '#7a3fb8' }, { v: 1000, c: '#d9822b' }];
+const CHIPS = [{ v: 5, c: '#c8303c' }, { v: 25, c: '#2f6fd0' }, { v: 100, c: '#25272c' }, { v: 500, c: '#7a3fb8' }, { v: 1000, c: '#d9822b' }, { v: 1, c: '#8e98a4' }];
 const BET_SPOT = new THREE.Vector3(0, FELT_Y, 0.3);
 const SHOE_MOUTH = new THREE.Vector3(0.5, FELT_Y + 0.06, -0.24);
 const DISCARD = new THREE.Vector3(-0.55, FELT_Y + 0.01, -0.3);
@@ -382,7 +382,7 @@ function buildTable(stage, opts = {}) {
      hands: [{ id, cards, bet, doubled, result, active, total: { text, cls }, tag: { text, cls } }],
      bet,                     // chips on the spot for the next hand, while betting
    } */
-const DENOMS = [1000, 500, 100, 25, 5];
+const DENOMS = [1000, 500, 100, 25, 5, 1];
 const HAND_GAP = 0.19;          // between split hands
 const HAND_Z = 0.13;             // the first card of each hand
 const STACK_Z = 0.285;           // chips, on the printed betting spot
@@ -394,7 +394,7 @@ function chipsFor(amount) {
   const out = [];
   let a = Math.floor(amount + 1e-6);
   for (const d of DENOMS) while (a >= d && out.length < 20) { out.push(d); a -= d; }
-  if (!out.length && amount > 0) out.push(5);
+  if (!out.length && amount > 0) out.push(1);
   return out;   // biggest first, so they sit at the bottom
 }
 

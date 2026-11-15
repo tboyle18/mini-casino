@@ -1848,8 +1848,29 @@ export async function mount({ stage, controls, info, casino }) {
     sitBtn.textContent = locked() ? 'Sign in to play' : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : st.id === 'slots' ? 'Pick a machine' : `Sit at ${st.name}`;
   }
   let glide = null;
+  /* After a swipe the camera settles on the nearest station with a spring that starts at the
+     finger's speed, so letting go doesn't stop the camera dead and then start it up again. */
+  let snap = null;
+  function settle(dt) {
+    if (drag.on) {
+      // Follow the finger a touch behind, so uneven touch events don't make the camera judder
+      const s0 = cam.s;
+      cam.s += (drag.to - cam.s) * (1 - Math.exp(-dt * 30));
+      if (dt > 0) drag.v = 0.75 * drag.v + 0.25 * ((cam.s - s0) / dt);
+      changed();
+      return;
+    }
+    if (!snap) return;
+    const w = calm ? 22 : 9;   // critically damped
+    const a = w * w * (snap.to - cam.s) - 2 * w * snap.v;
+    snap.v += a * dt;
+    cam.s += snap.v * dt;
+    if (Math.abs(snap.to - cam.s) < 0.0008 && Math.abs(snap.v) < 0.01) { cam.s = snap.to; snap = null; }
+    changed();
+  }
   function go(k) {
     k = THREE.MathUtils.clamp(k, 0, LAST);
+    snap = null;
     if (glide) glide.kill();
     const d = Math.abs(k - cam.s);
     glide = gsap.to(cam, { s: k, duration: calm ? 0.25 : Math.min(1.6, 0.55 + d * 0.5), ease: 'power2.inOut', onUpdate: changed, onComplete: () => { glide = null; } });
@@ -1862,9 +1883,11 @@ export async function mount({ stage, controls, info, casino }) {
   const locked = () => !!(casino.locked && casino.locked());
   function sit() {
     if (busy) return;
+    snap = null;
     if (locked()) { casino.ask(); return; }
     const k = Math.round(THREE.MathUtils.clamp(cam.s, 0, LAST));
     if (STATIONS[k].id === 'slots' && casino.pickSlot) { casino.pickSlot(); return; }   // pick a machine first
+    if (STATIONS[k].id === 'cashier' && bonusCoin && bonusCoin.visible && casino.collect) { buzz(10); casino.collect(); return; }   // today's bonus: paid on the spot
     busy = true;
     if (glide) { glide.kill(); glide = null; }
     buzz(10);
@@ -1876,19 +1899,24 @@ export async function mount({ stage, controls, info, casino }) {
   function jumpTo(id) {
     const k = STATIONS.findIndex(st => st.id === id);
     if (k < 0 || busy) return;
-    if (locked()) { go(k); casino.ask(); return; }   // take them there to look, and ask them to sign in
-    busy = true;
+    snap = null;
     if (glide) { glide.kill(); glide = null; }
+    // No flying past every table on the way: a quick dip to black, and you're standing at it
+    const far = Math.abs(k - cam.s) > 0.05;
+    const tl = gsap.timeline({ onUpdate: changed });
+    if (far) tl.to(canvasEl, { opacity: 0, duration: calm ? 0.08 : 0.16, ease: 'power1.in' })
+      .call(() => { cam.s = k; changed(); })
+      .to(canvasEl, { opacity: 1, duration: calm ? 0.1 : 0.22, ease: 'power1.out' });
+    if (locked()) { tl.call(() => casino.ask()); return; }   // take them there to look, and ask them to sign in
+    busy = true;
     buzz(8);
     map.classList.add('off');
-    const t = calm ? 0.2 : Math.min(2, 0.55 + Math.abs(k - cam.s) * 0.3);
-    const down = calm ? 0.2 : 1.05;
-    gsap.timeline({ onUpdate: changed, onComplete: () => { if (!dead) casino.sit(id); } })
-      .to(cam, { s: k, duration: t, ease: 'power2.inOut' }, 0)
-      .to(cam, { seat: 1, duration: down, ease: 'power2.inOut' }, Math.max(0, t - down * 0.5));
+    tl.to(cam, { seat: 1, duration: calm ? 0.2 : 1.05, ease: 'power2.inOut' }, far ? '-=0.12' : 0)
+      .call(() => { if (!dead) casino.sit(id); });
   }
   // The casino's arrows: from one seat, up along the floor and down into the next
   function hopCasino(from, to) {
+    snap = null;
     busy = true;
     map.classList.add('off');
     cam.s = from;
@@ -1901,6 +1929,7 @@ export async function mount({ stage, controls, info, casino }) {
   }
   // Coming back from a game: start in its seat and stand up
   function standUpFrom(k) {
+    snap = null;
     busy = true;
     cam.s = k;
     cam.seat = 1;
@@ -1914,38 +1943,51 @@ export async function mount({ stage, controls, info, casino }) {
   // ---- Input: swipe, tap, wheel, keys ----
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  const drag = { on: false, id: 0, x: 0, s0: 0, moved: false, vx: 0, lx: 0, lt: 0 };
+  const drag = { on: false, id: 0, x: 0, s0: 0, to: 0, v: 0, moved: false, vx: 0, lx: 0, lt: 0 };
   function onDown(e) {
     if (busy) return;
     if (glide) { glide.kill(); glide = null; }
-    Object.assign(drag, { on: true, id: e.pointerId, x: e.clientX, s0: cam.s, moved: false, vx: 0, lx: e.clientX, lt: performance.now() });
+    const v = snap ? snap.v : 0;   // caught mid-settle: keep its motion
+    snap = null;
+    Object.assign(drag, { on: true, id: e.pointerId, x: e.clientX, s0: cam.s, to: cam.s, v, moved: false, vx: 0, lx: e.clientX, lt: performance.now() });
     try { canvasEl.setPointerCapture(e.pointerId); } catch (err) { /* released */ }
   }
   function onMove(e) {
     if (!drag.on || e.pointerId !== drag.id) return;
+    if (!drag.moved) {
+      if (Math.abs(e.clientX - drag.x) < 7) return;
+      drag.moved = true;
+      drag.x = e.clientX;   // start from here, so the camera doesn't jump the dead zone
+      drag.lx = e.clientX;
+      drag.lt = performance.now();
+      return;
+    }
     const dx = e.clientX - drag.x;
-    if (!drag.moved && Math.abs(dx) < 7) return;
-    drag.moved = true;
     const w = stage.clientWidth || 1;
     let s = drag.s0 - dx / (w * 0.6);
     if (s < 0) s *= 0.35;
     if (s > LAST) s = LAST + (s - LAST) * 0.35;
-    cam.s = s;
+    drag.to = s;
     const now = performance.now();
     if (now > drag.lt) drag.vx = 0.7 * drag.vx + 0.3 * ((e.clientX - drag.lx) / (now - drag.lt));
     drag.lx = e.clientX;
     drag.lt = now;
-    changed();
   }
   function onUp(e) {
     if (!drag.on || e.pointerId !== drag.id) return;
     drag.on = false;
     if (drag.moved) {
-      // Flick: carry on toward the next station if you swiped fast
+      // Flick: carry on toward the next station if you swiped fast. A finger that stopped
+      // before lifting doesn't count as a flick.
+      if (performance.now() - drag.lt > 90) drag.vx = 0;
       const fling = -drag.vx * 0.9;
-      go(Math.round(cam.s + THREE.MathUtils.clamp(fling, -0.6, 0.6)));
+      const k = THREE.MathUtils.clamp(Math.round(drag.to + THREE.MathUtils.clamp(fling, -0.6, 0.6)), 0, LAST);
+      snap = { to: k, v: THREE.MathUtils.clamp(drag.v, -8, 8) };
       return;
     }
+    // A tap that caught the camera between stations: let it finish settling
+    const near = THREE.MathUtils.clamp(Math.round(cam.s), 0, LAST);
+    if (Math.abs(cam.s - near) > 0.001) snap = { to: near, v: drag.v };
     const r = canvasEl.getBoundingClientRect();
     ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ndc, camera);
@@ -1961,6 +2003,7 @@ export async function mount({ stage, controls, info, casino }) {
   function onWheel(e) {
     if (busy) return;
     e.preventDefault();
+    snap = null;
     if (glide) { glide.kill(); glide = null; }
     const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
     cam.s = THREE.MathUtils.clamp(cam.s + d * 0.0025, -0.15, LAST + 0.15);
@@ -2045,6 +2088,7 @@ export async function mount({ stage, controls, info, casino }) {
       for (let k = 0; k < signBulbs.length; k++) signLights.setColorAt(k, (k + step) % 3 === 0 ? bulbDim[k] : bulbOn[k]);
       signLights.instanceColor.needsUpdate = true;
     }
+    settle(dt);
     pose();
     renderer.render(scene, camera);
     drawMap();

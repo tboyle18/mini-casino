@@ -32,7 +32,7 @@ import { adsConfig, adOffer, adClaim, undosLeft } from './ads.js';
 export { TableRoom };
 
 // Email and password only: the sign-in routes the page may reach through this proxy
-const AUTH_ROUTES = new Set(['/sign-up/email', '/sign-in/email', '/sign-out', '/get-session']);
+const AUTH_ROUTES = new Set(['/sign-up/email', '/sign-in/email', '/sign-out', '/get-session', '/change-password']);
 const MAX_SAVE_BYTES = 256 * 1024;
 
 export default {
