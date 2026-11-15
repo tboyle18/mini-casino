@@ -345,6 +345,36 @@ export async function mount({ stage }) {
     palm.rotation.z = lean;
     scene.add(palm);
   }
+  // Potted palms either side of the doors, like the ones just inside: a plum pot with a gold
+  // band, a ringed trunk and a fan of fronds
+  const plum = std(0x3a1430, 0.6), leafA = std(0x2f8a3a, 0.55), leafB = std(0x46b04a, 0.55);
+  const potPalm = (x, z, seed) => {
+    const g = new THREE.Group();
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.19, 0.5, 20), plum);
+    pot.position.y = 0.25;
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.255, 0.02, 8, 24).rotateX(Math.PI / 2), trim);
+    band.position.y = 0.46;
+    g.add(pot, band);
+    for (let i = 0; i < 6; i++) {
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.05 - i * 0.004, 0.058 - i * 0.004, 0.22, 8), std(i % 2 ? 0x7a5230 : 0x8f6238, 0.8));
+      seg.position.set(Math.sin(i * 0.9 + seed) * 0.02, 0.6 + i * 0.2, 0);
+      g.add(seg);
+    }
+    for (let i = 0; i < 9; i++) {
+      const frond = new THREE.Group();
+      frond.position.y = 1.78;
+      frond.rotation.y = (i / 9) * Math.PI * 2 + seed;
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 6).scale(1, 0.05, 0.16), i % 2 ? leafB : leafA);
+      leaf.position.x = 0.42;
+      leaf.rotation.z = -0.35 - (i % 3) * 0.12;
+      frond.add(leaf);
+      g.add(frond);
+    }
+    g.position.set(x, 0, z);
+    scene.add(g);
+  };
+  potPalm(-2.75, 0.75, 0.3);
+  potPalm(1.95, 0.75, 1.4);
   // MINI CASINO in neon on the tower, over the canopy
   const signTex = T(neonText([{ text: 'MINI CASINO', size: 132, y: 128, col: PINK, track: 6 }]));
   const facade = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 1.85), new THREE.MeshBasicMaterial({ map: signTex, transparent: true, toneMapped: false, depthWrite: false }));
