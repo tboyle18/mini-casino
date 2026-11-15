@@ -584,7 +584,8 @@
   }
   .fl-btn:active { transform: scale(.94); }
   .fl-btn svg { width: 24px; height: 24px; }
-  .fl-btn.fl-2d { font: 800 15px/1 var(--font-display); letter-spacing: .02em; }
+  .fl-to2d { margin-top: 6px; }
+  .fl-to2d .sl-icon { font: 800 15px/1 var(--font-display); color: #f0e6d0; background: rgba(240, 230, 208, .12); }
   .fl-av { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; font: 800 17px/1 var(--font-display); }
   .fl-av svg { width: 20px; height: 20px; }
   /* All games: its own labelled button under the round ones, so it doesn't blend in */
@@ -758,10 +759,12 @@
     box-shadow: inset 0 0 0 1.5px rgba(240, 230, 208, .6), 0 6px 18px rgba(0, 0, 0, .45); display: grid; place-items: center; }
   html.floor #floor-view .ag-controls .lab-btn.fl-arrow svg { width: 26px; height: 26px; }
   html.floor #floor-view .ag-controls .lab-btn.fl-arrow:disabled { opacity: .3; }
-  html.floor #floor-view .ag-controls .lab-btn.primary { background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; box-shadow: 0 2px 0 #a3957a; }
+  html.floor #floor-view .ag-controls { justify-content: center; align-items: center; gap: 18px; }
+  html.floor #floor-view .ag-controls .lab-btn.primary { flex: none; min-width: 132px; height: 50px; min-height: 50px; padding: 0 26px; border-radius: 14px; font-size: 17px; background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; box-shadow: 0 2px 0 #a3957a; }
+  html.floor #floor-view .ag-controls .lab-btn.fl-arrow { width: 48px; min-width: 48px; height: 48px; min-height: 48px; }
   html.floor #floor-view .dock { position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); justify-content: flex-end; margin: 0; background: none; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
   html.floor #floor-view .dock .ag-controls > * { pointer-events: auto; }
-  html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 76px); background: rgba(62, 52, 76, .82); box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .3), 0 6px 18px rgba(0, 0, 0, .4); }
+  html.floor .floor-map { bottom: calc(max(14px, var(--safe-bottom)) + 64px); }
   /* Signed out: both ways in, right on the floor */
   .fl-welcome { display: none; }
   html.floor .fl-welcome:not([hidden]) { display: block; position: fixed; z-index: 3; top: calc(var(--safe-top) + 118px); left: max(16px, var(--gl)); right: max(16px, var(--gr)); max-width: 420px; margin: 0 auto; padding: 12px 14px 14px; border-radius: 16px;
@@ -1735,10 +1738,9 @@
     <div class="ag-stage" id="fl-stage"><div class="hud fl-hud">
       <div class="fl-btns">
         <button class="fl-btn" id="fl-acct" aria-label="Your account"><span class="fl-av" id="fl-av"></span></button>
-        <button class="fl-btn fl-2d" id="fl-2d" aria-label="Open the 2D casino">2D</button>
+        <button class="fl-btn" id="fl-go" aria-label="All games, or switch to 2D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></button>
         <button class="fl-btn" id="fl-lb" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11M12 13v4M8.5 20h7M9.5 17h5v3h-5z"/></svg></button>
       </div>
-      <button class="fl-all" id="fl-go" aria-label="All games: jump to a table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>All games</button>
       <button class="fl-all fl-undo" id="fl-undo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg><span></span></button>
       <span id="fl-info"></span>
     </div></div>
@@ -3000,7 +3002,7 @@ const ui = {
   backLabel: $('back-label'), barTitle: $('bar-title'), tableTools: $('table-tools'),
   homeWallet: $('home-wallet'), dailyLine: $('daily-line'), dailyBtn: $('daily-btn'),
   gateView: $('gate-view'), gateIn: $('gate-in'), gateUp: $('gate-up'), gateLearn: $('gate-learn'),
-  floorView: $('floor-view'), fl2d: $('fl-2d'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flWelcome: $('fl-welcome'), flGuest: $('fl-guest'), flSignin: $('fl-signin'), flInfo: $('fl-info'), flControls: $('fl-controls'),
+  floorView: $('floor-view'), flGo: $('fl-go'), flAcct: $('fl-acct'), flAv: $('fl-av'), flLb: $('fl-lb'), flSheet: $('fl-sheet'), flSheetDialog: $('fl-sheet-dialog'), flSheetBody: $('fl-sheet-body'), flSheetClose: $('fl-sheet-close'), flStage: $('fl-stage'), flWelcome: $('fl-welcome'), flGuest: $('fl-guest'), flSignin: $('fl-signin'), flInfo: $('fl-info'), flControls: $('fl-controls'),
 
   arcadeGameView: $('arcadegame-view'), agStage: $('ag-stage'), agInfo: $('ag-info'), agChips: $('ag-chips'), agControls: $('ag-controls'), agLow: $('ag-low'),
   titleView: $('title-view'), ttStage: $('tt-stage'), ttPlay: $('tt-play'), settingsView: $('settings-view'), accountView: $('account-view'), arcadeTiles: $('arcade-tiles'), profileView: $('profile-view'), tabbar: $('tabbar'), tabs: [...document.querySelectorAll('#tabbar .tab')],
@@ -6200,6 +6202,12 @@ function floorGoList() {
     }
     out.push(grid);
   }
+  // The same games in 2D: flat screens, quicker to load
+  const two = document.createElement('button');
+  two.className = 'stats-link fl-to2d';
+  two.innerHTML = '<span class="sl-icon" aria-hidden="true">2D</span><span class="sl-text"><b>Switch to 2D</b><span>The same games and wallet, on flat screens</span></span><span class="sl-go" aria-hidden="true">›</span>';
+  two.addEventListener('click', () => { flPopClose(); if (signedIn()) { buzz(6); go('home'); } else floorAsk('home'); });
+  out.push(two);
   return out;
 }
 /* The slot machines: pick one and you're walked to the seat and it starts. They all play the
@@ -7102,8 +7110,8 @@ function maybeTour() {
     tour.steps = [
       { el: ui.flControls, text: 'Tap the arrows, or swipe across the room, to glide from table to table.' },
       { el: sit, text: 'When a game you like is in front of you, tap Sit down to play it.' },
-      { el: ui.flGo, text: 'All games jumps straight to any table. The cashier pays a free bonus every day.' },
-      { el: ui.flAcct.parentNode, text: 'Your profile and settings, the 2D casino, and the leaderboard live up here.' },
+      { el: ui.flGo, text: 'All games jumps straight to any table, or switches to the 2D casino. The cashier pays a free bonus every day.' },
+      { el: ui.flAcct.parentNode, text: 'Your profile and settings, and the leaderboard, live up here too.' },
     ];
     tour.on = true;
     tour.i = 0;
@@ -7989,7 +7997,6 @@ ui.flLb.addEventListener('click', () => { buzz(6); lb.board = 'week'; app.hub = 
 ui.pfVol.addEventListener('input', () => volumeSet(ui.pfVol.value / 100));
 ui.acPass.addEventListener('submit', changePassword);
 ui.flGo.addEventListener('click', () => flPopOpen('go'));
-ui.fl2d.addEventListener('click', () => { if (signedIn()) { buzz(6); go('home'); } else floorAsk('home'); });
 ui.ttPlay.addEventListener('click', titlePlay);
 ui.flSheetClose.addEventListener('click', flPopClose);
 ui.flSheet.addEventListener('click', e => { if (e.target === ui.flSheet) flPopClose(); });

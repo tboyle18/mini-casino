@@ -1,7 +1,7 @@
 // Casino floor (beta): the games laid out on a casino floor. You don't walk around: the camera
 // glides along a fixed path from one station to the next as you swipe, and tapping a station
-// takes you down into its seat, where the casino opens that game's screen. A small 2D map in
-// the corner shows where you are on the floor; tap it to jump to a station.
+// takes you down into its seat, where the casino opens that game's screen. A row of dots
+// above the controls shows where you are on the floor; tap one to jump to that station.
 //
 // The floor only draws stand-in models (they're cheap); the games themselves are the casino's.
 
@@ -40,10 +40,12 @@ const STATIONS = [
 const LAST = STATIONS.length - 1;
 
 const CSS = `
-.floor-map { position: absolute; right: 12px; bottom: 82px; width: 168px; height: 92px; z-index: 3; border-radius: 14px; touch-action: none; cursor: pointer;
-  background: rgba(10, 8, 6, .72); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 6px 18px rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: opacity .3s; }
-canvas.floor-map { width: 168px !important; height: 92px !important; }   /* the lab and the casino stretch every stage canvas */
+.floor-map { position: absolute; left: 0; right: 0; bottom: 84px; z-index: 3; display: flex; justify-content: center; gap: 0; pointer-events: none; transition: opacity .3s; }
+.floor-map button { appearance: none; border: 0; background: none; padding: 9px 5px; margin: 0; cursor: pointer; pointer-events: auto; display: grid; place-items: center; }
+.floor-map button::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: rgba(240, 230, 208, .38); box-shadow: 0 1px 3px rgba(0, 0, 0, .6); transition: transform .2s, background .2s; }
+.floor-map button.on::before { background: #f0e6d0; transform: scale(1.5); box-shadow: 0 0 0 2px rgba(240, 230, 208, .25), 0 1px 3px rgba(0, 0, 0, .6); }
 .floor-map.off { opacity: 0; pointer-events: none; }
+.floor-map.off button { pointer-events: none; }
 `;
 
 /* Sitting down calls casino.sit(id) once the camera is in the seat, and the casino opens its
@@ -1747,94 +1749,19 @@ export async function mount({ stage, controls, info, casino }) {
     camera.lookAt(look);
   }
 
-  // ---- Overlay: the station's name, and the map ----
-  const map = document.createElement('canvas');
+  // ---- Where you are: a dot for each station, the one you're at lit; tap one to go there ----
+  const map = document.createElement('div');
   map.className = 'floor-map';
-  map.setAttribute('role', 'img');
-  map.setAttribute('aria-label', 'Map of the casino floor');
+  map.setAttribute('role', 'group');
+  map.setAttribute('aria-label', 'Stations on the floor');
+  const dots = STATIONS.map((st, k) => {
+    const d = document.createElement('button');
+    d.setAttribute('aria-label', st.name);
+    d.addEventListener('click', e => { e.stopPropagation(); if (busy) return; buzz(5); go(k); });
+    map.appendChild(d);
+    return d;
+  });
   stage.appendChild(map);
-  const MAP_W = 168, MAP_H = 92, PAD = 7;
-  const mg = map.getContext('2d');
-  const toMap = (x, z) => [PAD + ((x - ROOM.x0) / (ROOM.x1 - ROOM.x0)) * (MAP_W - PAD * 2), PAD + ((z - ROOM.z0) / (ROOM.z1 - ROOM.z0)) * (MAP_H - PAD * 2)];
-  function drawMap() {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    if (map.width !== MAP_W * dpr) { map.width = MAP_W * dpr; map.height = MAP_H * dpr; }
-    mg.setTransform(dpr, 0, 0, dpr, 0, 0);
-    mg.clearRect(0, 0, MAP_W, MAP_H);
-    // The walls and the row of machines along the back
-    const [ax, az] = toMap(ROOM.x0, ROOM.z0), [bx, bz] = toMap(ROOM.x1, ROOM.z1);
-    mg.strokeStyle = 'rgba(255, 255, 255, .18)';
-    mg.lineWidth = 1;
-    mg.beginPath();
-    mg.strokeRect(ax, az, bx - ax, bz - az);
-    mg.stroke();
-    mg.fillStyle = 'rgba(255, 255, 255, .22)';
-    for (const x of rowX) { const [mx, mz] = toMap(x, ROOM.z0 + 0.5); mg.fillRect(mx - 2.5, mz - 2, 5, 4); }
-    // The path
-    mg.setLineDash([2, 3]);
-    mg.strokeStyle = 'rgba(233, 196, 106, .45)';
-    mg.beginPath();
-    for (let i = 0; i <= 40; i++) {
-      const p = curve.getPoint(i / 40, tmp);
-      const [mx, mz] = toMap(p.x, p.z);
-      if (i) mg.lineTo(mx, mz); else mg.moveTo(mx, mz);
-    }
-    mg.stroke();
-    mg.setLineDash([]);
-    // Stations
-    const here = Math.round(cam.s);
-    STATIONS.forEach((st, k) => {
-      const [mx, mz] = toMap(st.pos[0], st.pos[1]);
-      mg.save();
-      mg.translate(mx, mz);
-      mg.rotate(-st.yaw);
-      mg.fillStyle = st.color;
-      mg.globalAlpha = k === here ? 1 : 0.6;
-      mg.beginPath();
-      if (st.id === 'roulette') mg.rect(-9.5, -4, 19, 8);
-      else if (st.id === 'baccarat') mg.ellipse(0, 0, 10, 5.5, 0, 0, TAU);
-      else if (st.id === 'cashier') mg.rect(-7, -2.5, 14, 5);
-      else if (st.id === 'plinko') mg.rect(-5, -2.5, 10, 5);
-      else if (st.id === 'slots' || st.id === 'poker' || st.id === 'crash') mg.rect(-3.5, -3.5, 7, 7);
-      else { mg.arc(0, 0, 7.5, 0, Math.PI); mg.closePath(); }   // the half-moon card tables
-      mg.fill();
-      if (k === here) { mg.strokeStyle = '#fff'; mg.lineWidth = 1.5; mg.stroke(); }
-      mg.restore();
-    });
-    // You: a dot and the way you're looking
-    const [cx, cz] = toMap(camera.position.x, camera.position.z);
-    const ang = Math.atan2(look.z - camera.position.z, look.x - camera.position.x);
-    const g = mg.createRadialGradient(cx, cz, 0, cx, cz, 22);
-    g.addColorStop(0, 'rgba(233, 196, 106, .55)');
-    g.addColorStop(1, 'rgba(233, 196, 106, 0)');
-    mg.fillStyle = g;
-    mg.beginPath();
-    mg.moveTo(cx, cz);
-    mg.arc(cx, cz, 22, ang - 0.45, ang + 0.45);
-    mg.closePath();
-    mg.fill();
-    mg.fillStyle = '#e9c46a';
-    mg.strokeStyle = '#2a1d05';
-    mg.lineWidth = 1.5;
-    mg.beginPath();
-    mg.arc(cx, cz, 4, 0, TAU);
-    mg.fill();
-    mg.stroke();
-  }
-  function onMapTap(e) {
-    if (busy) return;
-    const r = map.getBoundingClientRect();
-    const x = e.clientX - r.left, y = e.clientY - r.top;
-    let best = -1, bd = Infinity;
-    STATIONS.forEach((st, k) => {
-      const [mx, mz] = toMap(st.pos[0], st.pos[1]);
-      const d = Math.hypot(mx - x, mz - y);
-      if (d < bd) { bd = d; best = k; }
-    });
-    if (best >= 0) { buzz(5); go(best); }
-    e.stopPropagation();
-  }
-  map.addEventListener('pointerup', onMapTap);
 
   // ---- Moving along the floor ----
   let here = -1;
@@ -1845,7 +1772,9 @@ export async function mount({ stage, controls, info, casino }) {
     const st = STATIONS[k];
     prevBtn.disabled = k === 0;
     nextBtn.disabled = k === LAST;
-    sitBtn.textContent = locked() ? 'Sign in to play' : st.id === 'cashier' && bonusCoin && bonusCoin.visible ? 'Collect $1,000' : st.id === 'slots' ? 'Pick a machine' : `Sit at ${st.name}`;
+    sitBtn.textContent = locked() ? 'Sign in to play' : st.id === 'cashier' ? (bonusCoin && bonusCoin.visible ? 'Collect $1,000' : 'Open') : 'Play';
+    sitBtn.setAttribute('aria-label', locked() ? 'Sign in to play' : st.id === 'cashier' ? sitBtn.textContent + ' at the cashier' : `Play ${st.name}`);
+    dots.forEach((d, i) => { d.classList.toggle('on', i === k); d.setAttribute('aria-current', i === k ? 'true' : 'false'); });
   }
   let glide = null;
   /* After a swipe the camera settles on the nearest station with a spring that starts at the
@@ -2038,7 +1967,7 @@ export async function mount({ stage, controls, info, casino }) {
   const sitBtn = button('Sit down', sit, 'primary');
   prevBtn.setAttribute('aria-label', 'Previous station');
   nextBtn.setAttribute('aria-label', 'Next station');
-  prevBtn.style.flex = nextBtn.style.flex = '0 0 64px';
+  prevBtn.style.flex = nextBtn.style.flex = '0 0 auto';
   controls.textContent = '';
   controls.append(prevBtn, sitBtn, nextBtn);
 
@@ -2091,7 +2020,6 @@ export async function mount({ stage, controls, info, casino }) {
     settle(dt);
     pose();
     renderer.render(scene, camera);
-    drawMap();
   }
   const start = casino.start;
   const at = start ? STATIONS.findIndex(st => st.id === start.at) : -1;
