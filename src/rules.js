@@ -164,8 +164,8 @@ export function applyIntent(T, uid, m, ctx) {
     }
     case 'bet': {
       if (seat < 0 || T.phase !== 'betting') return;
-      let a = Math.floor((Number(m.a) || 0) / 5) * 5;
-      a = Math.max(0, Math.min(a, Math.floor(P.bank / 5) * 5));
+      let a = Math.floor(Number(m.a) || 0);
+      a = Math.max(0, Math.min(a, Math.floor(P.bank)));
       P.bet = a;
       P.status = 'betting';
       return;
@@ -349,7 +349,7 @@ export function finish(T, ctx, how) {
     if (P.leaving) { T.seats[s] = null; P.leaving = false; P.status = 'betting'; cashOut(P); continue; }
     P.status = 'betting';
     if (uid in R.start) P.bet = 0;   // every round starts with no bet; Rebet brings back lastBet
-    else P.bet = Math.min(P.bet, Math.floor(P.bank / 5) * 5);
+    else P.bet = Math.min(P.bet, Math.floor(P.bank));
   }
 }
 

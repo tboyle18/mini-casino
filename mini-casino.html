@@ -3510,8 +3510,8 @@ function leaveSeat() {
 function setBet(nb, covered) {
   const T = app.T, P = myP();
   if (!T || !P || T.phase !== 'betting' || mySeat() < 0) return;
-  nb = Math.max(0, Math.floor(nb / 5) * 5);
-  if (!covered) nb = Math.min(nb, Math.floor((P.bank + (app.solo && wallet.ready ? wallet.balance : 0)) / 5) * 5);   // solo bets come straight from the wallet
+  nb = Math.max(0, Math.floor(nb));
+  if (!covered) nb = Math.min(nb, Math.floor(P.bank + (app.solo && wallet.ready ? wallet.balance : 0)));   // solo bets come straight from the wallet
   if (nb === viewBet()) return;
   const s = send({ t: 'bet', a: nb });
   if (s) app.opt = { s, bet: nb, status: 'betting' };
