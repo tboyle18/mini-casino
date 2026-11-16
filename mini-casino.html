@@ -584,6 +584,9 @@
   }
   .fl-btn:active { transform: scale(.94); }
   .fl-btn svg { width: 24px; height: 24px; }
+  /* All games: the grid icon with its name beside it, so it reads as the way to every game */
+  .fl-btn.fl-wide { display: inline-flex; gap: 8px; width: auto; padding: 0 16px 0 13px; border-radius: 14px; font: 800 13px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+  .fl-btn.fl-wide svg { width: 20px; height: 20px; }
   .fl-to2d { margin-top: 6px; }
   .fl-to2d .sl-icon { font: 800 15px/1 var(--font-display); color: #f0e6d0; background: rgba(240, 230, 208, .12); }
   .fl-av { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(#f6eedc, #ddcfae); color: #2b2418; font: 800 17px/1 var(--font-display); }
@@ -747,6 +750,7 @@
   html.floor .appbar .bar-right { pointer-events: auto; }
   html.floor .appbar .balance-label, html.floor .appbar .balance-amt { text-shadow: 0 1px 2px rgba(0, 0, 0, .9), 0 0 12px rgba(0, 0, 0, .7); }
   html.floor .appbar .balance-label { color: rgba(245, 240, 227, .8); }
+  html.floor .appbar .bl-x { display: none; }   /* just "Wallet", leaving room for the buttons on the left */
   html.floor .appbar .balance-amt { color: var(--fl-ink); }
   html.floor #floor-view .ag-controls .lab-btn { color: var(--fl-ink); }
   html.floor #floor-view .ag-controls .lab-btn.fl-arrow { flex: none; width: 54px; min-width: 54px; height: 54px; min-height: 54px; padding: 0; align-self: center; border-radius: 50%;
@@ -993,6 +997,24 @@
   .felt.three .msg:has(.title:not(:empty)) { padding: 8px 18px 10px; border-radius: 14px; background: rgba(8, 22, 15, .92); box-shadow: 0 6px 20px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(240, 230, 208, .14); }
   .felt.three.betting .msg { visibility: hidden; }
   .felt.three.t3-deal .msg, .felt.three.t3-deal .t3-labels { visibility: hidden; }
+  /* The 3D solo table runs edge to edge: the top strip and the controls float over it, see-through,
+     and lab/table.js frames the table into the open space between them (setInset) */
+  html.bj3 .appbar { position: fixed; top: 0; left: 0; right: 0; margin: 0; padding: var(--safe-top) var(--gr) 10px var(--gl); background: linear-gradient(rgba(8, 6, 4, .6), rgba(8, 6, 4, 0)); }
+  html.bj3 .appbar .back, html.bj3 .appbar .bar-title, html.bj3 .appbar .barbtn { text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+  html.bj3 #game { position: relative; }
+  html.bj3 .felt.three { margin: 0 calc(-1 * var(--gr)) 0 calc(-1 * var(--gl)); padding-top: calc(var(--safe-top) + var(--bar-h) + 8px); }
+  html.bj3 #table-view .dock {
+    position: absolute; left: 0; right: 0; bottom: 0; gap: 8px; padding-top: 30px;
+    background: linear-gradient(rgba(8, 6, 4, 0), rgba(8, 6, 4, .62) 34%, rgba(8, 6, 4, .8));
+    border: 0; border-radius: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  html.bj3 #table-view .dock-top { min-height: 26px; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+  html.bj3 #table-view .panels { min-height: 0; }
+  html.bj3 #bj-spot { display: none; }
+  html.bj3 #table-view .bet-row .btn { min-height: 50px; font-size: 17px; }
+  html.bj3 #table-view .play-small .btn { min-height: 40px; font-size: 15px; }
+  html.bj3 #table-view .play-big .btn { min-height: 60px; font-size: 21px; }
+  html.bj3 #table-view .row .btn:not(.hit):not(.stand):not(.primary) { background: rgba(10, 8, 6, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   .felt.t3-wait { background: radial-gradient(ellipse 150% 110% at 50% 18%, #145c3c 0%, #0b4029 60%, #062a1b 100%); }
   .felt.t3-wait > .mid { visibility: hidden; }
   /* The in-play cards: HTML cards placed on the 3D table by three.js (lab/table.js) */
@@ -1669,7 +1691,7 @@
           <button class="barbtn hint" id="hint-toggle" aria-pressed="false" title="Highlight the basic-strategy move">Hints</button>
         </span>
         <button class="balance" id="balance-btn" title="When your next $1,000 arrives">
-          <span class="balance-label">Your wallet balance</span>
+          <span class="balance-label"><span class="bl-x">Your </span>wallet<span class="bl-x"> balance</span></span>
           <span class="balance-amt" id="wallet-amt">—</span>
         </button>
       </div>
@@ -1733,7 +1755,7 @@
     <div class="ag-stage" id="fl-stage"><div class="hud fl-hud">
       <div class="fl-btns">
         <button class="fl-btn" id="fl-acct" aria-label="Your account"><span class="fl-av" id="fl-av"></span></button>
-        <button class="fl-btn" id="fl-go" aria-label="All games, or switch to 2D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg></button>
+        <button class="fl-btn fl-wide" id="fl-go" aria-label="All games, or switch to 2D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg><span>All games</span></button>
         <button class="fl-btn" id="fl-lb" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11M12 13v4M8.5 20h7M9.5 17h5v3h-5z"/></svg></button>
       </div>
       <button class="fl-all fl-undo" id="fl-undo" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg><span></span></button>
@@ -7637,6 +7659,8 @@ function renderTable() {
   ui.felt.classList.toggle('three', three);
   ui.felt.classList.toggle('t3-wait', three && !bj3d.inst);
   ui.felt.classList.toggle('betting', T.phase === 'betting' && !(R && R.over));
+  document.documentElement.classList.toggle('bj3', three && app.view === 'table');
+  if (three && bj3d.inst) bj3Inset();
   if (three && bj3d.inst) {
     // The result waits until the 3D cards that decide it have landed, so it never shows early
     const view = bj3dView(T, R);
@@ -7677,7 +7701,25 @@ async function bj3dEnsure() {
     bj3d.loading = false;
   }
 }
+/* Tell the 3D table how much of it the see-through controls cover. The bottom
+   keeps the tallest the controls have been, so the table doesn't shift between betting and play. */
+function bj3Inset() {
+  if (!bj3d.inst || !bj3d.inst.setInset) return;
+  const f = ui.felt.getBoundingClientRect();
+  if (!f.height) return;
+  const dock = ui.felt.parentElement.querySelector('.dock');
+  const key = Math.round(f.width) + 'x' + Math.round(f.height);
+  if (bj3d.padKey !== key) { bj3d.padKey = key; bj3d.padB = 0; }
+  if (dock) bj3d.padB = Math.max(bj3d.padB || 0, f.bottom - dock.getBoundingClientRect().top - 24);
+  // The table rises under the see-through top strip (a little extra at the bottom lifts it), so
+  // the felt reaches the top of the screen instead of the dark room behind the table
+  bj3d.inst.setInset(0, bj3d.padB + f.height * 0.09);
+  if (!bj3d.ro && typeof ResizeObserver === 'function' && dock) { bj3d.ro = new ResizeObserver(() => bj3Inset()); bj3d.ro.observe(dock); bj3d.ro.observe(ui.felt); }
+}
 function bj3dDrop() {
+  document.documentElement.classList.remove('bj3');
+  if (bj3d.ro) { bj3d.ro.disconnect(); bj3d.ro = null; }
+  bj3d.padKey = '';
   ui.felt.classList.remove('three', 't3-wait', 't3-deal');
   clearTimeout(bj3d.dealTimer);
   if (!bj3d.inst) return;
@@ -7909,7 +7951,7 @@ function renderControls(T, R, ctx) {
     ui.bjSpot.disabled = ready || broke;
     ui.bjSpot.querySelector('.bc-amt').textContent = money(bet);
     ui.bjSpotHint.textContent = broke ? 'Your wallet is empty' : ready ? 'Locked in' : 'Tap chips to bet';
-    ui.betAmt.innerHTML = '';
+    ui.betAmt.innerHTML = app.solo && !bj3d.off && bet ? `Bet<b>${money(bet)}</b>` : '';
     // Undo and Clear while chips are down
     ui.bjUndo.hidden = ui.clear.hidden = !bet;
     ui.bjUndo.disabled = ready || !app.bjHist.length;
@@ -7921,7 +7963,7 @@ function renderControls(T, R, ctx) {
     ui.ready.disabled = bet < MIN_BET && !ready && !canRebet;
     ui.ready.classList.toggle('pressed', ready);
     const again = !bet && canRebet ? ` again · ${money(P.lastBet)}` : '';
-    const go = app.solo ? `Deal${again}` : ready ? 'Not ready' : `Ready${again}`;
+    const go = app.solo ? (bet ? `Deal ${money(bet)}` : `Deal${again}`) : ready ? 'Not ready' : `Ready${again}`;
     ui.ready.innerHTML = `${go} <kbd>Space</kbd>`;
     ui.rebuy.hidden = true;
     paintLow(ui.bjLow, broke);

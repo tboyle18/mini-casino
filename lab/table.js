@@ -251,8 +251,15 @@ function buildTable(stage, opts = {}) {
   const camera = new THREE.PerspectiveCamera(42, 1, 0.02, 20);
   /* From the player's seat: halfW is how much of the table's width (each side of the middle)
      must fit, and halfD how much of its depth; target is the point in the middle of the view. */
-  function seatView({ halfW = 0.205, halfD = 0, target = new THREE.Vector3(0, 0.03, 0.02), dir = new THREE.Vector3(0, 0.78, 0.68), min = 0.8 } = {}) {
+  function seatView({ halfW = 0.205, halfD = 0, target = new THREE.Vector3(0, 0.03, 0.02), dir = new THREE.Vector3(0, 0.78, 0.68), min = 0.8, inset = null } = {}) {
     fitRenderer(renderer, camera, stage);
+    /* inset {top, bottom}: pixels of the canvas covered by see-through page bars. The table is
+       framed into the open part between them, and the canvas still draws under the bars. */
+    const W = stage.clientWidth || 1, H = stage.clientHeight || 1;
+    const top = inset ? Math.max(0, inset.top) : 0, open = inset ? Math.max(H * 0.4, H - top - Math.max(0, inset.bottom)) : H;
+    if (inset) { camera.aspect = W / open; camera.setViewOffset(W, open, 0, -top, W, H); }
+    else { camera.aspect = W / H; camera.clearViewOffset(); }
+    camera.updateProjectionMatrix();
     const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     const dist = Math.max(min, halfW / (t * camera.aspect), halfD / t);
     camera.position.copy(target).add(dir.clone().normalize().multiplyScalar(dist));
@@ -493,7 +500,7 @@ export async function mountCasinoTable(container, opts = {}) {
     raf = 0;
     if (disposed) return;
     governor.tick(now);
-    const key = container.clientWidth + 'x' + container.clientHeight + ':' + spread + ':' + renderer.getPixelRatio();
+    const key = container.clientWidth + 'x' + container.clientHeight + ':' + spread + ':' + renderer.getPixelRatio() + ':' + (inset ? inset.top + ',' + inset.bottom : '');
     if (key !== viewKey) { viewKey = key; frameCamera(); if (cssRenderer) cssRenderer.setSize(container.clientWidth, container.clientHeight); }
     renderer.render(scene, camera);
     drawHTML();
@@ -503,9 +510,10 @@ export async function mountCasinoTable(container, opts = {}) {
     else governor.idle();
   }
   let spread = 1;   // how many hands across the view must fit
+  let inset = null;  // page bars over the canvas, set by the page (setInset)
   function frameCamera() {
     const wide = spread > 2 ? 0.36 : spread > 1 ? 0.27 : 0.2;
-    B.seatView({ halfW: wide, halfD: 0.35, target: new THREE.Vector3(0, 0.03, 0), dir: new THREE.Vector3(0, 0.92, 0.58), min: 0.5 });
+    B.seatView({ halfW: wide, halfD: 0.35, target: new THREE.Vector3(0, 0.03, 0), dir: new THREE.Vector3(0, 0.92, 0.58), min: 0.5, inset });
   }
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => kick(200)) : null;
   if (ro) ro.observe(container);
@@ -761,6 +769,13 @@ export async function mountCasinoTable(container, opts = {}) {
   kick(300);
   return {
     update,
+    // The page's see-through bars cover this much of the canvas (px); frame the table between them
+    setInset(top, bottom) {
+      const t = Math.round(top || 0), b = Math.round(bottom || 0);
+      if (inset && inset.top === t && inset.bottom === b) return;
+      inset = t || b ? { top: t, bottom: b } : null;
+      kick(200);
+    },
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
