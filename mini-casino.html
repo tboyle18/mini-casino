@@ -1015,6 +1015,18 @@
   html.bj3 #table-view .play-small .btn { min-height: 40px; font-size: 15px; }
   html.bj3 #table-view .play-big .btn { min-height: 60px; font-size: 21px; }
   html.bj3 #table-view .row .btn:not(.hit):not(.stand):not(.primary) { background: rgba(10, 8, 6, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  /* The camera button: tap to cycle the 3D table's views (Table, Cards, Seat) */
+  .t3-cam { display: none; }
+  html.bj3 .t3-cam:not([hidden]) {
+    position: absolute; z-index: 4; right: calc(var(--gr) - 4px); top: calc(var(--safe-top) + var(--bar-h) + 8px);
+    display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 12px 0 10px;
+    appearance: none; border: 0; border-radius: 12px; cursor: pointer; color: #f0e6d0;
+    background: rgba(10, 8, 6, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    box-shadow: inset 0 0 0 1px rgba(240, 230, 208, .3), 0 4px 14px rgba(0, 0, 0, .35);
+    font: 800 12px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase;
+  }
+  html.bj3 .t3-cam svg { width: 20px; height: 20px; }
+  html.bj3 .t3-cam:active { transform: scale(.95); }
   .felt.t3-wait { background: radial-gradient(ellipse 150% 110% at 50% 18%, #145c3c 0%, #0b4029 60%, #062a1b 100%); }
   .felt.t3-wait > .mid { visibility: hidden; }
   /* The in-play cards: HTML cards placed on the 3D table by three.js (lab/table.js) */
@@ -2738,6 +2750,7 @@
       <button class="btn" id="t-email">Sign in</button>
     </div>
     <div id="game">
+      <button class="t3-cam" id="t3-cam" hidden aria-label="Change the camera view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3v10H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg><span id="t3-cam-name">Table</span></button>
       <div class="felt" id="felt">
         <div class="tray" aria-hidden="true"><i style="--c:#c8303c"></i><i style="--c:#2f6fd0"></i><i style="--c:#2a2c32"></i><i style="--c:#7a3fb8"></i><i style="--c:#d9822b"></i><i style="--c:#1f8a8a"></i><i style="--c:#c8303c"></i><i style="--c:#2f6fd0"></i></div>
         <div class="shoe" id="shoe" aria-hidden="true"><div class="cardback"></div><div class="cardback"></div></div>
@@ -3083,7 +3096,7 @@ const ui = {
   betPanel: $('bet-panel'), insPanel: $('ins-panel'), playPanel: $('play-panel'), infoPanel: $('info-panel'),
   walletCard: $('wallet-card'), wcArt: $('wc-art'), wcFly: $('wc-fly'), tickerTrack: $('ticker-track'), lbw: $('lbw'), lbwList: $('lbw-list'), lbwMe: $('lbw-me'),
   bjChips: $('bj-chips'), bjLow: $('bj-low'), bjSpot: $('bj-spot'), bjSpotHint: $('bj-spot-hint'), bjUndo: $('bj-undo'),
-  clear: $('clear-btn'), betAmt: $('bet-amt'),
+  clear: $('clear-btn'), betAmt: $('bet-amt'), t3Cam: $('t3-cam'), t3CamName: $('t3-cam-name'),
   out: $('out-btn'), ready: $('ready-btn'), rebuy: $('rebuy-btn'),
   insText: $('ins-text'), insYes: $('ins-yes'), insNo: $('ins-no'),
   playNote: $('play-note'), hit: $('hit-btn'), stand: $('stand-btn'), dbl: $('double-btn'), split: $('split-btn'),
@@ -7661,6 +7674,7 @@ function renderTable() {
   ui.felt.classList.toggle('betting', T.phase === 'betting' && !(R && R.over));
   document.documentElement.classList.toggle('bj3', three && app.view === 'table');
   if (three && bj3d.inst) bj3Inset();
+  ui.t3Cam.hidden = !(three && bj3d.inst && bj3d.inst.setView);
   if (three && bj3d.inst) {
     // The result waits until the 3D cards that decide it have landed, so it never shows early
     const view = bj3dView(T, R);
@@ -7692,7 +7706,7 @@ async function bj3dEnsure() {
     // Cards are the 2D game's own HTML cards, laid on the 3D table so they stay sharp
     const inst = await table.mountCasinoTable(ui.felt, { cardHTML: c => ({ html: faceHTML(c), red: 'HD'.includes(suitOf(c)), ace: rankOf(c) === 'A' }) });
     if (app.view !== 'table' || !app.solo) inst.dispose();
-    else { bj3d.inst = inst; render(); }
+    else { bj3d.inst = inst; bj3CamSet(bj3CamGet(), true); render(); }
   } catch (e) {
     if (staleReload(e)) return;   // an update went out while the app was open
     bj3d.off = true;
@@ -7700,6 +7714,16 @@ async function bj3dEnsure() {
   } finally {
     bj3d.loading = false;
   }
+}
+/* The camera button cycles the 3D table's views; the one you picked is remembered */
+const CAM_KEY = 'mini-casino.bjCam', CAM_VIEWS = ['table', 'cards', 'seat'], CAM_NAMES = { table: 'Table', cards: 'Cards', seat: 'Seat' };
+function bj3CamGet() { try { const v = localStorage.getItem(CAM_KEY); return CAM_VIEWS.includes(v) ? v : 'table'; } catch (e) { return 'table'; } }
+function bj3CamSet(v, quiet) {
+  if (!CAM_VIEWS.includes(v)) v = 'table';
+  try { localStorage.setItem(CAM_KEY, v); } catch (e) { /* storage unavailable */ }
+  ui.t3CamName.textContent = CAM_NAMES[v];
+  if (bj3d.inst && bj3d.inst.setView) bj3d.inst.setView(v);
+  if (!quiet) buzz(5);
 }
 /* Tell the 3D table how much of it the see-through controls cover. The bottom
    keeps the tallest the controls have been, so the table doesn't shift between betting and play. */
@@ -8148,6 +8172,7 @@ ui.shareBtn.addEventListener('click', async () => {
 buildChipRail(ui.bjChips, bjChip);
 ui.bjUndo.addEventListener('click', bjUndo);
 ui.clear.addEventListener('click', clearBet);
+ui.t3Cam.addEventListener('click', () => bj3CamSet(CAM_VIEWS[(CAM_VIEWS.indexOf(bj3CamGet()) + 1) % CAM_VIEWS.length]));
 ui.ready.addEventListener('click', toggleReady);
 ui.out.addEventListener('click', sitOut);
 ui.rebuy.addEventListener('click', rebuy);

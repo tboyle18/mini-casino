@@ -511,9 +511,39 @@ export async function mountCasinoTable(container, opts = {}) {
   }
   let spread = 1;   // how many hands across the view must fit
   let inset = null;  // page bars over the canvas, set by the page (setInset)
-  function frameCamera() {
+  /* Camera views, cycled by the page's camera button:
+       table  the whole table from above your seat (the default)
+       cards  looking almost straight down, close on the dealer's cards and yours
+       seat   low and close, the way you'd see it sitting at the table */
+  let viewName = 'table';
+  function viewSpec(name) {
     const wide = spread > 2 ? 0.36 : spread > 1 ? 0.27 : 0.2;
-    B.seatView({ halfW: wide, halfD: 0.35, target: new THREE.Vector3(0, 0.03, 0), dir: new THREE.Vector3(0, 0.92, 0.58), min: 0.5, inset });
+    if (name === 'cards') return { halfW: wide * 0.85, halfD: 0.31, target: new THREE.Vector3(0, 0.03, -0.12), dir: new THREE.Vector3(0, 1, 0.16), min: 0.35, inset };
+    if (name === 'seat') return { halfW: wide * 0.9, halfD: 0, target: new THREE.Vector3(0, 0.03, -0.05), dir: new THREE.Vector3(0, 0.52, 0.85), min: 0.42, inset };
+    return { halfW: wide, halfD: 0.35, target: new THREE.Vector3(0, 0.03, 0), dir: new THREE.Vector3(0, 0.92, 0.58), min: 0.5, inset };
+  }
+  let camTween = null;
+  function frameCamera() {
+    if (camTween) { camTween.kill(); camTween = null; }
+    B.seatView(viewSpec(viewName));
+  }
+  // Glide to another view: work out where the camera ends up, then ease there from where it is
+  function setView(name) {
+    if (!['table', 'cards', 'seat'].includes(name) || name === viewName) return;
+    viewName = name;
+    if (!viewKey) return;   // not drawn yet: the first frame frames it
+    const fromP = camera.position.clone(), fromQ = camera.quaternion.clone();
+    if (camTween) { camTween.kill(); camTween = null; }
+    B.seatView(viewSpec(name));
+    const toP = camera.position.clone(), toQ = camera.quaternion.clone();
+    camera.position.copy(fromP); camera.quaternion.copy(fromQ);
+    const k = { t: 0 };
+    camTween = gsap.to(k, {
+      t: 1, duration: 0.7, ease: 'power2.inOut',
+      onUpdate() { camera.position.lerpVectors(fromP, toP, k.t); camera.quaternion.slerpQuaternions(fromQ, toQ, k.t); },
+      onComplete() { camTween = null; },
+    });
+    kick(900);
   }
   const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => kick(200)) : null;
   if (ro) ro.observe(container);
@@ -769,6 +799,7 @@ export async function mountCasinoTable(container, opts = {}) {
   kick(300);
   return {
     update,
+    setView,
     // The page's see-through bars cover this much of the canvas (px); frame the table between them
     setInset(top, bottom) {
       const t = Math.round(top || 0), b = Math.round(bottom || 0);
