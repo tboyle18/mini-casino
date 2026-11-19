@@ -251,8 +251,9 @@ function buildTable(stage, opts = {}) {
   const camera = new THREE.PerspectiveCamera(42, 1, 0.02, 20);
   /* From the player's seat: halfW is how much of the table's width (each side of the middle)
      must fit, and halfD how much of its depth; target is the point in the middle of the view. */
-  function seatView({ halfW = 0.205, halfD = 0, target = new THREE.Vector3(0, 0.03, 0.02), dir = new THREE.Vector3(0, 0.78, 0.68), min = 0.8, inset = null } = {}) {
+  function seatView({ halfW = 0.205, halfD = 0, target = new THREE.Vector3(0, 0.03, 0.02), dir = new THREE.Vector3(0, 0.78, 0.68), min = 0.8, inset = null, fov = 42 } = {}) {
     fitRenderer(renderer, camera, stage);
+    camera.fov = fov;   // a lens per view: wider for the seat
     /* inset {top, bottom}: pixels of the canvas covered by see-through page bars. The table is
        framed into the open part between them, and the canvas still draws under the bars. */
     const W = stage.clientWidth || 1, H = stage.clientHeight || 1;
@@ -519,8 +520,10 @@ export async function mountCasinoTable(container, opts = {}) {
   function viewSpec(name) {
     const wide = spread > 2 ? 0.36 : spread > 1 ? 0.27 : 0.2;
     if (name === 'cards') return { halfW: wide * 0.85, halfD: 0.31, target: new THREE.Vector3(0, 0.03, -0.12), dir: new THREE.Vector3(0, 1, 0.16), min: 0.35, inset };
-    if (name === 'seat') return { halfW: wide * 0.9, halfD: 0, target: new THREE.Vector3(0, 0.03, -0.05), dir: new THREE.Vector3(0, 0.52, 0.85), min: 0.42, inset };
-    return { halfW: wide, halfD: 0.35, target: new THREE.Vector3(0, 0.03, 0), dir: new THREE.Vector3(0, 0.92, 0.58), min: 0.5, inset };
+    // the seat: a wide-angle lens, low behind your spot, so the rail and the table around you show
+    if (name === 'seat') return { halfW: Math.max(wide, 0.3), halfD: 0, target: new THREE.Vector3(0, 0.03, 0.03), dir: new THREE.Vector3(0, 0.62, 0.79), min: 0.3, fov: 60, inset };
+    // the table: pulled back to show most of it, the felt still filling the screen
+    return { halfW: Math.max(wide, 0.3), halfD: 0, target: new THREE.Vector3(0, 0.03, 0.02), dir: new THREE.Vector3(0, 0.9, 0.6), min: 0.5, inset };
   }
   let camTween = null;
   function frameCamera() {
@@ -532,15 +535,18 @@ export async function mountCasinoTable(container, opts = {}) {
     if (!['table', 'cards', 'seat'].includes(name) || name === viewName) return;
     viewName = name;
     if (!viewKey) return;   // not drawn yet: the first frame frames it
-    const fromP = camera.position.clone(), fromQ = camera.quaternion.clone();
+    const fromP = camera.position.clone(), fromQ = camera.quaternion.clone(), fromF = camera.fov;
     if (camTween) { camTween.kill(); camTween = null; }
     B.seatView(viewSpec(name));
-    const toP = camera.position.clone(), toQ = camera.quaternion.clone();
-    camera.position.copy(fromP); camera.quaternion.copy(fromQ);
+    const toP = camera.position.clone(), toQ = camera.quaternion.clone(), toF = camera.fov;
+    camera.position.copy(fromP); camera.quaternion.copy(fromQ); camera.fov = fromF; camera.updateProjectionMatrix();
     const k = { t: 0 };
     camTween = gsap.to(k, {
       t: 1, duration: 0.7, ease: 'power2.inOut',
-      onUpdate() { camera.position.lerpVectors(fromP, toP, k.t); camera.quaternion.slerpQuaternions(fromQ, toQ, k.t); },
+      onUpdate() {
+        camera.position.lerpVectors(fromP, toP, k.t); camera.quaternion.slerpQuaternions(fromQ, toQ, k.t);
+        if (fromF !== toF) { camera.fov = fromF + (toF - fromF) * k.t; camera.updateProjectionMatrix(); }
+      },
       onComplete() { camTween = null; },
     });
     kick(900);
