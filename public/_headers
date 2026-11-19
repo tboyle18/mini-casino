@@ -10,3 +10,8 @@
 # The lab's code chunks are named by their content: they never change, so browsers keep them.
 /lab/chunks/*
   Cache-Control: public, max-age=31536000, immutable
+
+# The admin dashboard stays out of search engines
+/admin.html
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache

@@ -28,6 +28,7 @@ import { play, roundsView, PlayError } from './play.js';
 import { loadWallet, withWallet, leaderboard, recentWins, rollWeek, DAILY_BONUS } from './wallet.js';
 import { note } from './play.js';
 import { adsConfig, adOffer, adClaim, undosLeft } from './ads.js';
+import { isAdmin, adminStats } from './admin.js';
 
 export { TableRoom };
 
@@ -51,6 +52,7 @@ export default {
       if (url.pathname === '/api/leaderboard') return await boardRoute(request, env, url);
       if (url.pathname === '/api/ads' || url.pathname.startsWith('/api/ads/')) return await adsRoute(request, env, url);
       if (url.pathname === '/api/feed') return await feedRoute(request, env, url);
+      if (url.pathname === '/api/admin') return await adminRoute(request, env, url);
       if (url.pathname === '/api/rooms') return await createRoom(request, env, url);
       const room = url.pathname.match(/^\/api\/rooms\/([a-z0-9]{4,12})(\/ws)?$/);
       if (room) return await roomRoute(request, env, url, room[1], !!room[2]);
@@ -375,6 +377,16 @@ async function feedRoute(request, env, url) {
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
   const sql = neon(env.DATABASE_URL);
   return json({ wins: await recentWins(sql, Date.now(), env.DEV_AUTH === '1') });
+}
+
+// The admin dashboard (public/admin.html): admins only (src/admin.js), never cached
+async function adminRoute(request, env, url) {
+  if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405);
+  const user = await currentUser(request, env, url);
+  if (!user) return json({ error: 'signed_out' }, 401);
+  const sql = neon(env.DATABASE_URL);
+  if (!(await isAdmin(sql, env, user))) return json({ error: 'forbidden' }, 403);
+  return json(await adminStats(sql, Date.now(), env.DEV_AUTH === '1'));   // json() is never cached
 }
 
 async function boardRoute(request, env, url) {

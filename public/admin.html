@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b0907">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<title>Admin · Mini Casino</title>
+<style>
+  @font-face { font-family: "Manrope"; src: url("/fonts/manrope.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+  :root {
+    color-scheme: dark;
+    --bg: #0b0907; --card: #17120d; --card-2: #201911; --line: rgba(240, 230, 208, .12);
+    --ink: #f5f0e3; --ink-2: rgba(245, 240, 227, .74); --ink-3: rgba(245, 240, 227, .5);
+    --gold: #e9c46a; --bar: #c9a24e; --up: #6fd39a; --down: #ff8a8a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; font-variant-numeric: tabular-nums; }
+  main { max-width: 960px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+  header .when { margin-left: auto; color: var(--ink-3); font-size: 13px; text-align: right; }
+  .btn { appearance: none; border: 1px solid var(--line); background: var(--card-2); color: var(--ink); border-radius: 10px; padding: 8px 12px; font: 700 14px/1 inherit; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:active { transform: scale(.97); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-3); margin: 24px 0 8px; font-weight: 800; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+  .tile .k { color: var(--ink-3); font-size: 12px; font-weight: 700; }
+  .tile .v { font-size: 24px; font-weight: 800; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile .s { color: var(--ink-2); font-size: 12px; margin-top: 2px; }
+  .up { color: var(--up); } .down { color: var(--down); }
+  .grid2 { display: grid; grid-template-columns: 1fr; gap: 0 16px; }
+  @media (min-width: 760px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 9px 12px; text-align: left; border-top: 1px solid var(--line); white-space: nowrap; }
+  thead th { border-top: 0; color: var(--ink-3); font-size: 12px; font-weight: 700; background: var(--card-2); }
+  td.n, th.n { text-align: right; }
+  td.name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .tag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--ink-3); border: 1px solid var(--line); vertical-align: 1px; }
+  td.gcell { width: 100%; white-space: normal; }
+  .bar { height: 4px; margin-top: 5px; border-radius: 0 4px 4px 0; background: var(--bar); min-width: 3px; }
+  @media (max-width: 420px) { th, td { padding: 9px 10px; } }
+  .empty { padding: 14px; color: var(--ink-3); }
+  .note { color: var(--ink-3); font-size: 12px; margin: 8px 2px 0; }
+  .msg { margin: 18vh auto 0; max-width: 360px; text-align: center; color: var(--ink-2); }
+  .msg h1 { color: var(--ink); font-size: 22px; }
+</style>
+</head>
+<body>
+<main id="app"><p class="msg">Loading…</p></main>
+<script>
+const $app = document.getElementById('app');
+const money = n => (n < 0 ? '−$' : '$') + Math.abs(n).toLocaleString('en-US', n % 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 0 });
+const num = n => Number(n || 0).toLocaleString('en-US');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ago = ms => { const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'just now' : m < 60 ? m + 'm ago' : m < 1440 ? Math.round(m / 60) + 'h ago' : Math.round(m / 1440) + 'd ago'; };
+// The players' net: their loss is the house's gain, shown from the house's side
+const house = n => `<span class="${-n >= 0 ? 'up' : 'down'}">${money(-n)}</span>`;
+const tile = (k, v, s = '') => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+
+function render(d) {
+  const p = d.players, m = d.money, g = d.play;
+  const maxRounds = Math.max(1, ...g.games.map(x => x.rounds));
+  $app.innerHTML = `
+    <header>
+      <a class="btn" href="/" aria-label="Back to the casino">‹ Casino</a>
+      <h1>Admin</h1>
+      <div class="when">Updated ${new Date(d.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}<br><button class="btn" id="refresh" style="margin-top:4px">Refresh</button></div>
+    </header>
+
+    <h2>Players</h2>
+    <div class="tiles">
+      ${tile('Accounts', num(p.accounts), `${num(p.verified)} verified email`)}
+      ${tile('New accounts', num(p.newToday), `today · ${num(p.newWeek)} this week`)}
+      ${tile('Guests', num(p.guests), 'playing without an account')}
+      ${tile('Active, 24h', num(p.active24h), `${num(p.active7d)} in the last 7 days`)}
+    </div>
+
+    <h2>Play</h2>
+    <div class="tiles">
+      ${tile('Rounds, 24h', num(g.rounds24h), `${num(g.rounds7d)} in 7 days`)}
+      ${tile('House, 24h', house(g.net24h), 'what players lost overall')}
+      ${tile('House, 7 days', house(g.net7d), 'before daily bonuses')}
+      ${tile('Daily bonuses', num(m.bonusesToday), `claimed today · ${money(m.bonusWeek)} this week`)}
+    </div>
+
+    <h2>Money in wallets</h2>
+    <div class="tiles">
+      ${tile('Total', money(m.total), `${money(m.average)} average`)}
+      ${tile('Accounts', money(m.accounts))}
+      ${tile('Guests', money(m.guests))}
+      ${tile('Ad undos today', num(m.adUndosToday), 'win-back-your-loss')}
+    </div>
+
+    <h2>Games, last 7 days</h2>
+    <div class="card">${g.games.length ? `<table>
+      <thead><tr><th>Game</th><th class="n">Rounds</th><th class="n">Players</th><th class="n">House</th></tr></thead>
+      <tbody>${g.games.map(x => `<tr><td class="gcell">${esc(x.game)}<div class="bar" aria-hidden="true" style="width:${(x.rounds / maxRounds * 100).toFixed(1)}%"></div></td><td class="n">${num(x.rounds)}</td>
+        <td class="n">${num(x.players)}</td><td class="n">${house(Math.round(x.net))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No rounds in the last 7 days.</div>'}</div>
+
+    <div class="grid2">
+      <div>
+        <h2>Top balances</h2>
+        <div class="card">${d.top.length ? `<table><tbody>${d.top.map((t, i) => `<tr><td class="n" style="width:1%;color:var(--ink-3)">${i + 1}</td><td class="name">${esc(t.name)}${t.guest ? '<span class="tag">guest</span>' : ''}</td><td class="n">${money(t.balance)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No wallets yet.</div>'}</div>
+      </div>
+      <div>
+        <h2>Newest accounts</h2>
+        <div class="card">${d.recent.length ? `<table><tbody>${d.recent.map(u => `<tr><td class="name">${esc(u.name)}<div style="color:var(--ink-3);font-size:12px">${esc(u.email)}</div></td><td style="color:var(--ink-3)">${ago(u.at)}</td><td class="n">${u.balance == null ? '<span style="color:var(--ink-3)">no wallet</span>' : money(u.balance)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No accounts yet.</div>'}</div>
+      </div>
+    </div>
+
+    <h2>Big wins, last 7 days</h2>
+    <div class="card">${g.bigWins.length ? `<table><tbody>${g.bigWins.map(w => `<tr><td>${esc(w.game)}${w.guest ? '<span class="tag">guest</span>' : ''}</td><td style="color:var(--ink-3)">${ago(w.at)}</td><td class="n up">+${money(w.amount)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No wins of $100 or more this week.</div>'}</div>
+    <p class="note">Play numbers come from each player's statement (their last 200 lines), so a very busy player's older rounds can drop out of the 7-day totals. Test accounts are left out.</p>`;
+  document.getElementById('refresh').onclick = load;
+}
+
+function message(title, text, link) {
+  $app.innerHTML = `<div class="msg"><h1>${title}</h1><p>${text}</p>${link ? `<p><a class="btn" href="/">Go to the casino</a></p>` : ''}</div>`;
+}
+
+async function load() {
+  try {
+    const res = await fetch('/api/admin', { credentials: 'same-origin', cache: 'no-store' });
+    if (res.status === 401) return message('Sign in first', 'Sign in to Mini Casino with your admin account, then come back to this page.', true);
+    if (res.status === 403) return message('Admins only', 'This account doesn’t have access to the admin page.', true);
+    if (!res.ok) return message('Couldn’t load', 'The server had a problem. Try again in a moment.');
+    render(await res.json());
+  } catch (e) {
+    message('Couldn’t load', 'Check your connection and try again.');
+  }
+}
+load();
+</script>
+</body>
+</html>
